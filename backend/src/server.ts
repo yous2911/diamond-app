@@ -101,6 +101,9 @@ async function registerPlugins() {
     console.log('🛣️ Registering monitoring routes...');
     await fastify.register(import('./routes/monitoring'), { prefix: '/api/monitoring' });
     
+    console.log('🛣️ Registering leaderboard routes...');
+    await fastify.register(import('./routes/leaderboard'));
+    
     console.log('🛣️ Route registration completed successfully');
     
     // Health check route
@@ -151,6 +154,9 @@ async function registerPlugins() {
           sessions: '/api/sessions',
           analytics: '/api/analytics',
           monitoring: '/api/monitoring',
+          leaderboards: '/api/leaderboards',
+          badges: '/api/badges',
+          competitions: '/api/competitions',
           gdpr: '/api/gdpr',
           docs: '/docs',
           enhanced: {

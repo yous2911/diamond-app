@@ -243,7 +243,7 @@ class EnhancedDatabaseService {
   async getCompetencePrerequisites(
     competenceCode: string, 
     options: { includeDetails?: boolean; depth?: number } = {}
-  ): Promise<CompetencePrerequisite[]> {
+  ): Promise<any[]> {
     try {
       const prerequisites = await this.db
         .select()

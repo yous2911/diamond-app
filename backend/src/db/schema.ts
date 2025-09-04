@@ -505,6 +505,71 @@ export const studentAchievements = mysqlTable('student_achievements', {
   createdAt: timestamp('created_at').notNull().defaultNow()
 });
 
+// Leaderboard Tables
+export const leaderboards = mysqlTable('leaderboards', {
+  id: int('id').primaryKey().autoincrement(),
+  type: varchar('type', { length: 50 }).notNull(), // 'global', 'class', 'weekly', 'monthly'
+  category: varchar('category', { length: 50 }).notNull(), // 'points', 'streak', 'exercises', 'accuracy'
+  studentId: int('student_id').notNull().references(() => students.id),
+  score: int('score').notNull(),
+  rank: int('rank').notNull(),
+  previousRank: int('previous_rank'),
+  rankChange: int('rank_change').default(0),
+  period: varchar('period', { length: 20 }), // '2024-W01', '2024-01', 'all-time'
+  classId: int('class_id'), // For class-based rankings
+  metadata: json('metadata'), // Additional data like badges, achievements
+  lastUpdated: timestamp('last_updated').notNull().defaultNow().onUpdateNow(),
+  createdAt: timestamp('created_at').notNull().defaultNow()
+});
+
+export const leaderboardHistory = mysqlTable('leaderboard_history', {
+  id: int('id').primaryKey().autoincrement(),
+  studentId: int('student_id').notNull().references(() => students.id),
+  leaderboardType: varchar('leaderboard_type', { length: 50 }).notNull(),
+  rank: int('rank').notNull(),
+  score: int('score').notNull(),
+  period: varchar('period', { length: 20 }).notNull(),
+  recordedAt: timestamp('recorded_at').notNull().defaultNow()
+});
+
+export const studentBadges = mysqlTable('student_badges', {
+  id: int('id').primaryKey().autoincrement(),
+  studentId: int('student_id').notNull().references(() => students.id),
+  badgeType: varchar('badge_type', { length: 50 }).notNull(), // 'top_performer', 'streak_master', 'quick_learner', etc.
+  title: varchar('title', { length: 100 }).notNull(),
+  description: text('description'),
+  icon: varchar('icon', { length: 255 }),
+  rarity: varchar('rarity', { length: 20 }).default('common'), // 'common', 'rare', 'epic', 'legendary'
+  earnedAt: timestamp('earned_at').notNull().defaultNow(),
+  validUntil: timestamp('valid_until'), // For temporary badges
+  metadata: json('metadata')
+});
+
+export const competitions = mysqlTable('competitions', {
+  id: int('id').primaryKey().autoincrement(),
+  name: varchar('name', { length: 100 }).notNull(),
+  description: text('description'),
+  type: varchar('type', { length: 50 }).notNull(), // 'weekly_challenge', 'monthly_competition', 'special_event'
+  startDate: timestamp('start_date').notNull(),
+  endDate: timestamp('end_date').notNull(),
+  rules: json('rules'),
+  rewards: json('rewards'),
+  isActive: boolean('is_active').default(true),
+  participants: int('participants').default(0),
+  createdAt: timestamp('created_at').notNull().defaultNow()
+});
+
+export const competitionParticipants = mysqlTable('competition_participants', {
+  id: int('id').primaryKey().autoincrement(),
+  competitionId: int('competition_id').notNull().references(() => competitions.id),
+  studentId: int('student_id').notNull().references(() => students.id),
+  score: int('score').default(0),
+  rank: int('rank'),
+  progress: json('progress'),
+  joinedAt: timestamp('joined_at').notNull().defaultNow(),
+  lastActivity: timestamp('last_activity').notNull().defaultNow().onUpdateNow()
+});
+
 // Add MasteryLevels export
 export const MasteryLevels = {
   NOT_STARTED: 'not_started',
@@ -527,6 +592,18 @@ export type ExercisePerformanceAnalytics = InferSelectModel<typeof exercisePerfo
 export type NewExercisePerformanceAnalytics = InferInsertModel<typeof exercisePerformanceAnalytics>;
 export type StudentAchievements = InferSelectModel<typeof studentAchievements>;
 export type NewStudentAchievements = InferInsertModel<typeof studentAchievements>;
+
+// Leaderboard type exports
+export type Leaderboard = InferSelectModel<typeof leaderboards>;
+export type NewLeaderboard = InferInsertModel<typeof leaderboards>;
+export type LeaderboardHistory = InferSelectModel<typeof leaderboardHistory>;
+export type NewLeaderboardHistory = InferInsertModel<typeof leaderboardHistory>;
+export type StudentBadge = InferSelectModel<typeof studentBadges>;
+export type NewStudentBadge = InferInsertModel<typeof studentBadges>;
+export type Competition = InferSelectModel<typeof competitions>;
+export type NewCompetition = InferInsertModel<typeof competitions>;
+export type CompetitionParticipant = InferSelectModel<typeof competitionParticipants>;
+export type NewCompetitionParticipant = InferInsertModel<typeof competitionParticipants>;
 
 // GDPR type exports  
 export type GdprConsentRequest = InferSelectModel<typeof gdprConsentRequests>;

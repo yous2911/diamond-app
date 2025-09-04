@@ -144,7 +144,7 @@ export class RecommendationService {
           ));
       } else {
         // Create new progress record
-        const newProgress: NewProgress = {
+        const newProgress: any = {
           studentId: data.studentId,
           exerciseId: data.exerciseId,
           competenceCode: 'default', // Add required field
