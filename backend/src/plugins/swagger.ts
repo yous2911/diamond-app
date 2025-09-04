@@ -570,7 +570,7 @@ A comprehensive educational platform API designed for children's learning manage
   // Note: API info is available via the main /docs endpoint
   // No need for a separate info endpoint
 
-  fastify.log.info('📚 Swagger/OpenAPI documentation configured', {
+  (fastify.log as any).info('📚 Swagger/OpenAPI documentation configured', {
     docsUrl: '/docs',
     specUrl: '/docs/json'
   });

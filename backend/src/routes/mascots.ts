@@ -112,7 +112,7 @@ export default async function mascotsRoutes(fastify: FastifyInstance) {
         });
 
       } catch (error) {
-        fastify.log.error('Get mascot error:', error);
+        (fastify.log as any).error('Get mascot error:', error);
         return reply.status(500).send({
           success: false,
           error: {
@@ -203,7 +203,7 @@ export default async function mascotsRoutes(fastify: FastifyInstance) {
         });
 
       } catch (error) {
-        fastify.log.error('Update mascot error:', error);
+        (fastify.log as any).error('Update mascot error:', error);
         return reply.status(500).send({
           success: false,
           error: {
@@ -327,7 +327,7 @@ export default async function mascotsRoutes(fastify: FastifyInstance) {
         });
 
       } catch (error) {
-        fastify.log.error('Update mascot emotion error:', error);
+        (fastify.log as any).error('Update mascot emotion error:', error);
         return reply.status(500).send({
           success: false,
           error: {
@@ -455,7 +455,7 @@ export default async function mascotsRoutes(fastify: FastifyInstance) {
         });
 
       } catch (error) {
-        fastify.log.error('Get mascot dialogue error:', error);
+        (fastify.log as any).error('Get mascot dialogue error:', error);
         return reply.status(500).send({
           success: false,
           error: {

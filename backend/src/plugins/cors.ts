@@ -327,7 +327,7 @@ const corsPlugin = async (fastify: any) => {
   // Decorate fastify with CORS service for access in other plugins
   fastify.decorate('corsService', corsService);
 
-  fastify.log.info('✅ Enhanced CORS plugin registered', {
+  (fastify.log as any).info('✅ Enhanced CORS plugin registered', {
     environment: process.env.NODE_ENV,
     originsCount: corsService.getAllowedOrigins().length,
     dynamicValidation: process.env.NODE_ENV === 'production'

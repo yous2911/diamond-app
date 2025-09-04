@@ -1,0 +1,38 @@
+
+> frontend-diamond@0.1.0 build
+> react-scripts build
+
+Creating an optimized production build...
+Compiled with warnings.
+
+[eslint] 
+src\App.tsx
+  Line 547:10:  'selectedSubject' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+src\contexts\AuthContext.tsx
+  Line 140:9:  The 'refreshStudentData' function makes the dependencies of useEffect Hook (at line 179) change on every render. To fix this, wrap the definition of 'refreshStudentData' in its own useCallback() Hook  react-hooks/exhaustive-deps
+
+Search for the keywords to learn more about each warning.
+To ignore, add // eslint-disable-next-line to the line before.
+
+File sizes after gzip:
+
+  95.69 kB  build\static\js\main.e0ec697c.js
+  11.44 kB  build\static\css\main.6b0a873e.css
+  3.66 kB   build\static\js\93.4221c85e.chunk.js
+  3.06 kB   build\static\js\946.5b4c2266.chunk.js
+  2.5 kB    build\static\js\488.e6e87b32.chunk.js
+
+The project was built assuming it is hosted at /.
+You can control this with the homepage field in your package.json.
+
+The build folder is ready to be deployed.
+You may serve it with a static server:
+
+  npm install -g serve
+  serve -s build
+
+Find out more about deployment here:
+
+  https://cra.link/deployment
+

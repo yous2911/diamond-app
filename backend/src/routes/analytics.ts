@@ -31,7 +31,7 @@ export default async function analyticsRoutes(fastify: FastifyInstance): Promise
     try {
       const { metrics } = request.body as { metrics: any[] };
       
-      fastify.log.info('Performance metrics received', { 
+      (fastify.log as any).info('Performance metrics received', { 
         count: metrics.length,
         sessionId: metrics[0]?.sessionId 
       });
@@ -42,7 +42,7 @@ export default async function analyticsRoutes(fastify: FastifyInstance): Promise
         count: metrics.length
       });
     } catch (error) {
-      fastify.log.error('Performance analytics error:', error);
+      (fastify.log as any).error('Performance analytics error:', error);
       return reply.status(500).send({
         success: false,
         error: {
@@ -75,7 +75,7 @@ export default async function analyticsRoutes(fastify: FastifyInstance): Promise
         data: progress
       });
     } catch (error) {
-      fastify.log.error('Get student progress analytics error:', error);
+      (fastify.log as any).error('Get student progress analytics error:', error);
       return reply.status(500).send({
         success: false,
         error: {
@@ -115,7 +115,7 @@ export default async function analyticsRoutes(fastify: FastifyInstance): Promise
         data: stats
       });
     } catch (error) {
-      fastify.log.error('Get student session stats error:', error);
+      (fastify.log as any).error('Get student session stats error:', error);
       return reply.status(500).send({
         success: false,
         error: {
@@ -147,7 +147,7 @@ export default async function analyticsRoutes(fastify: FastifyInstance): Promise
         data: completion
       });
     } catch (error) {
-      fastify.log.error('Get exercise completion rate error:', error);
+      (fastify.log as any).error('Get exercise completion rate error:', error);
       return reply.status(500).send({
         success: false,
         error: {
@@ -241,7 +241,7 @@ export default async function analyticsRoutes(fastify: FastifyInstance): Promise
         }
       });
     } catch (error) {
-      fastify.log.error('Get comprehensive analytics error:', error);
+      (fastify.log as any).error('Get comprehensive analytics error:', error);
       return reply.status(500).send({
         success: false,
         error: {
@@ -339,7 +339,7 @@ export default async function analyticsRoutes(fastify: FastifyInstance): Promise
         }
       });
     } catch (error) {
-      fastify.log.error('Get session analytics error:', error);
+      (fastify.log as any).error('Get session analytics error:', error);
       return reply.status(500).send({
         success: false,
         error: {

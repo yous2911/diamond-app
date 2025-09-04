@@ -105,7 +105,7 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
       });
 
     } catch (error) {
-      fastify.log.error('Error getting competence prerequisites:', error);
+      (fastify.log as any).error('Error getting competence prerequisites:', error);
       reply.status(500).send({
         success: false,
         error: {
@@ -187,7 +187,7 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
       }
 
     } catch (error) {
-      fastify.log.error('Error getting competence progress:', error);
+      (fastify.log as any).error('Error getting competence progress:', error);
       reply.status(500).send({
         success: false,
         error: {

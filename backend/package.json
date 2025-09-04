@@ -8,6 +8,7 @@
     "dev:full": "node start-dev.js",
     "build": "tsc",
     "start": "node dist/server.js",
+    "railway:deploy": "npm run build && railway up",
     "clean": "rimraf dist",
     "prebuild": "npm run clean",
     "migrate": "tsx src/db/migrate-mysql.ts --sample-data",

@@ -38,24 +38,24 @@ const websocketPlugin: FastifyPluginAsync = async (fastify: FastifyInstance) => 
               // Handle subscriptions
               break;
             default:
-              fastify.log.warn('Unknown WebSocket message type:', data.type);
+              (fastify.log as any).warn('Unknown WebSocket message type:', data.type);
           }
         } catch (error) {
-          fastify.log.error('WebSocket message parsing error:', error);
+          (fastify.log as any).error('WebSocket message parsing error:', error);
         }
       });
 
       connection.socket.on('close', () => {
         connections.delete(connectionId);
-        fastify.log.info(`WebSocket connection ${connectionId} closed`);
+        (fastify.log as any).info(`WebSocket connection ${connectionId} closed`);
       });
 
       connection.socket.on('error', (error: Error) => {
-        fastify.log.error(`WebSocket connection ${connectionId} error:`, error);
+        (fastify.log as any).error(`WebSocket connection ${connectionId} error:`, error);
         connections.delete(connectionId);
       });
 
-      fastify.log.info(`WebSocket connection ${connectionId} established`);
+      (fastify.log as any).info(`WebSocket connection ${connectionId} established`);
     });
   });
 
@@ -68,7 +68,7 @@ const websocketPlugin: FastifyPluginAsync = async (fastify: FastifyInstance) => 
           connection.socket.send(payload);
         }
       } catch (error) {
-        fastify.log.error(`Failed to send message to connection ${id}:`, error);
+        (fastify.log as any).error(`Failed to send message to connection ${id}:`, error);
         connections.delete(id);
       }
     });
@@ -95,7 +95,7 @@ const websocketPlugin: FastifyPluginAsync = async (fastify: FastifyInstance) => 
     connections.clear();
   });
 
-  fastify.log.info('✅ WebSocket plugin registered successfully');
+  (fastify.log as any).info('✅ WebSocket plugin registered successfully');
 };
 
 export default fp(websocketPlugin, { name: 'websocket' });

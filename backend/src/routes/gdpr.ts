@@ -90,7 +90,7 @@ export default async function gdprRoutes(fastify: FastifyInstance) {
         });
 
       } catch (error) {
-        fastify.log.error('GDPR consent request error:', error);
+        (fastify.log as any).error('GDPR consent request error:', error);
         return reply.status(500).send({
           success: false,
           error: {
@@ -147,7 +147,7 @@ export default async function gdprRoutes(fastify: FastifyInstance) {
         });
 
       } catch (error) {
-        fastify.log.error('GDPR consent verification error:', error);
+        (fastify.log as any).error('GDPR consent verification error:', error);
         return reply.status(500).send({
           success: false,
           error: {
@@ -233,7 +233,7 @@ export default async function gdprRoutes(fastify: FastifyInstance) {
         });
 
       } catch (error) {
-        fastify.log.error('GDPR data export error:', error);
+        (fastify.log as any).error('GDPR data export error:', error);
         return reply.status(500).send({
           success: false,
           error: {
@@ -329,7 +329,7 @@ export default async function gdprRoutes(fastify: FastifyInstance) {
         });
 
       } catch (error) {
-        fastify.log.error('GDPR data deletion error:', error);
+        (fastify.log as any).error('GDPR data deletion error:', error);
         return reply.status(500).send({
           success: false,
           error: {
@@ -403,7 +403,7 @@ export default async function gdprRoutes(fastify: FastifyInstance) {
         });
 
       } catch (error) {
-        fastify.log.error('GDPR audit log error:', error);
+        (fastify.log as any).error('GDPR audit log error:', error);
         return reply.status(500).send({
           success: false,
           error: {
@@ -447,7 +447,7 @@ export default async function gdprRoutes(fastify: FastifyInstance) {
         });
 
       } catch (error) {
-        fastify.log.error('GDPR health check error:', error);
+        (fastify.log as any).error('GDPR health check error:', error);
         return reply.status(503).send({
           success: false,
           error: {

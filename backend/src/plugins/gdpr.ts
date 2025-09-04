@@ -40,11 +40,11 @@ const gdprPlugin = async (fastify: FastifyInstance, options: GDPRPluginOptions =
   };
 
   if (!opts.enabled) {
-    fastify.log.info('⚠️ GDPR plugin disabled via configuration');
+    (fastify.log as any).info('⚠️ GDPR plugin disabled via configuration');
     return;
   }
 
-  fastify.log.info('🔄 Initializing GDPR plugin...');
+  (fastify.log as any).info('🔄 Initializing GDPR plugin...');
 
   try {
     // Initialisation des services RGPD
@@ -97,12 +97,12 @@ const gdprPlugin = async (fastify: FastifyInstance, options: GDPRPluginOptions =
             try {
               await auditService.logAction(auditData);
             } catch (auditError) {
-              fastify.log.warn('Audit logging failed:', auditError);
+              (fastify.log as any).warn('Audit logging failed:', auditError);
             }
           });
 
         } catch (error) {
-          fastify.log.warn('GDPR audit middleware error:', error);
+          (fastify.log as any).warn('GDPR audit middleware error:', error);
           // Ne pas faire échouer la requête si l'audit échoue
         }
       });
@@ -146,7 +146,7 @@ const gdprPlugin = async (fastify: FastifyInstance, options: GDPRPluginOptions =
                 });
               }
             } catch (error) {
-              fastify.log.warn('Consent verification failed:', error);
+              (fastify.log as any).warn('Consent verification failed:', error);
               // En cas d'erreur, permettre l'accès mais logger l'incident
               await auditService.logAction({
                 entityType: 'parental_consent',
@@ -176,9 +176,9 @@ const gdprPlugin = async (fastify: FastifyInstance, options: GDPRPluginOptions =
       setInterval(async () => {
         try {
           await encryptionService.cleanupExpiredKeys();
-          fastify.log.info('🧹 Cleaned up expired encryption keys');
+          (fastify.log as any).info('🧹 Cleaned up expired encryption keys');
         } catch (error) {
-          fastify.log.error('Error cleaning up expired keys:', error);
+          (fastify.log as any).error('Error cleaning up expired keys:', error);
         }
       }, 24 * 60 * 60 * 1000); // 24 heures
 
@@ -186,31 +186,31 @@ const gdprPlugin = async (fastify: FastifyInstance, options: GDPRPluginOptions =
       setInterval(async () => {
         try {
           await retentionService.executeRetentionPolicies();
-          fastify.log.debug('✅ Retention policies applied');
+          (fastify.log as any).debug('✅ Retention policies applied');
         } catch (error) {
-          fastify.log.error('Error applying retention policies:', error);
+          (fastify.log as any).error('Error applying retention policies:', error);
         }
       }, 6 * 60 * 60 * 1000); // 6 heures
 
-      fastify.log.info('⏰ GDPR maintenance tasks scheduled');
+      (fastify.log as any).info('⏰ GDPR maintenance tasks scheduled');
     }
 
     // Hook de fermeture pour nettoyage propre
     fastify.addHook('onClose', async (): Promise<void> => {
-      fastify.log.info('🔄 Shutting down GDPR services...');
+      (fastify.log as any).info('🔄 Shutting down GDPR services...');
       // Ici on pourrait ajouter du nettoyage si nécessaire
       return; // Explicit return for all code paths
     });
 
-    fastify.log.info('✅ GDPR plugin initialized successfully');
-    fastify.log.info(`📊 GDPR Configuration: 
+    (fastify.log as any).info('✅ GDPR plugin initialized successfully');
+    (fastify.log as any).info(`📊 GDPR Configuration: 
       - Parental consent required: ${gdprConfig.parentalConsentRequired}
       - Data retention: ${gdprConfig.dataRetentionDays} days
       - Key rotation: ${gdprConfig.encryptionKeyRotationDays} days
       - Audit retention: ${gdprConfig.auditLogRetentionDays} days`);
 
   } catch (error) {
-    fastify.log.error('❌ Failed to initialize GDPR plugin:', error);
+    (fastify.log as any).error('❌ Failed to initialize GDPR plugin:', error);
     throw error;
   }
 };

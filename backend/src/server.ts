@@ -184,7 +184,7 @@ async function registerPlugins() {
 // Graceful shutdown
 async function gracefulShutdown() {
   try {
-    fastify.log.info('Starting graceful shutdown...');
+    (fastify.log as any).info('Starting graceful shutdown...');
     
     // Close Fastify server (this also closes all plugins)
     await fastify.close();
@@ -192,10 +192,10 @@ async function gracefulShutdown() {
     // Close database connections
     await disconnectDatabase();
     
-    fastify.log.info('Graceful shutdown completed');
+    (fastify.log as any).info('Graceful shutdown completed');
     process.exit(0);
   } catch (error) {
-    fastify.log.error('Error during graceful shutdown:', error);
+    (fastify.log as any).error('Error during graceful shutdown:', error);
     process.exit(1);
   }
 }
@@ -215,7 +215,7 @@ async function start() {
     // Test database connection
     console.log('🔗 Testing database connection...');
     await connectDatabase();
-    fastify.log.info('Database connected successfully');
+    (fastify.log as any).info('Database connected successfully');
 
     // Register all plugins and routes
     console.log('🔧 Registering plugins and routes...');
@@ -228,13 +228,13 @@ async function start() {
       host: config.HOST
     });
 
-    fastify.log.info(`🚀 RevEd Kids Fastify server started successfully!`);
-    fastify.log.info(`📍 Server listening on: ${address}`);
-    fastify.log.info(`🌍 Environment: ${config.NODE_ENV}`);
-    fastify.log.info(`📊 Health Check: ${address}/api/health`);
-    fastify.log.info(`📚 API Documentation: ${address}/docs`);
-    fastify.log.info(`🔒 GDPR Compliance: ${config.GDPR_ENABLED ? 'ENABLED' : 'DISABLED'}`);
-    fastify.log.info(`🛡️ GDPR Endpoints: ${address}/api/gdpr`);
+    (fastify.log as any).info(`🚀 RevEd Kids Fastify server started successfully!`);
+    (fastify.log as any).info(`📍 Server listening on: ${address}`);
+    (fastify.log as any).info(`🌍 Environment: ${config.NODE_ENV}`);
+    (fastify.log as any).info(`📊 Health Check: ${address}/api/health`);
+    (fastify.log as any).info(`📚 API Documentation: ${address}/docs`);
+    (fastify.log as any).info(`🔒 GDPR Compliance: ${config.GDPR_ENABLED ? 'ENABLED' : 'DISABLED'}`);
+    (fastify.log as any).info(`🛡️ GDPR Endpoints: ${address}/api/gdpr`);
 
   } catch (error) {
     console.error('❌ Error starting server:', error);

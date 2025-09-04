@@ -1021,6 +1021,8 @@ export class AuditTrailService {
         await tx.insert(securityAlerts).values({
           id: alert.id,
           type: alert.type,
+          alertType: alert.type,
+          message: alert.description || 'Security alert detected',
           severity: alert.severity,
           entityType: alert.entityType,
           entityId: alert.entityId,

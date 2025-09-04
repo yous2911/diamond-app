@@ -106,7 +106,7 @@ const rateLimitPlugin = async (fastify: any) => {
     errorResponseBuilder: (request: any, context: any) => {
       const isAuthRoute = request.url.startsWith('/api/auth/');
       
-      fastify.log.warn('Rate limit exceeded', {
+      (fastify.log as any).warn('Rate limit exceeded', {
         ip: request.ip,
         userAgent: request.headers['user-agent'],
         url: request.url,
@@ -186,7 +186,7 @@ const rateLimitPlugin = async (fastify: any) => {
     const { ip, duration } = request.body;
     enhancedRateLimit.blockIP(ip, duration);
     
-    fastify.log.info('IP manually blocked', { 
+    (fastify.log as any).info('IP manually blocked', { 
       ip, 
       duration: duration / 1000, 
       admin: request.user?.id 
@@ -212,7 +212,7 @@ const rateLimitPlugin = async (fastify: any) => {
     const { ip } = request.body;
     enhancedRateLimit.unblockIP(ip);
     
-    fastify.log.info('IP manually unblocked', { 
+    (fastify.log as any).info('IP manually unblocked', { 
       ip, 
       admin: request.user?.id 
     });
@@ -228,7 +228,7 @@ const rateLimitPlugin = async (fastify: any) => {
   // Store reference for access in other parts of the application
   fastify.decorate('enhancedRateLimit', enhancedRateLimit);
 
-  fastify.log.info('✅ Enhanced rate limit plugin registered with DDoS protection');
+  (fastify.log as any).info('✅ Enhanced rate limit plugin registered with DDoS protection');
 };
 
 export default fp(rateLimitPlugin, { name: 'rateLimit' });

@@ -16,7 +16,7 @@ import {
   studentAchievements,
   type Student,
   type Exercise,
-  type Progress,
+  type StudentProgress,
   type DailyLearningAnalytics,
   type WeeklyProgressSummary,
   type StudentCompetenceProgress,

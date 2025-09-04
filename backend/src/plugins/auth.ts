@@ -178,7 +178,7 @@ const authPlugin = async (fastify: any) => {
   // REMOVED: This route is now handled in ./routes/auth.ts
   // fastify.post('/api/auth/logout', { ... });
 
-  fastify.log.info('✅ Enhanced auth plugin registered with secure cookies and refresh tokens');
+  (fastify.log as any).info('✅ Enhanced auth plugin registered with secure cookies and refresh tokens');
 };
 
 export default fp(authPlugin, { name: 'auth' });

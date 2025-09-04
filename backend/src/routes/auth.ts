@@ -132,7 +132,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
         });
 
       } catch (error) {
-        fastify.log.error('Login error:', error);
+        (fastify.log as any).error('Login error:', error);
         return reply.status(500).send({
           success: false,
           error: {
@@ -192,7 +192,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
         });
 
       } catch (error) {
-        fastify.log.error('Registration error:', error);
+        (fastify.log as any).error('Registration error:', error);
         return reply.status(500).send({
           success: false,
           error: {
@@ -287,7 +287,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
         });
 
       } catch (error) {
-        fastify.log.error('Token refresh error:', error);
+        (fastify.log as any).error('Token refresh error:', error);
         return reply.status(500).send({
           success: false,
           error: {
@@ -323,7 +323,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
         // await emailService.sendPasswordReset(email, resetToken);
 
       } catch (error) {
-        fastify.log.error('Password reset error:', error);
+        (fastify.log as any).error('Password reset error:', error);
         return reply.status(500).send({
           success: false,
           error: {
@@ -364,7 +364,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
         });
 
       } catch (error) {
-        fastify.log.error('Password reset confirm error:', error);
+        (fastify.log as any).error('Password reset confirm error:', error);
         return reply.status(500).send({
           success: false,
           error: {
@@ -401,7 +401,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
         });
 
       } catch (error) {
-        fastify.log.error('Logout error:', error);
+        (fastify.log as any).error('Logout error:', error);
         return reply.status(500).send({
           success: false,
           error: {
@@ -435,7 +435,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
         });
 
       } catch (error) {
-        fastify.log.error('Get user error:', error);
+        (fastify.log as any).error('Get user error:', error);
         return reply.status(500).send({
           success: false,
           error: {
@@ -478,7 +478,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
         });
 
       } catch (error) {
-        fastify.log.error('Auth health check error:', error);
+        (fastify.log as any).error('Auth health check error:', error);
         return reply.status(500).send({
           success: false,
           error: {
@@ -549,7 +549,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
         });
 
       } catch (error) {
-        fastify.log.error('Student verification error:', error);
+        (fastify.log as any).error('Student verification error:', error);
         return reply.status(500).send({
           success: false,
           error: {

@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(C:\\Users\\rachida\\Desktop\\fastrevedkids\\fastrevedkids-diamond\\backend/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

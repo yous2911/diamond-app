@@ -106,7 +106,7 @@ export default async function studentRoutes(fastify: FastifyInstance) {
         }
       });
     } catch (error) {
-      fastify.log.error('Get student error:', error);
+      (fastify.log as any).error('Get student error:', error);
       return reply.status(500).send({
         success: false,
         error: {
@@ -159,7 +159,7 @@ export default async function studentRoutes(fastify: FastifyInstance) {
         data: recommendations
       });
     } catch (error) {
-      fastify.log.error('Get recommendations error:', error);
+      (fastify.log as any).error('Get recommendations error:', error);
       return reply.status(500).send({
         success: false,
         error: {
@@ -222,7 +222,7 @@ export default async function studentRoutes(fastify: FastifyInstance) {
         data: result
       });
     } catch (error) {
-      fastify.log.error('Submit attempt error:', error);
+      (fastify.log as any).error('Submit attempt error:', error);
       return reply.status(500).send({
         success: false,
         error: {
@@ -268,7 +268,7 @@ export default async function studentRoutes(fastify: FastifyInstance) {
         data: progress
       });
     } catch (error) {
-      fastify.log.error('Get progress error:', error);
+      (fastify.log as any).error('Get progress error:', error);
       return reply.status(500).send({
         success: false,
         error: {
@@ -324,7 +324,7 @@ export default async function studentRoutes(fastify: FastifyInstance) {
         data: mockStudents
       };
     } catch (error) {
-      fastify.log.error('Get all students error:', error);
+      (fastify.log as any).error('Get all students error:', error);
       return reply.status(500).send({
         success: false,
         error: {
@@ -372,7 +372,7 @@ export default async function studentRoutes(fastify: FastifyInstance) {
         }
       };
     } catch (error) {
-      fastify.log.error('Get profile error:', error);
+      (fastify.log as any).error('Get profile error:', error);
       return reply.status(500).send({
         success: false,
         error: {
@@ -420,7 +420,7 @@ export default async function studentRoutes(fastify: FastifyInstance) {
         }
       };
     } catch (error) {
-      fastify.log.error('Update profile error:', error);
+      (fastify.log as any).error('Update profile error:', error);
       return reply.status(500).send({
         success: false,
         error: {
@@ -459,7 +459,7 @@ export default async function studentRoutes(fastify: FastifyInstance) {
         }
       };
     } catch (error) {
-      fastify.log.error('Get progress error:', error);
+      (fastify.log as any).error('Get progress error:', error);
       return reply.status(500).send({
         success: false,
         error: {
@@ -484,7 +484,7 @@ export default async function studentRoutes(fastify: FastifyInstance) {
         data: { stats }
       };
     } catch (error) {
-      fastify.log.error('Get stats error:', error);
+      (fastify.log as any).error('Get stats error:', error);
       return reply.status(500).send({
         success: false,
         error: {
@@ -521,7 +521,7 @@ export default async function studentRoutes(fastify: FastifyInstance) {
         }
       };
     } catch (error) {
-      fastify.log.error('Get sessions error:', error);
+      (fastify.log as any).error('Get sessions error:', error);
       return reply.status(500).send({
         success: false,
         error: {
@@ -572,7 +572,7 @@ export default async function studentRoutes(fastify: FastifyInstance) {
         data: { session }
       };
     } catch (error) {
-      fastify.log.error('Create session error:', error);
+      (fastify.log as any).error('Create session error:', error);
       return reply.status(500).send({
         success: false,
         error: {
@@ -642,7 +642,7 @@ export default async function studentRoutes(fastify: FastifyInstance) {
         data: { session: updatedSession }
       };
     } catch (error) {
-      fastify.log.error('Update session error:', error);
+      (fastify.log as any).error('Update session error:', error);
       return reply.status(500).send({
         success: false,
         error: {
@@ -679,7 +679,7 @@ export default async function studentRoutes(fastify: FastifyInstance) {
         }
       };
     } catch (error) {
-      fastify.log.error('Get recommendations error:', error);
+      (fastify.log as any).error('Get recommendations error:', error);
       return reply.status(500).send({
         success: false,
         error: {
@@ -704,7 +704,7 @@ export default async function studentRoutes(fastify: FastifyInstance) {
         data: { weeklyProgress }
       };
     } catch (error) {
-      fastify.log.error('Get weekly progress error:', error);
+      (fastify.log as any).error('Get weekly progress error:', error);
       return reply.status(500).send({
         success: false,
         error: {
@@ -729,7 +729,7 @@ export default async function studentRoutes(fastify: FastifyInstance) {
         data: { subjectProgress }
       };
     } catch (error) {
-      fastify.log.error('Get subject progress error:', error);
+      (fastify.log as any).error('Get subject progress error:', error);
       return reply.status(500).send({
         success: false,
         error: {
@@ -815,7 +815,7 @@ export default async function studentRoutes(fastify: FastifyInstance) {
         }
       };
     } catch (error) {
-      fastify.log.error('Get competence progress error:', error);
+      (fastify.log as any).error('Get competence progress error:', error);
       return reply.status(500).send({
         success: false,
         error: {
@@ -900,7 +900,7 @@ export default async function studentRoutes(fastify: FastifyInstance) {
         }
       };
     } catch (error) {
-      fastify.log.error('Record progress error:', error);
+      (fastify.log as any).error('Record progress error:', error);
       return reply.status(500).send({
         success: false,
         error: {
@@ -995,7 +995,7 @@ export default async function studentRoutes(fastify: FastifyInstance) {
         }
       };
     } catch (error) {
-      fastify.log.error('Get achievements error:', error);
+      (fastify.log as any).error('Get achievements error:', error);
       return reply.status(500).send({
         success: false,
         error: {
@@ -1026,7 +1026,7 @@ export default async function studentRoutes(fastify: FastifyInstance) {
         }
       };
     } catch (error) {
-      fastify.log.error('Student health check error:', error);
+      (fastify.log as any).error('Student health check error:', error);
       return reply.status(503).send({
         success: false,
         error: {

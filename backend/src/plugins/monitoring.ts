@@ -54,7 +54,7 @@ const monitoringPlugin: FastifyPluginAsync = async (fastify: FastifyInstance) =>
   // FIXED: Decorate with proper typing
   fastify.decorate('monitoring', monitoring);
 
-  fastify.log.info('✅ Monitoring plugin registered successfully');
+  (fastify.log as any).info('✅ Monitoring plugin registered successfully');
 };
 
 export default fp(monitoringPlugin, { name: 'monitoring' });

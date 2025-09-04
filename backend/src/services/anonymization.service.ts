@@ -58,7 +58,7 @@ class AnonymizationService {
       await this.db
         .update(gdprFiles)
         .set({
-          filename: 'fichier_anonymise.dat'
+          fileName: 'fichier_anonymise.dat'
         })
         .where(eq(gdprFiles.studentId, studentId));
       

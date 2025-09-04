@@ -109,7 +109,7 @@ const securityPlugin: FastifyPluginAsync = async (fastify) => {
     const requestString = JSON.stringify(request.body || {}) + request.url;
     for (const pattern of suspiciousPatterns) {
       if (pattern.test(requestString)) {
-        fastify.log.warn('Suspicious request blocked:', { 
+        (fastify.log as any).warn('Suspicious request blocked:', { 
           ip: request.ip, 
           url: request.url,
           userAgent: request.headers['user-agent'] 
@@ -129,7 +129,7 @@ const securityPlugin: FastifyPluginAsync = async (fastify) => {
   // Request logging for security monitoring
   fastify.addHook('onRequest', async (request) => {
     if (config.NODE_ENV === 'production') {
-      fastify.log.info('Incoming request', {
+      (fastify.log as any).info('Incoming request', {
         method: request.method,
         url: request.url,
         ip: request.ip,
@@ -139,7 +139,7 @@ const securityPlugin: FastifyPluginAsync = async (fastify) => {
     }
   });
 
-  fastify.log.info('✅ Security plugin registered successfully');
+  (fastify.log as any).info('✅ Security plugin registered successfully');
 };
 
 // Helper function to sanitize objects

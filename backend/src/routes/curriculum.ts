@@ -49,7 +49,7 @@ const curriculumPlugin: FastifyPluginAsync = async (fastify, opts) => {
           message: 'Exercices par matière récupérés avec succès'
         });
       } catch (error) {
-        fastify.log.error('Get exercises by subject error:', error);
+        (fastify.log as any).error('Get exercises by subject error:', error);
         return reply.status(500).send({
           success: false,
           error: {
@@ -91,7 +91,7 @@ const curriculumPlugin: FastifyPluginAsync = async (fastify, opts) => {
           message: 'Niveaux disponibles récupérés'
         });
       } catch (error) {
-        fastify.log.error('Get levels error:', error);
+        (fastify.log as any).error('Get levels error:', error);
         return reply.status(500).send({
           success: false,
           error: {
@@ -165,7 +165,7 @@ const curriculumPlugin: FastifyPluginAsync = async (fastify, opts) => {
           message: `Programme ${supportedLevel.displayName} récupéré`
         });
       } catch (error) {
-        fastify.log.error('Get curriculum error:', error);
+        (fastify.log as any).error('Get curriculum error:', error);
         return reply.status(500).send({
           success: false,
           error: {
@@ -203,7 +203,7 @@ const curriculumPlugin: FastifyPluginAsync = async (fastify, opts) => {
           message: `Matières pour ${level} récupérées`
         });
       } catch (error) {
-        fastify.log.error('Get subjects error:', error);
+        (fastify.log as any).error('Get subjects error:', error);
         return reply.status(500).send({
           success: false,
           error: {
@@ -264,7 +264,7 @@ const curriculumPlugin: FastifyPluginAsync = async (fastify, opts) => {
           message: `Exercices pour ${level} récupérés`
         });
       } catch (error) {
-        fastify.log.error('Get exercises error:', error);
+        (fastify.log as any).error('Get exercises error:', error);
         return reply.status(500).send({
           success: false,
           error: {
@@ -321,7 +321,7 @@ const curriculumPlugin: FastifyPluginAsync = async (fastify, opts) => {
           message: 'Statistiques du programme récupérées'
         });
       } catch (error) {
-        fastify.log.error('Get statistics error:', error);
+        (fastify.log as any).error('Get statistics error:', error);
         return reply.status(500).send({
           success: false,
           error: {

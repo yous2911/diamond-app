@@ -59,7 +59,7 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
         error: { message: 'Not implemented', code: 'NOT_IMPLEMENTED' }
       });
     } catch (error) {
-      fastify.log.error('Create module error:', error);
+      (fastify.log as any).error('Create module error:', error);
       return reply.status(500).send({
         success: false,
         error: { message: 'Internal error', code: 'INTERNAL_ERROR' }
@@ -99,7 +99,7 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
         error: { message: 'Not implemented', code: 'NOT_IMPLEMENTED' }
       });
     } catch (error) {
-      fastify.log.error('Generate exercises error:', error);
+      (fastify.log as any).error('Generate exercises error:', error);
       return reply.status(500).send({
         success: false,
         error: { message: 'Internal error', code: 'INTERNAL_ERROR' }
@@ -172,7 +172,7 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
           data: allExercises
         });
       } catch (error) {
-        fastify.log.error('Get exercises error:', error);
+        (fastify.log as any).error('Get exercises error:', error);
         return reply.status(500).send({
           success: false,
           error: {
@@ -218,7 +218,7 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
         error: { message: 'Not implemented', code: 'NOT_IMPLEMENTED' }
       });
     } catch (error) {
-      fastify.log.error('Create exercise error:', error);
+      (fastify.log as any).error('Create exercise error:', error);
       return reply.status(500).send({
         success: false,
         error: { message: 'Internal error', code: 'INTERNAL_ERROR' }
@@ -250,7 +250,7 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
         error: { message: 'Not implemented', code: 'NOT_IMPLEMENTED' }
       });
     } catch (error) {
-      fastify.log.error('Update exercise error:', error);
+      (fastify.log as any).error('Update exercise error:', error);
       return reply.status(500).send({
         success: false,
         error: { message: 'Internal error', code: 'INTERNAL_ERROR' }
@@ -278,7 +278,7 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
         error: { message: 'Not implemented', code: 'NOT_IMPLEMENTED' }
       });
     } catch (error) {
-      fastify.log.error('Delete exercise error:', error);
+      (fastify.log as any).error('Delete exercise error:', error);
       return reply.status(500).send({
         success: false,
         error: { message: 'Internal error', code: 'INTERNAL_ERROR' }
@@ -330,7 +330,7 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
           message: 'Recommandations récupérées avec succès',
         });
       } catch (error) {
-        fastify.log.error('Recommendations error:', error);
+        (fastify.log as any).error('Recommendations error:', error);
         return reply.status(500).send({
           success: false,
           error: {
@@ -374,7 +374,7 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
           message: 'Exercices récupérés avec succès',
         });
       } catch (error) {
-        fastify.log.error('Get exercises by module error:', error);
+        (fastify.log as any).error('Get exercises by module error:', error);
         return reply.status(500).send({
           success: false,
           error: {
@@ -431,7 +431,7 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
           });
 
         // Simple analytics recording (removed service calls that don't exist)
-        fastify.log.info(`Exercise attempt recorded for student ${user.studentId}`);
+        (fastify.log as any).info(`Exercise attempt recorded for student ${user.studentId}`);
 
         return reply.send({
           success: true,
@@ -439,7 +439,7 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
           message: 'Tentative enregistrée avec succès',
         });
       } catch (error) {
-        fastify.log.error('Create attempt error:', error);
+        (fastify.log as any).error('Create attempt error:', error);
         return reply.status(500).send({
           success: false,
           error: {
@@ -498,7 +498,7 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
           message: 'Historique récupéré avec succès',
         });
       } catch (error) {
-        fastify.log.error('Get student history error:', error);
+        (fastify.log as any).error('Get student history error:', error);
         return reply.status(500).send({
           success: false,
           error: {
@@ -544,7 +544,7 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
           message: 'Progrès récupéré avec succès',
         });
       } catch (error) {
-        fastify.log.error('Get student progress error:', error);
+        (fastify.log as any).error('Get student progress error:', error);
         return reply.status(500).send({
           success: false,
           error: {
@@ -593,7 +593,7 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
           message: 'Exercice récupéré avec succès',
         });
       } catch (error) {
-        fastify.log.error('Get exercise by ID error:', error);
+        (fastify.log as any).error('Get exercise by ID error:', error);
         return reply.status(500).send({
           success: false,
           error: {
@@ -686,7 +686,7 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
         });
 
       } catch (error) {
-        fastify.log.error('Get exercises by level error:', error);
+        (fastify.log as any).error('Get exercises by level error:', error);
         return reply.status(500).send({
           success: false,
           error: {
@@ -760,7 +760,7 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
         });
 
       } catch (error) {
-        fastify.log.error('Get random exercises error:', error);
+        (fastify.log as any).error('Get random exercises error:', error);
         return reply.status(500).send({
           success: false,
           error: {
@@ -833,7 +833,7 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
         });
 
       } catch (error) {
-        fastify.log.error('Get exercise stats error:', error);
+        (fastify.log as any).error('Get exercise stats error:', error);
         return reply.status(500).send({
           success: false,
           error: {

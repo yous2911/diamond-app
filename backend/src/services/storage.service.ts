@@ -89,7 +89,7 @@ export class StorageService {
       const fileData = await db
         .select()
         .from(files)
-        .where(eq(files.id, parseInt(fileId, 10)))
+        .where(eq(files.id, fileId))
         .limit(1);
 
       if (fileData.length === 0) {
@@ -102,7 +102,7 @@ export class StorageService {
       const variants = await db
         .select()
         .from(fileVariants)
-        .where(eq(fileVariants.fileId, parseInt(fileId, 10)));
+        .where(eq(fileVariants.fileId, fileId));
 
       const processedVariants: ProcessedVariant[] = variants.map(variant => ({
         id: variant.id.toString(),
@@ -228,7 +228,7 @@ export class StorageService {
       await db
         .update(files)
         .set({ status })
-        .where(eq(files.id, parseInt(fileId, 10)));
+        .where(eq(files.id, fileId));
 
       logger.info('File status updated', { fileId, status });
     } catch (error) {
@@ -249,13 +249,13 @@ export class StorageService {
           .set({ 
             status: 'deleted'
           })
-          .where(eq(files.id, parseInt(fileId, 10)));
+          .where(eq(files.id, fileId));
 
         // Mark variants as deleted
         await tx
           .update(fileVariants)
           .set({ deletedAt: new Date() })
-          .where(eq(fileVariants.fileId, parseInt(fileId, 10)));
+          .where(eq(fileVariants.fileId, fileId));
       });
 
       logger.info('File marked as deleted', { fileId });

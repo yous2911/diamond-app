@@ -1,7 +1,7 @@
 import { db } from '../db/connection';
 import * as schema from '../db/schema';
 import { eq, and, sql, not, desc } from 'drizzle-orm';
-import type { exercises, students, studentProgress, Exercise, NewProgress } from '../db/schema';
+import type { exercises, students, studentProgress, Exercise } from '../db/schema';
 
 export class RecommendationService {
   async getRecommendedExercises(studentId: number, limit: number = 5): Promise<any[]> {

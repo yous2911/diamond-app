@@ -21,7 +21,7 @@ const databasePlugin: FastifyPluginAsync = async (fastify) => {
   // Enhanced connection function with retry logic
   async function ensureConnection(attempt = 1): Promise<void> {
     try {
-      fastify.log.info(`🔄 Database connection attempt ${attempt}/${maxConnectionAttempts}...`);
+      (fastify.log as any).info(`🔄 Database connection attempt ${attempt}/${maxConnectionAttempts}...`);
       
       await connectDatabase();
       const db = getDatabase();
@@ -35,17 +35,17 @@ const databasePlugin: FastifyPluginAsync = async (fastify) => {
       isConnected = true;
       connectionAttempts = attempt;
       
-      fastify.log.info(`✅ Database connected successfully on attempt ${attempt}`);
+      (fastify.log as any).info(`✅ Database connected successfully on attempt ${attempt}`);
       
       // Decorate fastify with database instance
       fastify.decorate('db', db);
       
     } catch (error) {
-      fastify.log.error(`❌ Database connection attempt ${attempt} failed:`, error);
+      (fastify.log as any).error(`❌ Database connection attempt ${attempt} failed:`, error);
       
       if (attempt < maxConnectionAttempts) {
         const delay = process.env.NODE_ENV === 'test' ? 100 : Math.min(1000 * Math.pow(2, attempt - 1), 10000);
-        fastify.log.info(`⏳ Retrying database connection in ${delay}ms...`);
+        (fastify.log as any).info(`⏳ Retrying database connection in ${delay}ms...`);
         
         await new Promise(resolve => setTimeout(resolve, delay));
         return ensureConnection(attempt + 1);
@@ -94,7 +94,7 @@ const databasePlugin: FastifyPluginAsync = async (fastify) => {
         };
       }
     } catch (error) {
-      fastify.log.error('Database health check failed:', error);
+      (fastify.log as any).error('Database health check failed:', error);
       return { 
         status: 'error', 
         message: 'Health check failed',
@@ -106,13 +106,13 @@ const databasePlugin: FastifyPluginAsync = async (fastify) => {
   // Database reconnection function
   fastify.decorate('dbReconnect', async (): Promise<boolean> => {
     try {
-      fastify.log.info('🔄 Attempting database reconnection...');
+      (fastify.log as any).info('🔄 Attempting database reconnection...');
       
       // Try to disconnect first
       try {
         await disconnectDatabase();
       } catch (error) {
-        fastify.log.warn('Error during disconnect (continuing):', error);
+        (fastify.log as any).warn('Error during disconnect (continuing):', error);
       }
       
       isConnected = false;
@@ -120,11 +120,11 @@ const databasePlugin: FastifyPluginAsync = async (fastify) => {
       // Reconnect
       await ensureConnection();
       
-      fastify.log.info('✅ Database reconnection successful');
+      (fastify.log as any).info('✅ Database reconnection successful');
       return true;
       
     } catch (error) {
-      fastify.log.error('❌ Database reconnection failed:', error);
+      (fastify.log as any).error('❌ Database reconnection failed:', error);
       isConnected = false;
       return false;
     }
@@ -135,11 +135,11 @@ const databasePlugin: FastifyPluginAsync = async (fastify) => {
     try {
       const health = await fastify.dbHealth();
       if (health.status !== 'healthy') {
-        fastify.log.warn('Database health check failed, attempting reconnection...');
+        (fastify.log as any).warn('Database health check failed, attempting reconnection...');
         await fastify.dbReconnect();
       }
     } catch (error) {
-      fastify.log.error('Connection monitor error:', error);
+      (fastify.log as any).error('Connection monitor error:', error);
     }
   }, 30000);
 
@@ -153,21 +153,21 @@ const databasePlugin: FastifyPluginAsync = async (fastify) => {
       await disconnectDatabase();
       isConnected = false;
       
-      fastify.log.info('✅ Database connections closed gracefully');
+      (fastify.log as any).info('✅ Database connections closed gracefully');
     } catch (error) {
-      fastify.log.error('❌ Error closing database connections:', error);
+      (fastify.log as any).error('❌ Error closing database connections:', error);
     }
   });
 
   // Request hook to ensure connection before each request
   fastify.addHook('preHandler', async (request, reply): Promise<void> => {
     if (!isConnected) {
-      fastify.log.warn('Database not connected, attempting reconnection...');
+      (fastify.log as any).warn('Database not connected, attempting reconnection...');
       
       try {
         await fastify.dbReconnect();
       } catch (error) {
-        fastify.log.error('Failed to reconnect to database:', error);
+        (fastify.log as any).error('Failed to reconnect to database:', error);
         
         // Return 503 Service Unavailable if database is down
         return reply.status(503).send({
@@ -187,7 +187,7 @@ const databasePlugin: FastifyPluginAsync = async (fastify) => {
     (request as any).dbAttempts = connectionAttempts;
   });
 
-  fastify.log.info('✅ Database plugin registered successfully');
+  (fastify.log as any).info('✅ Database plugin registered successfully');
 };
 
 export default fp(databasePlugin, {

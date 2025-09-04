@@ -18,14 +18,14 @@ import {
   gdprConsentRequests,
   type Student,
   type Exercise,
-  type Progress,
+  type StudentProgress as Progress,
   type StudentCompetenceProgress,
-  type CompetencePrerequisite,
+  competencePrerequisites as CompetencePrerequisite,
   type DailyLearningAnalytics,
   type WeeklyProgressSummary,
   type LearningSessionTracking,
   type ExercisePerformanceAnalytics,
-  type StudentAchievement,
+  type StudentAchievements as StudentAchievement,
   MasteryLevels
 } from '../db/schema';
 import { eq, and, or, desc, asc, sql, count, sum, avg, between, inArray, gte, lte } from 'drizzle-orm';

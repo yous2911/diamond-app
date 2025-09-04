@@ -44,6 +44,10 @@ export const exercises = mysqlTable('exercises', {
   pointsRecompense: int('points_recompense').default(10),
   tempsEstime: int('temps_estime').default(300),
   typeExercice: varchar('type_exercice', { length: 30 }).notNull(),
+  // Alias for compatibility
+  type: varchar('type', { length: 30 }).notNull(),
+  xp: int('xp').default(10), // Missing field from seed data
+  configuration: json('configuration'),
   ordre: int('ordre').default(0),
   estActif: boolean('est_actif').default(true),
   metadonnees: json('metadonnees'),
@@ -71,6 +75,11 @@ export const studentProgress = mysqlTable('student_progress', {
   reviewScheduledAt: timestamp('review_scheduled_at'),
   streakCount: int('streak_count').default(0),
   difficultyPreference: varchar('difficulty_preference', { length: 30 }),
+  // Missing field that code expects
+  completed: boolean('completed').default(false),
+  completedAt: timestamp('completed_at'),
+  attempts: int('attempts').default(0),
+  score: decimal('score', { precision: 5, scale: 2 }).default('0.00'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow().onUpdateNow()
 });
@@ -235,5 +244,358 @@ export const gdprDataProcessingLog = mysqlTable('gdpr_data_processing_log', {
 
 // Type exports
 export type NewGdprDataProcessingLog = typeof gdprDataProcessingLog.$inferInsert;
+
+// =============================================================================
+// STREAK PSYCHOLOGY & GAMIFICATION TABLES
+// =============================================================================
+
+// Student Streaks table
+export const streaks = mysqlTable('streaks', {
+  id: int('id').primaryKey().autoincrement(),
+  studentId: int('student_id').notNull().references(() => students.id),
+  currentStreak: int('current_streak').default(0),
+  longestStreak: int('longest_streak').default(0),
+  lastActivityDate: timestamp('last_activity_date').notNull().defaultNow(),
+  streakFreezes: int('streak_freezes').default(0),
+  weeklyGoal: int('weekly_goal').default(5), // days per week
+  streakSafeUntil: timestamp('streak_safe_until'),
+  emotionalState: varchar('emotional_state', { length: 20 }).default('cold'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow().onUpdateNow()
+});
+
+// Streak Freezes Usage Log table
+export const streakFreezes = mysqlTable('streak_freezes', {
+  id: int('id').primaryKey().autoincrement(),
+  studentId: int('student_id').notNull().references(() => students.id),
+  usedAt: timestamp('used_at').notNull().defaultNow(),
+  protectedStreak: int('protected_streak').notNull(),
+  reason: varchar('reason', { length: 50 }).default('manual_use'),
+  createdAt: timestamp('created_at').notNull().defaultNow()
+});
+
+// Daily Goals table
+export const dailyGoals = mysqlTable('daily_goals', {
+  id: int('id').primaryKey().autoincrement(),
+  studentId: int('student_id').notNull().references(() => students.id),
+  goalDate: date('goal_date').notNull(),
+  targetExercises: int('target_exercises').default(3),
+  completedExercises: int('completed_exercises').default(0),
+  goalMet: boolean('goal_met').default(false),
+  studyTimeMinutes: int('study_time_minutes').default(0),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow().onUpdateNow()
+});
+
+// Spaced Repetition table
+export const spacedRepetition = mysqlTable('spaced_repetition', {
+  id: int('id').primaryKey().autoincrement(),
+  studentId: int('student_id').notNull().references(() => students.id),
+  exerciseId: int('exercise_id').notNull().references(() => exercises.id),
+  competenceCode: varchar('competence_code', { length: 20 }).notNull(),
+  
+  // SuperMemo-2 Algorithm parameters
+  easinessFactor: decimal('easiness_factor', { precision: 3, scale: 2 }).default('2.5'),
+  repetitionNumber: int('repetition_number').default(0),
+  intervalDays: int('interval_days').default(1),
+  
+  // Scheduling
+  nextReviewDate: timestamp('next_review_date').notNull(),
+  lastReviewDate: timestamp('last_review_date'),
+  
+  // Performance tracking
+  correctAnswers: int('correct_answers').default(0),
+  totalReviews: int('total_reviews').default(0),
+  averageResponseTime: int('average_response_time').default(0),
+  
+  // Status
+  isActive: boolean('is_active').default(true),
+  priority: varchar('priority', { length: 20 }).default('normal'),
+  
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow().onUpdateNow()
+});
+
+// Push Notifications table
+export const pushNotifications = mysqlTable('push_notifications', {
+  id: int('id').primaryKey().autoincrement(),
+  studentId: int('student_id').notNull().references(() => students.id),
+  deviceToken: varchar('device_token', { length: 255 }).notNull(),
+  platform: varchar('platform', { length: 20 }).notNull(), // 'ios', 'android', 'web'
+  
+  // Notification preferences
+  streakReminders: boolean('streak_reminders').default(true),
+  dailyGoalReminders: boolean('daily_goal_reminders').default(true),
+  spacedRepetitionReminders: boolean('spaced_repetition_reminders').default(true),
+  achievementNotifications: boolean('achievement_notifications').default(true),
+  
+  // Timing preferences
+  reminderTime: varchar('reminder_time', { length: 8 }).default('19:00'), // HH:MM format
+  timeZone: varchar('time_zone', { length: 50 }).default('Europe/Paris'),
+  
+  // Quiet hours
+  quietHoursStart: varchar('quiet_hours_start', { length: 8 }).default('22:00'),
+  quietHoursEnd: varchar('quiet_hours_end', { length: 8 }).default('08:00'),
+  
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow().onUpdateNow()
+});
+
+// Type exports for new tables
+export type Streak = InferSelectModel<typeof streaks>;
+export type NewStreak = InferInsertModel<typeof streaks>;
+export type StreakFreeze = InferSelectModel<typeof streakFreezes>;
+export type NewStreakFreeze = InferInsertModel<typeof streakFreezes>;
+export type DailyGoal = InferSelectModel<typeof dailyGoals>;
+export type NewDailyGoal = InferInsertModel<typeof dailyGoals>;
+export type SpacedRepetition = InferSelectModel<typeof spacedRepetition>;
+export type NewSpacedRepetition = InferInsertModel<typeof spacedRepetition>;
+export type PushNotification = InferSelectModel<typeof pushNotifications>;
+export type NewPushNotification = InferInsertModel<typeof pushNotifications>;
+
+// Missing tables that code expects
+export const securityAlerts = mysqlTable('security_alerts', {
+  id: varchar('id', { length: 36 }).primaryKey(),
+  studentId: int('student_id').references(() => students.id),
+  type: varchar('type', { length: 50 }).notNull(),
+  alertType: varchar('alert_type', { length: 50 }).notNull(),
+  severity: varchar('severity', { length: 20 }).notNull(),
+  entityType: varchar('entity_type', { length: 50 }).notNull(),
+  entityId: varchar('entity_id', { length: 50 }).notNull(),
+  message: text('message').notNull(),
+  description: text('description'),
+  detectedAt: timestamp('detected_at').notNull().defaultNow(),
+  auditEntries: json('audit_entries'),
+  resolved: boolean('resolved').default(false),
+  resolvedAt: timestamp('resolved_at'),
+  resolvedBy: varchar('resolved_by', { length: 100 }),
+  metadata: json('metadata'),
+  isResolved: boolean('is_resolved').default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow().onUpdateNow()
+});
+
+export const complianceReports = mysqlTable('compliance_reports', {
+  id: int('id').primaryKey().autoincrement(),
+  reportType: varchar('report_type', { length: 50 }).notNull(),
+  status: varchar('status', { length: 20 }).notNull(),
+  data: json('data'),
+  generatedAt: timestamp('generated_at').notNull().defaultNow(),
+  createdAt: timestamp('created_at').notNull().defaultNow()
+});
+
+export const files = mysqlTable('files', {
+  id: varchar('id', { length: 36 }).primaryKey(),
+  studentId: int('student_id').references(() => students.id),
+  fileName: varchar('file_name', { length: 255 }).notNull(),
+  originalName: varchar('original_name', { length: 255 }).notNull(),
+  filePath: varchar('file_path', { length: 500 }).notNull(),
+  fileSize: int('file_size').notNull(),
+  mimeType: varchar('mime_type', { length: 100 }).notNull(),
+  uploadedAt: timestamp('uploaded_at').notNull().defaultNow(),
+  uploadedBy: varchar('uploaded_by', { length: 100 }),
+  // Missing fields that services expect
+  path: varchar('path', { length: 500 }).notNull(),
+  size: int('size').notNull(),
+  status: varchar('status', { length: 20 }).default('active'),
+  category: varchar('category', { length: 50 }).default('general'),
+  isPublic: boolean('is_public').default(false),
+  checksum: varchar('checksum', { length: 64 }),
+  url: varchar('url', { length: 500 }),
+  thumbnailUrl: varchar('thumbnail_url', { length: 500 }),
+  metadata: json('metadata'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow().onUpdateNow()
+});
+
+export const fileVariants = mysqlTable('file_variants', {
+  id: varchar('id', { length: 36 }).primaryKey(),
+  originalFileId: varchar('original_file_id', { length: 36 }).notNull().references(() => files.id),
+  variantType: varchar('variant_type', { length: 50 }).notNull(),
+  filePath: varchar('file_path', { length: 500 }).notNull(),
+  fileSize: int('file_size').notNull(),
+  // Missing fields that services expect
+  fileId: varchar('file_id', { length: 36 }).notNull(),
+  path: varchar('path', { length: 500 }).notNull(),
+  type: varchar('type', { length: 50 }).notNull(),
+  filename: varchar('filename', { length: 255 }).notNull(),
+  url: varchar('url', { length: 500 }),
+  size: int('size').notNull(),
+  mimetype: varchar('mimetype', { length: 100 }),
+  metadata: json('metadata'),
+  deletedAt: timestamp('deleted_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow()
+});
+
+// Alias for compatibility
+export const progress = studentProgress;
+
+// Analytics tables
+export const dailyLearningAnalytics = mysqlTable('daily_learning_analytics', {
+  id: int('id').primaryKey().autoincrement(),
+  studentId: int('student_id').notNull().references(() => students.id),
+  date: date('date').notNull(),
+  exercisesCompleted: int('exercises_completed').default(0),
+  timeSpent: int('time_spent').default(0),
+  totalTimeMinutes: int('total_time_minutes').default(0),
+  totalExercises: int('total_exercises').default(0),
+  completedExercises: int('completed_exercises').default(0),
+  avgScore: decimal('avg_score', { precision: 5, scale: 2 }).default('0.00'),
+  averageScore: decimal('average_score', { precision: 5, scale: 2 }).default('0.00'),
+  competencesWorked: int('competences_worked').default(0),
+  createdAt: timestamp('created_at').notNull().defaultNow()
+});
+
+export const weeklyProgressSummary = mysqlTable('weekly_progress_summary', {
+  id: int('id').primaryKey().autoincrement(),
+  studentId: int('student_id').notNull().references(() => students.id),
+  weekStart: date('week_start').notNull(),
+  totalExercises: int('total_exercises').default(0),
+  completedExercises: int('completed_exercises').default(0),
+  totalTimeSpent: int('total_time_spent').default(0),
+  avgScore: decimal('avg_score', { precision: 5, scale: 2 }).default('0.00'),
+  createdAt: timestamp('created_at').notNull().defaultNow()
+});
+
+export const studentCompetenceProgress = mysqlTable('student_competence_progress', {
+  id: int('id').primaryKey().autoincrement(),
+  studentId: int('student_id').notNull().references(() => students.id),
+  competenceCode: varchar('competence_code', { length: 20 }).notNull(),
+  progressPercent: decimal('progress_percent', { precision: 5, scale: 2 }).default('0.00'),
+  masteryLevel: varchar('mastery_level', { length: 20 }).default('not_started'),
+  currentScore: decimal('current_score', { precision: 5, scale: 2 }).default('0.00'),
+  totalAttempts: int('total_attempts').default(0),
+  successfulAttempts: int('successful_attempts').default(0),
+  lastAttemptAt: timestamp('last_attempt_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow().onUpdateNow()
+});
+
+export const learningSessionTracking = mysqlTable('learning_session_tracking', {
+  id: int('id').primaryKey().autoincrement(),
+  studentId: int('student_id').notNull().references(() => students.id),
+  sessionStart: timestamp('session_start').notNull(),
+  sessionEnd: timestamp('session_end'),
+  exercisesCompleted: int('exercises_completed').default(0),
+  averageScore: decimal('average_score', { precision: 5, scale: 2 }).default('0.00'),
+  focusTime: int('focus_time').default(0),
+  createdAt: timestamp('created_at').notNull().defaultNow()
+});
+
+export const exercisePerformanceAnalytics = mysqlTable('exercise_performance_analytics', {
+  id: int('id').primaryKey().autoincrement(),
+  exerciseId: int('exercise_id').notNull().references(() => exercises.id),
+  totalAttempts: int('total_attempts').default(0),
+  successfulAttempts: int('successful_attempts').default(0),
+  avgCompletionTime: int('avg_completion_time').default(0),
+  createdAt: timestamp('created_at').notNull().defaultNow()
+});
+
+export const studentAchievements = mysqlTable('student_achievements', {
+  id: int('id').primaryKey().autoincrement(),
+  studentId: int('student_id').notNull().references(() => students.id),
+  achievementCode: varchar('achievement_code', { length: 50 }).notNull(),
+  badgeIcon: varchar('badge_icon', { length: 255 }),
+  achievementType: varchar('achievement_type', { length: 50 }).notNull(),
+  title: varchar('title', { length: 100 }).notNull(),
+  description: text('description'),
+  xpReward: int('xp_reward').default(10),
+  unlockedAt: timestamp('unlocked_at').notNull().defaultNow(),
+  createdAt: timestamp('created_at').notNull().defaultNow()
+});
+
+// Add MasteryLevels export
+export const MasteryLevels = {
+  NOT_STARTED: 'not_started',
+  DECOUVERTE: 'decouverte',
+  EN_COURS: 'en_cours',
+  MAITRISE: 'maitrise',
+  EXPERT: 'expert'
+} as const;
+
+// Analytics type exports
+export type DailyLearningAnalytics = InferSelectModel<typeof dailyLearningAnalytics>;
+export type NewDailyLearningAnalytics = InferInsertModel<typeof dailyLearningAnalytics>;
+export type WeeklyProgressSummary = InferSelectModel<typeof weeklyProgressSummary>;
+export type NewWeeklyProgressSummary = InferInsertModel<typeof weeklyProgressSummary>;
+export type StudentCompetenceProgress = InferSelectModel<typeof studentCompetenceProgress>;
+export type NewStudentCompetenceProgress = InferInsertModel<typeof studentCompetenceProgress>;
+export type LearningSessionTracking = InferSelectModel<typeof learningSessionTracking>;
+export type NewLearningSessionTracking = InferInsertModel<typeof learningSessionTracking>;
+export type ExercisePerformanceAnalytics = InferSelectModel<typeof exercisePerformanceAnalytics>;
+export type NewExercisePerformanceAnalytics = InferInsertModel<typeof exercisePerformanceAnalytics>;
+export type StudentAchievements = InferSelectModel<typeof studentAchievements>;
+export type NewStudentAchievements = InferInsertModel<typeof studentAchievements>;
+
+// GDPR type exports  
+export type GdprConsentRequest = InferSelectModel<typeof gdprConsentRequests>;
+export type NewGdprConsentRequest = InferInsertModel<typeof gdprConsentRequests>;
+
+// Data retention table
+export const retentionSchedules = mysqlTable('retention_schedules', {
+  id: varchar('id', { length: 36 }).primaryKey(),
+  entityType: varchar('entity_type', { length: 50 }).notNull(),
+  entityId: varchar('entity_id', { length: 36 }).notNull(),
+  policyId: varchar('policy_id', { length: 36 }),
+  scheduledDate: timestamp('scheduled_date').notNull(),
+  action: varchar('action', { length: 50 }).notNull(),
+  priority: int('priority').default(1),
+  retentionDays: varchar('retention_days', { length: 10 }).notNull(),
+  policyName: varchar('policy_name', { length: 100 }),
+  notificationSent: boolean('notification_sent').default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow().onUpdateNow()
+});
+
+// Competence prerequisites table
+export const competencePrerequisites = mysqlTable('competence_prerequisites', {
+  id: int('id').primaryKey().autoincrement(),
+  competenceCode: varchar('competence_code', { length: 20 }).notNull(),
+  prerequisiteCode: varchar('prerequisite_code', { length: 20 }).notNull(),
+  required: boolean('required').default(true),
+  minimumLevel: varchar('minimum_level', { length: 20 }).default('decouverte'),
+  createdAt: timestamp('created_at').notNull().defaultNow()
+});
+
+// Missing tables that setup.ts expects
+export const parentalConsent = gdprConsentRequests; // Alias
+export const gdprRequests = gdprConsentRequests; // Alias
+export const encryptionKeys = mysqlTable('encryption_keys', {
+  id: int('id').primaryKey().autoincrement(),
+  keyId: varchar('key_id', { length: 36 }).notNull(),
+  algorithm: varchar('algorithm', { length: 50 }).notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow()
+});
+export const retentionPolicies = mysqlTable('retention_policies', {
+  id: varchar('id', { length: 36 }).primaryKey(),
+  policyName: varchar('policy_name', { length: 100 }).notNull(),
+  entityType: varchar('entity_type', { length: 50 }).notNull(),
+  retentionPeriodDays: int('retention_period_days').notNull(),
+  triggerCondition: text('trigger_condition'),
+  action: varchar('action', { length: 50 }).notNull(),
+  priority: int('priority').default(1),
+  active: boolean('active').default(true),
+  retentionDays: int('retention_days').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow().onUpdateNow()
+});
+export const consentPreferences = mysqlTable('consent_preferences', {
+  id: int('id').primaryKey().autoincrement(),
+  studentId: int('student_id').references(() => students.id),
+  consentType: varchar('consent_type', { length: 50 }).notNull(),
+  granted: boolean('granted').default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow()
+});
+
+// Type exports for missing tables
+export type SecurityAlert = InferSelectModel<typeof securityAlerts>;
+export type NewSecurityAlert = InferInsertModel<typeof securityAlerts>;
+export type ComplianceReport = InferSelectModel<typeof complianceReports>;
+export type NewComplianceReport = InferInsertModel<typeof complianceReports>;
+export type File = InferSelectModel<typeof files>;
+export type NewFile = InferInsertModel<typeof files>;
+export type FileVariant = InferSelectModel<typeof fileVariants>;
+export type NewFileVariant = InferInsertModel<typeof fileVariants>;
 
 

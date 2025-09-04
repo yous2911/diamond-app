@@ -22,14 +22,14 @@ export class EmailService {
   constructor() {
     // Use fake transporter for testing
     if (config.NODE_ENV === 'test') {
-      this.transporter = nodemailer.createTransporter({
+      this.transporter = nodemailer.createTransport({
         streamTransport: true,
         newline: 'unix',
         buffer: true
       });
     } else {
       // Utiliser la configuration email centralisée
-      this.transporter = nodemailer.createTransporter({
+      this.transporter = nodemailer.createTransport({
         host: emailConfig.host,
         port: emailConfig.port,
         secure: emailConfig.port === 465,
@@ -74,14 +74,16 @@ export class EmailService {
       };
 
       // In test mode, just log the email instead of sending
+      let result;
       if (config.NODE_ENV === 'test') {
         logger.info('📧 Email would be sent:', {
           to: options.to,
           subject: options.subject,
           template: options.template
         });
+        result = { messageId: 'test-message-id', accepted: [options.to], rejected: [] };
       } else {
-        const result = await this.transporter.sendMail(mailOptions);
+        result = await this.transporter.sendMail(mailOptions);
       }
       
       // Audit log pour l'envoi d'email
