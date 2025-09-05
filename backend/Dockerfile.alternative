@@ -1,0 +1,37 @@
+# Use Microsoft Container Registry to avoid Docker Hub rate limits
+FROM mcr.microsoft.com/dotnet/aspnet:6.0-alpine AS base
+# Actually, let's use a proper Node.js image from MCR
+FROM mcr.microsoft.com/mirror/docker/library/node:18-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S revedkids -u 1001 -G nodejs
+
+# Copy package files first for better Docker layer caching
+COPY package*.json ./
+
+# Install dependencies with verbose logging to help debug
+RUN npm ci --only=production --verbose && \
+    npm cache clean --force
+
+# Copy source code
+COPY --chown=revedkids:nodejs . .
+
+# Build the TypeScript application
+RUN npm run build
+
+# Switch to non-root user
+USER revedkids
+
+# Expose the application port
+EXPOSE 3003
+
+# Add health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3003/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })" || exit 1
+
+# Start the application
+CMD ["node", "dist/server.js"]

@@ -1,0 +1,83 @@
+version: '3.8'
+
+# Alternative Docker Compose configuration to avoid Docker Hub rate limits
+# Uses Microsoft Container Registry and alternative base images
+
+services:
+  # Service for your Node.js backend application
+  app:
+    build: 
+      context: .
+      dockerfile: Dockerfile.alternative
+    container_name: revedkids_backend_app
+    restart: unless-stopped
+    ports:
+      - "3003:3003"
+    env_file:
+      - ./.env.docker
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - revedkids-network
+
+  # MySQL using Microsoft Container Registry (better rate limits)
+  db:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    container_name: revedkids_mysql_db
+    restart: unless-stopped
+    env_file:
+      - ./.env.docker
+    environment:
+      # Override for SQL Server instead of MySQL for testing
+      ACCEPT_EULA: Y
+      SA_PASSWORD: "YourStrong!Passw0rd"
+    ports:
+      - "1433:1433"
+    networks:
+      - revedkids-network
+    healthcheck:
+      test: ["CMD", "/opt/mssql-tools/bin/sqlcmd", "-S", "localhost", "-U", "sa", "-P", "YourStrong!Passw0rd", "-Q", "SELECT 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis using Microsoft Container Registry
+  redis:
+    image: mcr.microsoft.com/oss/bitnami/redis:7.0
+    container_name: revedkids_redis_cache
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    volumes:
+      - redis_data:/bitnami/redis/data
+    networks:
+      - revedkids-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      
+  # Adminer using alternative registry
+  adminer:
+    image: ghcr.io/shyim/adminer:latest
+    container_name: revedkids_adminer_ui
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    networks:
+      - revedkids-network
+
+networks:
+  revedkids-network:
+    driver: bridge
+
+volumes:
+  redis_data:
