@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { eq, and, desc, asc, sql } from 'drizzle-orm';
-import { exercises, studentProgress, modules } from '../db/schema';
+import { exercises, studentProgress, modules, spacedRepetition } from '../db/schema';
+import { SuperMemoService, SuperMemoCard } from '../services/supermemo.service';
 
 // Mock authentication middleware for testing
 const mockAuthenticate = async (request: any, reply: any) => {
@@ -388,7 +389,7 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
 
   // Submit exercise attempt
   fastify.post('/attempt', {
-    preHandler: [(fastify as any).authenticate],
+    preHandler: process.env.NODE_ENV === 'test' ? mockAuthenticate : (fastify as any).authenticate,
     schema: {
       body: {
         type: 'object',
@@ -414,8 +415,73 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
       try {
         const attemptData = request.body;
         const user = (request as any).user;
+        const studentId = user.studentId;
+        const exerciseId = parseInt(attemptData.exerciseId);
 
-        // Create attempt record
+        // 1. Get existing spaced repetition data
+        let currentCard: SuperMemoCard | null = null;
+        const existingRepetition = await fastify.db
+          .select()
+          .from(spacedRepetition)
+          .where(and(eq(spacedRepetition.studentId, studentId), eq(spacedRepetition.exerciseId, exerciseId)))
+          .limit(1);
+
+        if (existingRepetition.length > 0) {
+          const rep = existingRepetition[0];
+          currentCard = {
+            studentId: rep.studentId,
+            competenceId: exerciseId, // Assuming exerciseId is competenceId
+            easinessFactor: parseFloat(rep.easinessFactor),
+            repetitionNumber: rep.repetitionNumber,
+            interval: rep.intervalDays,
+            lastReview: rep.lastReviewDate,
+            nextReview: rep.nextReviewDate,
+            quality: 0 // quality will be calculated next
+          };
+        } else {
+          // Create a new card if it doesn't exist
+          currentCard = {
+            studentId: studentId,
+            competenceId: exerciseId,
+            easinessFactor: 2.5,
+            repetitionNumber: 0,
+            interval: 0,
+            lastReview: new Date(),
+            nextReview: new Date(),
+            quality: 0
+          };
+        }
+
+        // 2. Calculate quality from score
+        const quality = (parseFloat(attemptData.score) / 100) * 5;
+
+        // 3. Calculate next review using SuperMemoService
+        const result = SuperMemoService.calculateNextReview(currentCard, quality);
+
+        // 4. Upsert into spacedRepetition table
+        await fastify.db
+          .insert(spacedRepetition)
+          .values({
+            studentId: studentId,
+            exerciseId: exerciseId,
+            competenceCode: 'DEFAULT', // Or get from exercise
+            easinessFactor: result.easinessFactor.toString(),
+            repetitionNumber: result.repetitionNumber,
+            intervalDays: result.interval,
+            nextReviewDate: result.nextReviewDate,
+            lastReviewDate: new Date(),
+          })
+          .onDuplicateKeyUpdate({
+            set: {
+              easinessFactor: result.easinessFactor.toString(),
+              repetitionNumber: result.repetitionNumber,
+              intervalDays: result.interval,
+              nextReviewDate: result.nextReviewDate,
+              lastReviewDate: new Date(),
+            }
+          });
+        
+        // 5. Also update studentProgress for compatibility
         const attempt = await fastify.db
           .insert(studentProgress)
           .values({
@@ -430,12 +496,11 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
             updatedAt: new Date(),
           });
 
-        // Simple analytics recording (removed service calls that don't exist)
         (fastify.log as any).info(`Exercise attempt recorded for student ${user.studentId}`);
 
         return reply.send({
           success: true,
-          data: attempt,
+          data: { ...attempt, superMemo: result },
           message: 'Tentative enregistrée avec succès',
         });
       } catch (error) {

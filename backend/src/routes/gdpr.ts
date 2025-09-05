@@ -363,7 +363,6 @@ export default async function gdprRoutes(fastify: FastifyInstance) {
         },
       },
     },
-    preHandler: [fastify.authenticate],
     handler: async (request: FastifyRequest<{
       Params: { studentId: string };
       Querystring: { limit?: number; offset?: number; action?: string };

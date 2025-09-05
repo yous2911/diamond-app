@@ -9,6 +9,7 @@ import { FileUploadService } from './file-upload.service';
 import { ImageProcessingService } from './image-processing.service';
 import { StorageService } from './storage.service';
 import { FileSecurityService } from './file-security.service';
+import { SuperMemoService } from './supermemo.service';
 
 // Service identifier tokens
 export const SERVICE_TOKENS = {
@@ -22,6 +23,7 @@ export const SERVICE_TOKENS = {
   IMAGE_PROCESSING: 'imageProcessing',
   STORAGE: 'storage',
   FILE_SECURITY: 'fileSecurity',
+  SUPER_MEMO: 'superMemo',
 } as const;
 
 export type ServiceToken = typeof SERVICE_TOKENS[keyof typeof SERVICE_TOKENS];
@@ -159,6 +161,9 @@ export class ServiceContainer {
       //   this.resolve(SERVICE_TOKENS.FILE_SECURITY)
       // )
     );
+
+    // Educational services
+    this.register(SERVICE_TOKENS.SUPER_MEMO, () => new SuperMemoService());
   }
 
   /**
@@ -231,6 +236,9 @@ export const ServiceFactory = {
   
   getFileSecurityService: (): FileSecurityService => 
     serviceContainer.resolve(SERVICE_TOKENS.FILE_SECURITY),
+
+  getSuperMemoService: (): SuperMemoService =>
+    serviceContainer.resolve(SERVICE_TOKENS.SUPER_MEMO),
 
   // Legacy methods for backwards compatibility (deprecated)
   /** @deprecated Use serviceContainer.clearInstances() instead */
