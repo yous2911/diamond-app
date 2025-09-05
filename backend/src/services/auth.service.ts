@@ -148,7 +148,7 @@ export class AuthService {
           error: 'Un compte avec cette adresse email existe déjà'
         };
       }
-      
+
       // Hash password
       const passwordHash = await this.hashPassword(data.password);
 
@@ -167,7 +167,7 @@ export class AuthService {
       });
 
       const studentId = newStudentResult[0].insertId;
-      
+
       // The service now returns the student data, not tokens.
       return {
         success: true,

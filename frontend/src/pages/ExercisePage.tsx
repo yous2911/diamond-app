@@ -9,7 +9,7 @@ const ExercisePage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { setMascotEmotion, setMascotMessage, setShowParticles, setParticleType } = useOutletContext<any>();
-  
+
   const currentExercise = location.state?.exercise;
 
   const { student } = useAuth();
@@ -24,14 +24,14 @@ const ExercisePage = () => {
 
   const handleAnswerSubmit = async (answer: any, isCorrect: boolean) => {
     const startTime = Date.now();
-    
+
     try {
       if (isCorrect) {
         setMascotEmotion('celebrating');
         setMascotMessage('BRAVO ! Tu as réussi ! 🎉');
         setShowParticles(true);
         setParticleType('success');
-        
+
         const exerciseResult = {
           score: 100,
           timeSpent: Math.floor((Date.now() - startTime) / 1000),
@@ -40,13 +40,13 @@ const ExercisePage = () => {
         };
 
         const submission = await submitExercise(currentExercise.id, exerciseResult);
-        
+
         if (submission.success) {
           await addXp(submission.xpEarned || 15);
         }
 
         await updateMascotEmotion('excellent', 'exercise_complete');
-        
+
         setTimeout(() => {
           setShowParticles(false);
           navigate('/');
@@ -77,7 +77,7 @@ const ExercisePage = () => {
 
   return (
     <div className="min-h-screen p-6">
-      <motion.div 
+      <motion.div
         className="flex justify-between items-center mb-8"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -89,9 +89,9 @@ const ExercisePage = () => {
           <Home className="w-5 h-5" />
           <span>Accueil</span>
         </button>
-        
+
         <h2 className="text-2xl font-bold text-gray-800">Exercice</h2>
-        
+
         <div className="flex items-center space-x-4">
           <Star className="w-6 h-6 text-yellow-500" />
           <span className="font-bold">{studentData.stars}</span>
@@ -105,7 +105,7 @@ const ExercisePage = () => {
         transition={{ duration: 0.6 }}
       >
         <h3 className="text-xl font-bold text-center mb-6">{currentExercise.question}</h3>
-        
+
         {currentExercise.options && (
           <div className="space-y-4">
             {currentExercise.options.map((option: string, index: number) => (

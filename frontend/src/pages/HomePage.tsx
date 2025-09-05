@@ -3,13 +3,13 @@ import { useNavigate, useOutletContext } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Star, Heart, Volume2, VolumeX, LogOut } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { 
-  useCompetences, 
-  useExercisesByLevel, 
+import {
+  useCompetences,
+  useExercisesByLevel,
   useMascot,
-  useSessionManagement, 
+  useSessionManagement,
   useStudentStats,
-  useXpTracking 
+  useXpTracking
 } from '../hooks/useApiData';
 import NextLevelXPSystem from '../components/NextLevelXPSystem';
 
@@ -54,7 +54,7 @@ const HomePage = () => {
         shadowColor: 'shadow-blue-500/50',
         description: 'Compter, additionner, géométrie',
         competences: mathCompetences,
-        exercises: exercisesData?.filter(ex => 
+        exercises: exercisesData?.filter(ex =>
           mathCompetences.some(comp => comp.id === ex.competenceId)
         ) || []
       },
@@ -66,7 +66,7 @@ const HomePage = () => {
         shadowColor: 'shadow-green-500/50',
         description: 'Lettres, mots, lecture',
         competences: frenchCompetences,
-        exercises: exercisesData?.filter(ex => 
+        exercises: exercisesData?.filter(ex =>
           frenchCompetences.some(comp => comp.id === ex.competenceId)
         ) || []
       }
@@ -76,13 +76,13 @@ const HomePage = () => {
   const handleSubjectClick = async (subject: any) => {
     setMascotEmotion('thinking');
     setMascotMessage('C\'est parti pour une nouvelle aventure !');
-    
+
     await updateMascotEmotion('good', 'exercise_complete').catch(console.warn);
 
     if (!activeSessionData?.hasActiveSession) {
       await startSession(subject.competences?.map((c: any) => c.code) || []).catch(console.warn);
     }
-    
+
     if (subject.exercises.length > 0) {
       const randomExercise = subject.exercises[Math.floor(Math.random() * subject.exercises.length)];
       navigate('/exercise', { state: { exercise: randomExercise } });
@@ -97,7 +97,7 @@ const HomePage = () => {
     setMascotMessage('NIVEAU SUPÉRIEUR ! 🎉');
     updateMascotEmotion('excellent', 'level_up').catch(console.warn);
   };
-  
+
   const handleLogout = async () => {
     if (activeSessionData?.hasActiveSession && activeSessionData.session) {
       await endSession(activeSessionData.session.id).catch(console.error);
@@ -107,14 +107,14 @@ const HomePage = () => {
 
   return (
     <div className="min-h-screen p-6">
-      <motion.div 
+      <motion.div
         className="flex justify-between items-center mb-8"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
       >
         <div className="flex items-center space-x-4">
-          <motion.div 
+          <motion.div
             className="text-4xl"
             animate={{ rotate: [0, 10, -10, 0] }}
             transition={{ duration: 2, repeat: Infinity }}
@@ -126,7 +126,7 @@ const HomePage = () => {
             <p className="text-gray-600">Niveau {studentData.niveau}</p>
           </div>
         </div>
-        
+
         <div className="flex items-center space-x-4">
           <div className="flex items-center bg-white/80 rounded-full px-4 py-2">
             <Star className="w-6 h-6 text-yellow-500 mr-2" />
@@ -182,7 +182,7 @@ const HomePage = () => {
         />
       </motion.div>
 
-      <motion.div 
+      <motion.div
         className="grid grid-cols-2 gap-6 max-w-4xl mx-auto"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

@@ -1,3 +1,4 @@
+
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { authSchemas, loginSchema, registerSchema } from '../schemas/auth.schema';
@@ -100,9 +101,12 @@ export default async function authRoutes(fastify: FastifyInstance) {
         const { student } = authResult;
         const payload = { studentId: student.id, email: student.email };
 
+        const { student } = authResult;
+        const payload = { studentId: student.id, email: student.email };
+
         const accessToken = await reply.jwtSign(payload);
         const refreshToken = await (fastify as any).refreshJwt.sign({ ...payload, type: 'refresh' });
-        
+
         (reply as any).setAuthCookies(accessToken, refreshToken);
 
         return reply.status(201).send({
@@ -145,6 +149,10 @@ export default async function authRoutes(fastify: FastifyInstance) {
           });
         }
         
+        const decoded = await (fastify as any).refreshJwt.verify(refreshToken);
+        const payload = { studentId: decoded.studentId, email: decoded.email };
+        const newAccessToken = await reply.jwtSign(payload);
+
         const decoded = await (fastify as any).refreshJwt.verify(refreshToken);
         const payload = { studentId: decoded.studentId, email: decoded.email };
         const newAccessToken = await reply.jwtSign(payload);
@@ -295,7 +303,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
     ) => {
       // The user object is decorated by the authenticate middleware
       const user = request.user as any;
-      
+
       return reply.send({
         success: true,
         data: {
@@ -332,7 +340,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
       reply: FastifyReply
     ) => {
       const { studentId } = request.params;
-      
+
       // Production logic should fetch student data securely
       // This is a placeholder and should be implemented properly
       const id = parseInt(studentId);
@@ -343,7 +351,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
       // Example:
       // const student = await studentService.findById(id);
       // if (!student) return reply.status(404).send({ error: 'Student not found' });
-      
+
       return reply.status(501).send({
         success: false,
         error: {

@@ -1,22 +1,39 @@
 import { z } from 'zod';
 import { FastifySchema } from 'fastify';
 
-// Zod schemas for validation
+// Zod schemas for validation - SINGLE SOURCE OF TRUTH
+const passwordSchema = z.string().min(12, 'Le mot de passe doit contenir au moins 12 caractères').max(100);
+
 export const loginSchema = z.object({
-  prenom: z.string().min(2, 'Le prénom doit contenir au moins 2 caractères').max(50),
-  nom: z.string().min(2, 'Le nom doit contenir au moins 2 caractères').max(50),
-  motDePasse: z.string().optional(),
+  email: z.string().email('Format d\'email invalide').optional(),
+  prenom: z.string().min(2, 'Le prénom doit contenir au moins 2 caractères').max(50).optional(),
+  nom: z.string().min(2, 'Le nom doit contenir au moins 2 caractères').max(50).optional(),
+  password: passwordSchema,
+}).refine(data => data.email || (data.prenom && data.nom), {
+  message: 'Email ou la combinaison Prénom/Nom est requise.',
+  path: ['email'],
 });
 
-export const logoutSchema = z.object({});
-
-export const refreshSchema = z.object({});
-
-export const verifySchema = z.object({
-  studentId: z.string().regex(/^\d+$/, "L'ID doit être un nombre"),
+export const registerSchema = z.object({
+  prenom: z.string().min(2).max(50),
+  nom: z.string().min(2).max(50),
+  email: z.string().email(),
+  password: passwordSchema,
+  dateNaissance: z.string().refine((val) => !isNaN(Date.parse(val)), { message: 'Date de naissance invalide' }),
+  niveauActuel: z.string(),
 });
 
-// Fastify JSON schemas with comprehensive OpenAPI documentation
+export const passwordResetSchema = z.object({
+  email: z.string().email(),
+});
+
+export const passwordResetConfirmSchema = z.object({
+  token: z.string(),
+  newPassword: passwordSchema,
+});
+
+
+// Fastify JSON schemas for OpenAPI documentation (aligned with Zod)
 export const authSchemas = {
   login: {
     description: 'Authenticate student and create session',
@@ -25,154 +42,55 @@ export const authSchemas = {
     operationId: 'loginStudent',
     body: {
       type: 'object',
-      required: ['prenom', 'nom'],
+      required: ['password'],
       properties: {
-        prenom: {
-          type: 'string',
-          minLength: 2,
-          maxLength: 50,
-          pattern: '^[a-zA-ZÀ-ÿ\\s\\-\']+$',
-          description: 'Student first name (2-50 characters, letters only)',
-          example: 'Alice'
-        },
-        nom: {
-          type: 'string',
-          minLength: 2,
-          maxLength: 50,
-          pattern: '^[a-zA-ZÀ-ÿ\\s\\-\']+$',
-          description: 'Student last name (2-50 characters, letters only)',
-          example: 'Dupont'
-        },
-        motDePasse: {
-          type: 'string',
-          minLength: 4,
-          maxLength: 100,
-          description: 'Optional password for enhanced security',
-          example: 'mon-mot-de-passe'
-        }
+        email: { type: 'string', format: 'email', description: 'Student email address', example: 'test@example.com' },
+        prenom: { type: 'string', minLength: 2, maxLength: 50, description: 'Student first name', example: 'Alice' },
+        nom: { type: 'string', minLength: 2, maxLength: 50, description: 'Student last name', example: 'Dupont' },
+        password: { type: 'string', minLength: 12, maxLength: 100, description: 'User password (min 12 characters)', example: 'a-very-secure-password' },
       },
       additionalProperties: false,
-      example: {
-        prenom: 'Alice',
-        nom: 'Dupont',
-        motDePasse: 'mon-mot-de-passe'
-      }
     },
     response: {
       200: {
-        description: 'Successful authentication',
         type: 'object',
         properties: {
           success: { type: 'boolean', example: true },
           data: {
             type: 'object',
             properties: {
-              token: { 
-                type: 'string', 
-                description: 'JWT authentication token',
-                example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdHVkZW50SWQiOjEsInByZW5vbSI6IkFsaWNlIiwibm9tIjoiRHVwb250Iiwibml2ZWF1IjoiQ1AiLCJpYXQiOjE3MDk2NDE0MDAsImV4cCI6MTcwOTcyNzgwMH0.example'
-              },
-              student: {
-                type: 'object',
-                properties: {
-                  id: { type: 'number', example: 1 },
-                  prenom: { type: 'string', example: 'Alice' },
-                  nom: { type: 'string', example: 'Dupont' },
-                  dateNaissance: { type: 'string', format: 'date', example: '2015-01-01' },
-                  niveauActuel: { type: 'string', example: 'CP' },
-                  totalPoints: { type: 'number', example: 350 },
-                  serieJours: { type: 'number', example: 7 },
-                  mascotteType: { type: 'string', example: 'dragon' },
-                  createdAt: { type: 'string', format: 'date-time', example: '2024-01-01T00:00:00Z' },
-                  updatedAt: { type: 'string', format: 'date-time', example: '2024-01-15T10:30:00Z' }
-                },
-              },
-            },
-          },
-          message: { type: 'string', example: 'Connexion réussie' },
-        },
-        example: {
-          success: true,
-          data: {
-            token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-            student: {
-              id: 1,
-              prenom: 'Alice',
-              nom: 'Dupont',
-              dateNaissance: '2015-01-01',
-              niveauActuel: 'CP',
-              totalPoints: 350,
-              serieJours: 7,
-              mascotteType: 'dragon'
-            }
-          },
-          message: 'Connexion réussie'
-        }
-      },
-      400: {
-        description: 'Invalid input parameters',
-        type: 'object',
-        properties: {
-          success: { type: 'boolean', example: false },
-          error: {
-            type: 'object',
-            properties: {
-              message: { type: 'string', example: 'Les paramètres fournis sont invalides' },
-              code: { type: 'string', example: 'INVALID_INPUT' },
+              token: { type: 'string', description: 'JWT authentication token' },
+              student: { type: 'object' /* Omitted for brevity */ },
             },
           },
         },
-        example: {
-          success: false,
-          error: {
-            code: 'INVALID_INPUT',
-            message: 'Les paramètres fournis sont invalides'
-          }
-        }
       },
-      404: {
-        description: 'Student not found',
-        type: 'object',
-        properties: {
-          success: { type: 'boolean', example: false },
-          error: {
-            type: 'object',
-            properties: {
-              message: { type: 'string', example: 'Étudiant non trouvé' },
-              code: { type: 'string', example: 'STUDENT_NOT_FOUND' },
-            },
-          },
-        },
-        example: {
-          success: false,
-          error: {
-            code: 'STUDENT_NOT_FOUND',
-            message: 'Étudiant non trouvé'
-          }
-        }
-      },
-      500: {
-        description: 'Internal server error',
-        type: 'object',
-        properties: {
-          success: { type: 'boolean', example: false },
-          error: {
-            type: 'object',
-            properties: {
-              message: { type: 'string', example: 'Erreur lors de la connexion' },
-              code: { type: 'string', example: 'LOGIN_ERROR' },
-            },
-          },
-        },
-        example: {
-          success: false,
-          error: {
-            code: 'LOGIN_ERROR',
-            message: 'Erreur lors de la connexion'
-          }
-        }
-      },
+      401: { type: 'object', properties: { error: {type: 'string'}}},
+      429: { type: 'object', properties: { error: {type: 'string'}}},
     },
+  } as FastifySchema,
+
+  register: {
+    description: 'Register a new student account',
+    summary: 'Student Registration',
+    tags: ['Authentication'],
+    operationId: 'registerStudent',
+    body: {
+      type: 'object',
+      required: ['prenom', 'nom', 'email', 'password', 'dateNaissance', 'niveauActuel'],
+      properties: {
+        prenom: { type: 'string', example: 'Bob' },
+        nom: { type: 'string', example: 'Marley' },
+        email: { type: 'string', format: 'email', example: 'bob@example.com' },
+        password: { type: 'string', minLength: 12, example: 'a-very-secure-password' },
+        dateNaissance: { type: 'string', format: 'date', example: '2016-01-20' },
+        niveauActuel: { type: 'string', example: 'CP' },
+      }
+    },
+    response: {
+      201: { type: 'object', properties: { success: { type: 'boolean' }}},
+      400: { type: 'object', properties: { error: {type: 'string'}}}
+    }
   } as FastifySchema,
 
   logout: {
@@ -182,163 +100,65 @@ export const authSchemas = {
     operationId: 'logoutStudent',
     security: [{ bearerAuth: [] }],
     response: {
-      200: {
-        type: 'object',
-        properties: {
-          success: { type: 'boolean' },
-          message: { type: 'string' }
-        }
-      },
-      401: {
-        type: 'object',
-        properties: {
-          success: { type: 'boolean' },
-          error: {
-            type: 'object',
-            properties: {
-              message: { type: 'string' },
-              code: { type: 'string' }
-            }
-          }
-        }
-      }
+      200: { type: 'object', properties: { success: { type: 'boolean' }}},
+      401: { type: 'object', properties: { error: {type: 'string'}}}
     }
   } as FastifySchema,
 
   refresh: {
-    description: 'Refresh JWT token',
-    tags: ['auth'],
-    security: [{ bearerAuth: [] }],
+    description: 'Refresh JWT access token using a refresh token cookie',
+    summary: 'Refresh Token',
+    tags: ['Authentication'],
+    operationId: 'refreshToken',
     response: {
-      200: {
-        type: 'object',
-        properties: {
-          success: { type: 'boolean' },
-          data: {
-            type: 'object',
-            properties: {
-              token: { type: 'string' }
-            }
-          },
-          message: { type: 'string' }
-        }
-      },
-      401: {
-        type: 'object',
-        properties: {
-          success: { type: 'boolean' },
-          error: {
-            type: 'object',
-            properties: {
-              message: { type: 'string' },
-              code: { type: 'string' }
-            }
-          }
-        }
-      }
+      200: { type: 'object', properties: { success: { type: 'boolean' }}},
+      401: { type: 'object', properties: { error: {type: 'string'}}}
     }
   } as FastifySchema,
 
-  verify: {
-    description: 'Verify student exists and get basic info',
-    tags: ['auth'],
-    params: {
+  passwordReset: {
+    description: 'Request a password reset email',
+    summary: 'Request Password Reset',
+    tags: ['Authentication'],
+    operationId: 'requestPasswordReset',
+    body: {
       type: 'object',
-      required: ['studentId'],
+      required: ['email'],
       properties: {
-        studentId: {
-          type: 'string',
-          pattern: '^\\d+$',
-          description: 'Student ID to verify (numeric)'
-        }
+        email: { type: 'string', format: 'email' },
       }
     },
     response: {
-      200: {
-        type: 'object',
-        properties: {
-          success: { type: 'boolean' },
-          data: {
-            type: 'object',
-            properties: {
-              student: {
-                type: 'object',
-                properties: {
-                  id: { type: 'number' },
-                  prenom: { type: 'string' },
-                  nom: { type: 'string' },
-                  niveau: { type: 'string' },
-                  age: { type: 'number' },
-                  dernierAcces: { type: 'string', format: 'date-time' },
-                  estConnecte: { type: 'boolean' },
-                },
-              },
-              parentCode: { type: 'string' },
-            },
-          },
-          message: { type: 'string' },
-        },
-      },
-      404: {
-        type: 'object',
-        properties: {
-          success: { type: 'boolean' },
-          error: {
-            type: 'object',
-            properties: {
-              message: { type: 'string' },
-              code: { type: 'string' },
-            },
-          },
-        },
-      },
+      200: { type: 'object', properties: { success: { type: 'boolean' }}}
+    }
+  } as FastifySchema,
+
+  passwordResetConfirm: {
+    description: 'Confirm a password reset with a token',
+    summary: 'Confirm Password Reset',
+    tags: ['Authentication'],
+    operationId: 'confirmPasswordReset',
+    body: {
+      type: 'object',
+      required: ['token', 'newPassword'],
+      properties: {
+        token: { type: 'string' },
+        newPassword: { type: 'string', minLength: 12 },
+      }
     },
+    response: {
+      200: { type: 'object', properties: { success: { type: 'boolean' }}},
+      400: { type: 'object', properties: { error: {type: 'string'}}}
+    }
   } as FastifySchema,
 
   health: {
     description: 'Authentication service health check',
-    tags: ['auth'],
+    summary: 'Health Check',
+    tags: ['Authentication'],
+    operationId: 'checkAuthHealth',
     response: {
-      200: {
-        type: 'object',
-        properties: {
-          success: { type: 'boolean' },
-          data: {
-            type: 'object',
-            properties: {
-              status: { type: 'string' },
-              service: { type: 'string' },
-              timestamp: { type: 'string', format: 'date-time' },
-              jwt: { type: 'object' },
-              database: { type: 'string' },
-              uptime: { type: 'number' }
-            }
-          },
-          message: { type: 'string' }
-        }
-      },
-      503: {
-        type: 'object',
-        properties: {
-          success: { type: 'boolean' },
-          error: {
-            type: 'object',
-            properties: {
-              message: { type: 'string' },
-              code: { type: 'string' }
-            }
-          }
-        }
-      }
+      200: { type: 'object', properties: { status: { type: 'string' }}}
     }
   } as FastifySchema,
 };
-
-// Validation helpers
-export function validateLogin(data: unknown) {
-  return loginSchema.safeParse(data);
-}
-
-export function validateVerify(data: unknown) {
-  return verifySchema.safeParse(data);
-}
