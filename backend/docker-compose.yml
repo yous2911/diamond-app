@@ -1,49 +1,70 @@
+version: '3.8'
+
 services:
-  mysql:
-    image: mysql:8.0
+  # Service for your Node.js backend application
+  app:
+    build: .
+    container_name: diamond_app_backend
+    restart: always
+    ports:
+      - "3003:3003"
+    # This tells the app container where to find the other services
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: reved_kids
-      MYSQL_USER: reved_user
-      MYSQL_PASSWORD: reved_password
+      - DB_HOST=db
+      - REDIS_HOST=redis
+      # Load other secrets from a file
+      - ./.env.docker
+    # This ensures the app only starts after the database and redis are healthy
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Service for the MySQL database
+  db:
+    image: mysql:8.0
+    container_name: mysql_db
+    restart: always
+    # IMPORTANT: The root password is now loaded from a secure file
+    env_file:
+      - ./.env.docker
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
-    restart: unless-stopped
-    networks:
-      - reved-kids
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost", "-u", "root", "-p$${MYSQL_ROOT_PASSWORD}"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 30s
-    command: --default-authentication-plugin=mysql_native_password
 
+  # Service for the Redis cache
   redis:
-    image: redis:7-alpine
+    image: redis:6.2-alpine
+    container_name: redis_cache
+    restart: always
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
-    restart: unless-stopped
-    networks:
-      - reved-kids
-    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 10s
+
+  # Service for the Adminer database UI
+  adminer:
+    image: adminer
+    container_name: adminer_ui
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
 
 volumes:
   mysql_data:
   redis_data:
-  uploads:
-
-networks:
-  reved-kids:
-    driver: bridge

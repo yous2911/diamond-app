@@ -17,6 +17,7 @@ out/
 .env.production
 .env.development
 .env.test
+.env.docker
 
 # Database
 *.db

@@ -8,7 +8,8 @@ if (process.env.NODE_ENV === 'test') {
   process.env.REDIS_ENABLED = 'false';
   process.env.DB_HOST = process.env.DB_HOST || 'localhost';
   process.env.DB_USER = process.env.DB_USER || 'root';
-  process.env.DB_PASSWORD = process.env.DB_PASSWORD || 'thisisREALLYIT29!';
+  // DO NOT set a default password for tests. It should be provided by the test environment.
+  // process.env.DB_PASSWORD = process.env.DB_PASSWORD || 'thisisREALLYIT29!';
   process.env.DB_NAME = process.env.DB_NAME || 'reved_kids';
 } else {
   // FORCE load ONLY env.backend - ignore all other .env files
@@ -51,24 +52,24 @@ const configSchema = z.object({
   DB_HOST: z.string().default('localhost'),
   DB_PORT: z.coerce.number().default(3306),
   DB_USER: z.string().default('root'),
-  DB_PASSWORD: z.string().default(''),
+  DB_PASSWORD: z.string(),
   DB_NAME: z.string().default('reved_kids'),
   DB_CONNECTION_LIMIT: z.coerce.number().default(20),
   
   // Redis Configuration (optional)
   REDIS_HOST: z.string().default('localhost'),
   REDIS_PORT: z.coerce.number().default(6379),
-  REDIS_PASSWORD: z.string().optional().default(''),
+  REDIS_PASSWORD: z.string().optional(),
   REDIS_DB: z.coerce.number().default(0),
   REDIS_ENABLED: z.coerce.boolean().default(false), // Disabled by default for easier setup
   
   // Security (with development fallbacks)
-  JWT_SECRET: z.string().min(8).default('dev-secret-key-change-in-production-minimum-32-chars'),
+  JWT_SECRET: z.string().min(32),
   JWT_EXPIRES_IN: z.string().default('24h'),
-  JWT_REFRESH_SECRET: z.string().min(8).default('dev-refresh-secret-change-in-production-minimum-32-chars'),
+  JWT_REFRESH_SECRET: z.string().min(32),
   JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
-  ENCRYPTION_KEY: z.string().min(8).default('dev-encryption-key-change-in-production-32-chars'),
-  COOKIE_SECRET: z.string().min(8).default('dev-cookie-secret-change-in-production-minimum-32-chars'),
+  ENCRYPTION_KEY: z.string().length(32),
+  COOKIE_SECRET: z.string().min(32),
   
   // Production security settings
   TRUST_PROXY: z.coerce.boolean().default(true),
@@ -141,71 +142,27 @@ const configSchema = z.object({
   SMTP_HOST: z.string().default('localhost'),
   SMTP_PORT: z.coerce.number().default(587),
   SMTP_USER: z.string().default(''),
-  SMTP_PASS: z.string().default(''),
+  SMTP_PASS: z.string().optional(),
   SMTP_FROM: z.string().default('noreply@revedkids.com'),
   SUPPORT_EMAIL: z.string().default('support@revedkids.com'),
-});
-
-// Safe parsing with detailed error handling
-let config: z.infer<typeof configSchema>;
-
-try {
-  const parseResult = configSchema.safeParse(process.env);
-  
-  if (!parseResult.success) {
-    console.warn('⚠️  Configuration warnings:');
-    parseResult.error.issues.forEach(issue => {
-      console.warn(`  - ${issue.path.join('.')}: ${issue.message}`);
-    });
-    
-    // Use defaults for missing values
-    config = configSchema.parse({});
-    console.log('✅ Using default configuration values');
-  } else {
-    config = parseResult.data;
-    console.log('✅ Configuration loaded successfully');
+}).refine(
+  (data) => {
+    if (data.NODE_ENV === 'production') {
+      return data.JWT_SECRET.length >= 32 && data.JWT_REFRESH_SECRET.length >= 32;
+    }
+    return true;
+  },
+  {
+    message: 'In production, JWT_SECRET and JWT_REFRESH_SECRET must be at least 32 characters long.',
+    path: ['JWT_SECRET'],
   }
-} catch (error) {
-  console.error('❌ Critical configuration error:', error);
-  console.log('🔧 Using emergency defaults...');
-  
-  // Emergency fallback configuration
-  config = {
-    NODE_ENV: 'development',
-    PORT: 3000,
-    HOST: '0.0.0.0',
-    DB_HOST: 'localhost',
-    DB_PORT: 3306,
-    DB_USER: 'root',
-    DB_PASSWORD: '',
-    DB_NAME: 'reved_kids',
-    DB_CONNECTION_LIMIT: 20,
-    REDIS_HOST: 'localhost',
-    REDIS_PORT: 6379,
-    REDIS_PASSWORD: '',
-    REDIS_DB: 0,
-    REDIS_ENABLED: false,
-    JWT_SECRET: 'dev-secret-key-change-in-production-minimum-32-chars',
-    JWT_EXPIRES_IN: '24h',
-    ENCRYPTION_KEY: 'dev-encryption-key-change-in-production-32-chars',
-    RATE_LIMIT_MAX: 100,
-    RATE_LIMIT_WINDOW: 900000,
-    MAX_FILE_SIZE: 10485760,
-    UPLOAD_PATH: './uploads',
-    ENABLE_METRICS: true,
-    METRICS_INTERVAL: 60000,
-    CACHE_TTL: 900,
-    CACHE_MAX_SIZE: 1000,
-    REQUEST_TIMEOUT: 30000,
-    BODY_LIMIT: 10485760,
-    CORS_ORIGIN: 'http://localhost:3000,http://localhost:3001',
-    CORS_CREDENTIALS: true,
-    LOG_LEVEL: 'info' as const,
-    LOG_FILE: '',
-    WS_HEARTBEAT_INTERVAL: 30000,
-    WS_MAX_CONNECTIONS: 1000,
-  };
-}
+);
+
+// Directly parse the environment. If it fails, the app will crash. This is what we want.
+const config = configSchema.parse(process.env);
+
+// Now, call your validation function to perform production-specific checks.
+validateEnvironment();
 
 // Environment helpers
 export const isDevelopment = config.NODE_ENV === 'development';
