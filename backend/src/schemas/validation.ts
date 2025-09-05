@@ -13,18 +13,8 @@ const UUID = {
 };
 const SafeString = { type: 'string', pattern: '^[a-zA-Z0-9\\s\\-_.]+$' };
 
-// Student schemas
-export const StudentLoginSchema = {
-  type: 'object',
-  required: ['email', 'password'],
-  properties: {
-    email: Email,
-    password: Password,
-  },
-  $id: 'StudentLogin',
-  title: 'Student Login',
-  description: 'Schema for student login request',
-};
+// Student schemas - REMOVED CONFLICTING StudentLoginSchema
+// Using auth.schema.ts loginSchema instead
 
 export const StudentRegistrationSchema = {
   type: 'object',
@@ -281,11 +271,8 @@ export const HealthResponseSchema = {
   description: 'System health check response schema',
 };
 
-// TypeScript interfaces for type safety
-export interface StudentLogin {
-  email: string;
-  password: string;
-}
+// TypeScript interfaces for type safety - REMOVED CONFLICTING StudentLogin
+// Using auth.schema.ts loginSchema types instead
 
 export interface StudentRegistration {
   email: string;

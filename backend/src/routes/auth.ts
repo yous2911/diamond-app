@@ -27,7 +27,21 @@ export default async function authRoutes(fastify: FastifyInstance) {
 
   // Secure login endpoint
   fastify.post('/login', {
-    schema: authSchemas.login,
+    preValidation: async (request, reply) => {
+      try {
+        request.body = await loginSchema.parseAsync(request.body);
+      } catch (error) {
+        reply.status(400).send({
+          success: false,
+          error: {
+            message: 'Données invalides',
+            code: 'VALIDATION_ERROR',
+            details: error instanceof Error ? error.message : 'Erreur de validation'
+          }
+        });
+        return;
+      }
+    },
     preHandler: [createRateLimitMiddleware('auth:login')],
     handler: async (
       request: FastifyRequest<{ Body: LoginRequestBody }>,
@@ -79,7 +93,21 @@ export default async function authRoutes(fastify: FastifyInstance) {
 
   // Register new student
   fastify.post('/register', {
-    schema: authSchemas.register,
+    preValidation: async (request, reply) => {
+      try {
+        request.body = await registerSchema.parseAsync(request.body);
+      } catch (error) {
+        reply.status(400).send({
+          success: false,
+          error: {
+            message: 'Données invalides',
+            code: 'VALIDATION_ERROR',
+            details: error instanceof Error ? error.message : 'Erreur de validation'
+          }
+        });
+        return;
+      }
+    },
     preHandler: [createRateLimitMiddleware('auth:register')],
     handler: async (
       request: FastifyRequest<{ Body: RegisterRequestBody }>,
