@@ -30,54 +30,54 @@ const fastify = Fastify({
 // Register plugins
 async function registerPlugins() {
   try {
-    console.log('🔧 Starting plugin registration...');
+    logger.info('🔧 Starting plugin registration...');
     
     // Core plugins
-    console.log('📦 Registering database plugin...');
+    logger.info('📦 Registering database plugin...');
     await fastify.register(import('./plugins/database'));
     
-    console.log('📦 Registering redis plugin...');
+    logger.info('📦 Registering redis plugin...');
     await fastify.register(import('./plugins/redis'));
     
-    console.log('📦 Registering cors plugin...');
+    logger.info('📦 Registering cors plugin...');
     await fastify.register(import('./plugins/cors'));
     
-    console.log('📦 Registering helmet plugin...');
+    logger.info('📦 Registering helmet plugin...');
     await fastify.register(import('./plugins/helmet'));
     
-    console.log('📦 Registering rate-limit plugin...');
+    logger.info('📦 Registering rate-limit plugin...');
     await fastify.register(import('./plugins/rate-limit'));
     
-    console.log('📦 Registering auth plugin...');
+    logger.info('📦 Registering auth plugin...');
     await fastify.register(import('./plugins/auth'));
     
-    console.log('📦 Registering websocket plugin...');
+    logger.info('📦 Registering websocket plugin...');
     await fastify.register(import('./plugins/websocket'));
     
-    console.log('📦 Registering swagger plugin...');
+    logger.info('📦 Registering swagger plugin...');
     await fastify.register(import('./plugins/swagger'));
     
-    console.log('📦 Registering monitoring plugin...');
+    logger.info('📦 Registering monitoring plugin...');
     await fastify.register(import('./plugins/monitoring'));
     
-    console.log('📦 Registering validation plugin...');
+    logger.info('📦 Registering validation plugin...');
     await fastify.register(import('./plugins/validation'));
 
-    console.log('🔧 Plugin registration completed successfully');
+    logger.info('🔧 Plugin registration completed successfully');
     
     // Routes - ORDRE IMPORTANT: GDPR en premier pour la sécurité
-    console.log('🛣️ Starting route registration...');
+    logger.info('🛣️ Starting route registration...');
     
-    console.log('🛣️ Registering GDPR routes...');
+    logger.info('🛣️ Registering GDPR routes...');
     await fastify.register(import('./routes/gdpr'), { prefix: '/api/gdpr' });
     
-    console.log('🛣️ Registering auth routes...');
+    logger.info('🛣️ Registering auth routes...');
     await fastify.register(import('./routes/auth'), { prefix: '/api/auth' });
     
-    console.log('🛣️ Registering students routes...');
+    logger.info('🛣️ Registering students routes...');
     await fastify.register(import('./routes/students'), { prefix: '/api/students' });
     
-    console.log('🛣️ Registering exercises routes...');
+    logger.info('🛣️ Registering exercises routes...');
     await fastify.register(import('./routes/exercises'), { prefix: '/api/exercises' });
     
     console.log('🛣️ Registering curriculum routes...');

@@ -1,0 +1,34 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    /* Development-friendly overrides */
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noEmitOnError": false,
+    "strictPropertyInitialization": false,
+    "exactOptionalPropertyTypes": false,
+    
+    /* Faster compilation */
+    "incremental": true,
+    "tsBuildInfoFile": "./dist/.tsbuildinfo",
+    
+    /* More verbose output for debugging */
+    "pretty": true,
+    "listFiles": false,
+    "listEmittedFiles": false
+  },
+  
+  /* Include test files in development */
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.js",
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ],
+  
+  /* Exclude less in development */
+  "exclude": [
+    "node_modules",
+    "dist/!(*.test.*|*.spec.*)"
+  ]
+}

@@ -274,7 +274,8 @@ export class AuditTrailService {
     startDate: Date,
     endDate: Date,
     entityType?: string,
-    format: 'json' | 'csv' | 'pdf' = 'json'
+    format: 'json' | 'csv' | 'pdf' = 'json',
+    userContext?: { userId: number; email: string }
   ): Promise<AuditReport> {
     try {
       const reportId = crypto.randomUUID();
@@ -290,7 +291,7 @@ export class AuditTrailService {
         id: reportId,
         title: `Compliance Report ${entityType ? `- ${entityType}` : ''}`,
         description: `Audit trail report for period ${startDate.toISOString()} to ${endDate.toISOString()}`,
-        generatedBy: 'system', // TODO: Get from context
+        generatedBy: userContext ? userContext.email : 'system'
         generatedAt: new Date(),
         period: { startDate, endDate },
         filters: { entityType },
@@ -312,7 +313,7 @@ export class AuditTrailService {
         entityType: 'admin_action',
         entityId: reportId,
         action: 'create',
-        userId: null, // TODO: Get from context
+        userId: userContext?.userId || null,
         details: {
           reportType: 'compliance',
           period: { startDate, endDate },
@@ -340,7 +341,7 @@ export class AuditTrailService {
   /**
    * Get audit trail for specific student (GDPR compliance)
    */
-  async getStudentAuditTrail(studentId: string): Promise<AuditLogEntry[]> {
+  async getStudentAuditTrail(studentId: string, userContext?: { userId: number; email: string }): Promise<AuditLogEntry[]> {
     try {
       const entries = await this.queryAuditLogs({
         studentId,
@@ -353,7 +354,7 @@ export class AuditTrailService {
         entityType: 'student',
         entityId: studentId,
         action: 'read',
-        userId: null, // TODO: Get from context
+        userId: userContext?.userId || null,
         details: {
           action: 'audit_trail_access',
           entriesReturned: entries.entries.length
@@ -373,7 +374,7 @@ export class AuditTrailService {
   /**
    * Anonymize audit logs for a student
    */
-  async anonymizeStudentAuditLogs(studentId: string, reason: string): Promise<number> {
+  async anonymizeStudentAuditLogs(studentId: string, reason: string, userContext?: { userId: number; email: string }): Promise<number> {
     try {
       const entries = await this.queryAuditLogs({
         studentId,
@@ -394,7 +395,7 @@ export class AuditTrailService {
         entityType: 'student',
         entityId: studentId,
         action: 'anonymize',
-        userId: null, // TODO: Get from context
+        userId: userContext?.userId || null,
         details: {
           action: 'audit_anonymization',
           entriesAnonymized: anonymizedCount,

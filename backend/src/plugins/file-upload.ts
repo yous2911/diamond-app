@@ -202,7 +202,7 @@ const fileUploadPlugin: FastifyPluginAsync<FileUploadPluginOptions> = async (
           }
         }
       },
-      preHandler: [fastify.authenticate], // TODO: Add admin authorization when available
+      preHandler: [fastify.authenticateAdmin], // Admin only - storage optimization is sensitive
       handler: async (request, reply) => {
         try {
           const result = await storageService.optimizeStorage();

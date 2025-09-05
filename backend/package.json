@@ -7,6 +7,8 @@
     "dev": "tsx watch src/server.ts",
     "dev:full": "node start-dev.js",
     "build": "tsc",
+    "build:dev": "tsc --project tsconfig.dev.json",
+    "build:test": "tsc --project tsconfig.test.json",
     "start": "node dist/server.js",
     "railway:deploy": "npm run build && railway up",
     "clean": "rimraf dist",

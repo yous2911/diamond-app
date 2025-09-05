@@ -367,6 +367,44 @@ export class EmailService {
           <p>Si vous recevez ce message, le service email est opérationnel.</p>
           <p>Cordialement,<br>L'équipe technique RevEd Kids</p>
         </div>
+      `,
+      
+      // =================================
+      // DATA RETENTION TEMPLATES
+      // =================================
+      'retention-warning': `
+        <div style="max-width: 600px; margin: 0 auto; font-family: Arial, sans-serif;">
+          <h2 style="color: #F59E0B;">⚠️ Alerte de Rétention de Données</h2>
+          <p>Une action de rétention de données est programmée et nécessite votre attention.</p>
+          
+          <div style="background: #FEF3C7; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0;">📊 Détails de l'Entité</h3>
+            <p><strong>ID de l'entité :</strong> ${variables.entityId}</p>
+            <p><strong>Type d'entité :</strong> ${variables.entityType}</p>
+            <p><strong>Politique :</strong> ${variables.policyName}</p>
+          </div>
+          
+          <div style="background: #FEE2E2; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0;">🎯 Action Requise</h3>
+            <p><strong>Action :</strong> ${variables.action}</p>
+            <p><strong>Période de rétention :</strong> ${variables.retentionPeriod} jours</p>
+            <p><strong>Date d'action :</strong> ${variables.actionDate}</p>
+            <p><strong>Préavis :</strong> ${variables.warningDays} jour(s)</p>
+          </div>
+          
+          <div style="background: #DBEAFE; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="margin-top: 0;">📋 Actions Recommandées</h3>
+            <ul style="margin: 0; padding-left: 20px;">
+              <li>Vérifier la conformité de la politique de rétention</li>
+              <li>Confirmer que l'action programmée est appropriée</li>
+              <li>Sauvegarder les données si nécessaire avant l'action</li>
+              <li>Documenter l'action dans le journal d'audit</li>
+            </ul>
+          </div>
+          
+          <p>Cette notification est générée automatiquement par le système de rétention des données pour assurer la conformité RGPD.</p>
+          <p>Cordialement,<br>Système de Rétention RevEd Kids</p>
+        </div>
       `
     };
 
@@ -987,7 +1025,8 @@ export class EmailService {
       'student-account-created',
       'gdpr-verification',
       'gdpr-confirmation',
-      'test'
+      'test',
+      'retention-warning'
     ];
   }
 
@@ -1003,7 +1042,8 @@ export class EmailService {
       'student-progress-report': ['parentName', 'studentName', 'exercisesCompleted', 'studyTime', 'averageScore', 'subjects', 'dashboardUrl'],
       'achievement-notification': ['studentName', 'achievementTitle', 'achievementDescription', 'achievementsUrl'],
       'system-maintenance': ['maintenanceDate', 'maintenanceTime', 'duration', 'purpose'],
-      'security-alert': ['userName', 'alertType', 'alertDate', 'location', 'device', 'securityUrl']
+      'security-alert': ['userName', 'alertType', 'alertDate', 'location', 'device', 'securityUrl'],
+      'retention-warning': ['entityId', 'entityType', 'policyName', 'action', 'retentionPeriod', 'actionDate', 'warningDays']
     };
 
     const required = requiredVars[template] || [];
@@ -1014,5 +1054,39 @@ export class EmailService {
       isValid: missingVars.length === 0,
       missingVars
     };
+  }
+
+  /**
+   * Send data retention warning notification
+   */
+  async sendRetentionWarning(
+    entity: { id: string; type: string; email?: string },
+    policy: { 
+      id: string; 
+      policyName: string; 
+      action: string; 
+      retentionPeriodDays: number; 
+      notificationDays: number;
+    }
+  ): Promise<void> {
+    // For student data, send notification to admin/compliance team
+    const notificationEmail = emailConfig.supportEmail || 'admin@revedkids.com';
+    const actionDate = new Date();
+    actionDate.setDate(actionDate.getDate() + policy.notificationDays);
+
+    await this.sendEmailWithRetry({
+      to: notificationEmail,
+      subject: `Alerte de rétention de données - Action requise`,
+      template: 'retention-warning',
+      variables: {
+        entityId: entity.id,
+        entityType: entity.type,
+        policyName: policy.policyName,
+        action: policy.action,
+        retentionPeriod: policy.retentionPeriodDays,
+        actionDate: actionDate.toLocaleDateString('fr-FR'),
+        warningDays: policy.notificationDays
+      }
+    });
   }
 }

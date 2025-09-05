@@ -943,8 +943,8 @@ export class DataRetentionService {
         action: policy.action
       });
 
-      // TODO: Implement actual email/SMS notification
-      // await this.emailService.sendRetentionWarning(entity, policy);
+      // Send actual email notification to admin/compliance team
+      await this.emailService.sendRetentionWarning(entity, policy);
 
     } catch (error) {
       logger.error('Error sending retention notification:', error);

@@ -1,0 +1,35 @@
+{
+  "extends": "./tsconfig.dev.json",
+  "compilerOptions": {
+    /* Test-specific settings */
+    "types": ["node", "jest", "@types/jest"],
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    
+    /* Allow more flexible typing for tests */
+    "strictPropertyInitialization": false,
+    "noImplicitAny": false,
+    
+    /* Test utilities might need any */
+    "strict": false,
+    
+    /* Faster compilation for tests */
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    "noEmitOnError": false
+  },
+  
+  /* Include all test files */
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.test.ts",
+    "src/**/*.spec.ts",
+    "src/**/__tests__/**/*.ts",
+    "src/**/__mocks__/**/*.ts"
+  ],
+  
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}

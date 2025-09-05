@@ -1,52 +1,103 @@
 {
   "compilerOptions": {
+    /* Language and Environment */
     "target": "ES2022",
+    "lib": ["ES2022"],
     "module": "commonjs",
     "moduleResolution": "node",
-    "allowSyntheticDefaultImports": true,
+    
+    /* Module System */
     "esModuleInterop": true,
-    "allowJs": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    
+    /* Output Options */
     "outDir": "./dist",
     "rootDir": "./src",
-    "skipLibCheck": true,
-    "skipDefaultLibCheck": true,
-    "noEmitOnError": false,
-    "skipLibCheck": true,
-    "ignoreDeprecations": "5.0",
-    "forceConsistentCasingInFileNames": false,
-    "isolatedModules": false,
-    "noImplicitAny": false,
-    "strictNullChecks": false,
-    "strict": false,
-    "noImplicitReturns": false,
-    "noFallthroughCasesInSwitch": false,
-    "resolveJsonModule": true,
+    "removeComments": true,
+    "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
-    "sourceMap": true,
-    "removeComments": true,
-    "noUncheckedIndexedAccess": false,
+    
+    /* Type Checking - PRODUCTION READY */
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
     "exactOptionalPropertyTypes": false,
+    
+    /* Additional Checks */
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitThis": true,
+    "alwaysStrict": true,
+    
+    /* Emit Options */
+    "noEmitOnError": true,
+    "preserveConstEnums": true,
+    "downlevelIteration": true,
+    
+    /* Interop Constraints */
+    "forceConsistentCasingInFileNames": true,
+    "allowJs": false,
+    
+    /* Skip Lib Check (Performance) */
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    
+    /* Experimental */
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
-    "types": ["jest"]
+    
+    /* Path Mapping */
+    "baseUrl": "./src",
+    "paths": {
+      "@/*": ["./*"],
+      "@/utils/*": ["./utils/*"],
+      "@/services/*": ["./services/*"],
+      "@/routes/*": ["./routes/*"],
+      "@/middleware/*": ["./middleware/*"],
+      "@/db/*": ["./db/*"],
+      "@/types/*": ["./types/*"],
+      "@/config/*": ["./config/*"],
+      "@/plugins/*": ["./plugins/*"]
+    },
+    
+    /* Type Definitions */
+    "types": ["node", "jest"],
+    "typeRoots": ["./node_modules/@types", "./src/types"]
   },
+  
+  /* File Inclusion */
   "include": [
-    "src/**/*",
-    "tests/**/*"
+    "src/**/*.ts",
+    "src/**/*.js"
   ],
+  
+  /* File Exclusion */
   "exclude": [
     "node_modules",
     "dist",
     "**/*.test.ts",
     "**/*.spec.ts",
-    "node_modules/@types/node/http.d.ts"
+    "coverage",
+    "jest.config.js"
   ],
+  
+  /* ts-node Configuration */
   "ts-node": {
     "transpileOnly": true,
+    "files": true,
     "compilerOptions": {
-      "skipLibCheck": true
+      "module": "commonjs",
+      "target": "ES2020"
     }
   }
 }
