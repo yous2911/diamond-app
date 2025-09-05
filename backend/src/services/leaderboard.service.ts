@@ -186,7 +186,7 @@ export class LeaderboardService {
       return { entries: formattedEntries, stats };
       
     } catch (error) {
-      logger.error('Error fetching leaderboard:', { type, category, error: error.message });
+      logger.warn('Error fetching leaderboard:', { type, category, error: error.message });
       return { entries: [], stats: { totalParticipants: 0, averageScore: 0, topScore: 0 } };
     }
   }
@@ -211,7 +211,7 @@ export class LeaderboardService {
       logger.info('✅ All leaderboards updated successfully');
       
     } catch (error) {
-      logger.error('❌ Error updating leaderboards:', { error: error.message });
+      logger.warn('❌ Error updating leaderboards:', { error: error.message });
       throw error;
     }
   }
@@ -404,7 +404,7 @@ export class LeaderboardService {
       }
 
     } catch (error) {
-      logger.error(`Error updating ${type} ${category} leaderboard:`, { error: error.message });
+      logger.warn(`Error updating ${type} ${category} leaderboard:`, { error: error.message });
     }
   }
 
@@ -425,7 +425,7 @@ export class LeaderboardService {
       logger.info('✅ All badges updated');
       
     } catch (error) {
-      logger.error('❌ Error updating badges:', { error: error.message });
+      logger.warn('❌ Error updating badges:', { error: error.message });
     }
   }
 
@@ -458,7 +458,7 @@ export class LeaderboardService {
       }
       
     } catch (error) {
-      logger.error(`Error updating badges for student ${studentId}:`, { error: error.message });
+      logger.warn(`Error updating badges for student ${studentId}:`, { error: error.message });
     }
   }
 
@@ -513,7 +513,7 @@ export class LeaderboardService {
       };
       
     } catch (error) {
-      logger.error(`Error getting student stats for ${studentId}:`, { error: error.message });
+      logger.warn(`Error getting student stats for ${studentId}:`, { error: error.message });
       return {};
     }
   }
@@ -676,7 +676,7 @@ export class LeaderboardService {
       };
       
     } catch (error) {
-      logger.error('Error getting student rank:', { studentId, type, category, error: error.message });
+      logger.warn('Error getting student rank:', { studentId, type, category, error: error.message });
       return null;
     }
   }
@@ -794,7 +794,7 @@ export class LeaderboardService {
       };
       
     } catch (error) {
-      logger.error('Error getting user-centric leaderboard:', { studentId, error: error.message });
+      logger.warn('Error getting user-centric leaderboard:', { studentId, error: error.message });
       return {
         userEntry: null,
         competitors: [],
@@ -834,7 +834,7 @@ export class LeaderboardService {
       );
       
     } catch (error) {
-      logger.error('Error getting nearby competitors:', { studentId, error: error.message });
+      logger.warn('Error getting nearby competitors:', { studentId, error: error.message });
       return [];
     }
   }
