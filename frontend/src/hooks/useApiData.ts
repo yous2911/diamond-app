@@ -28,7 +28,7 @@ interface UseApiDataOptions {
 // GENERIC API DATA HOOK
 // =============================================================================
 
-const useApiData = <T>(
+export const useApiData = <T>(
   fetchFunction: () => Promise<{ success: boolean; data?: T; error?: { message: string } }>,
   options: UseApiDataOptions = {}
 ) => {

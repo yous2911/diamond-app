@@ -59,3 +59,4 @@ app.listen(PORT, () => {
   console.log(`📚 Exercises API: http://localhost:${PORT}/api/exercises`);
   console.log(`🎯 Competences API: http://localhost:${PORT}/api/competences`);
 });
+

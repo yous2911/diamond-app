@@ -82,3 +82,4 @@ SELECT 'French: 50 competencies' as french;
 SELECT 'Math: 65 competencies' as math;
 SELECT 'Total: 115 competencies' as total;
 SELECT 'Prerequisites: Mapped CP to CE1' as prerequisites;
+

@@ -24,6 +24,7 @@
     "test:clean": "rimraf coverage .vitest",
     "test:quick": "node scripts/test-simple.js",
     "test:integration": "cross-env NODE_ENV=test vitest run src/tests/integration-quick.test.ts",
+    "db:setup-auth": "node scripts/setup-auth-database.js",
     "db:generate": "drizzle-kit generate:sqlite",
     "db:migrate": "tsx src/db/migrate.ts up",
     "db:migrate:down": "tsx src/db/migrate.ts down",

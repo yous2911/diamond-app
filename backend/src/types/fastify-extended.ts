@@ -6,6 +6,15 @@ declare module 'fastify' {
     // Cache service
     cache: any;
     
+    // Redis service
+    redis: {
+      get(key: string): Promise<string | null>;
+      set(key: string, value: string, ttl?: number): Promise<void>;
+      setex(key: string, ttl: number, value: string): Promise<void>;
+      del(key: string): Promise<number>;
+      [key: string]: any;
+    };
+    
     // WebSocket broadcast function
     broadcast?: (message: any) => void;
     

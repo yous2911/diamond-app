@@ -110,3 +110,4 @@ INSERT INTO cp2025_competence_codes (code, niveau, matiere, domaine, numero, com
 INSERT INTO cp2025_competence_codes (code, niveau, matiere, domaine, numero, competence, description) VALUES
 ('CE1.FR.O1.1', 'CE1', 'FRANCAIS', 'O1', 1, 1, 'S''exprimer clairement à l''oral en utilisant un vocabulaire approprié'),
 ('CE1.FR.O1.2', 'CE1', 'FRANCAIS', 'O1', 1, 2, 'Participer à des échanges en respectant les règles de communication');
+

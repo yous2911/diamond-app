@@ -127,3 +127,4 @@ INSERT INTO competence_prerequisites (competence_code, prerequisite_code, prereq
 -- ORAL (O1) - Requires CP oral foundation
 ('CE1.FR.O1.1', 'CP.FR.C2.1', 'required', 80, 2.5, 'Expression orale CP requise pour vocabulaire approprié'),
 ('CE1.FR.O1.2', 'CP.FR.C2.1', 'required', 80, 2.5, 'Communication CP requise pour échanges');
+

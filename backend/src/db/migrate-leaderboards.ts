@@ -86,12 +86,12 @@ async function populateLeaderboardData() {
     // Get real students from database
     const students = await db.execute(sql`SELECT * FROM students LIMIT 50`);
     
-    if (!students || students.length === 0) {
+    if (!students || !Array.isArray(students[0]) || students[0].length === 0) {
       console.log('⚠️ No students found - creating sample data');
       return;
     }
 
-    console.log(`📋 Found ${students.length} students`);
+    console.log(`📋 Found ${students[0].length} students`);
 
     // Get student progress for scoring
     const progressData = await db.execute(sql`
@@ -105,14 +105,18 @@ async function populateLeaderboardData() {
       GROUP BY sp.student_id
     `);
 
-    console.log(`📈 Found progress for ${progressData.length} students`);
+    const progressRows = Array.isArray(progressData[0]) ? progressData[0] : [];
+    console.log(`📈 Found progress for ${progressRows.length} students`);
 
     // Calculate scores and create leaderboard entries
     const leaderboardEntries = [];
     
-    for (let i = 0; i < Math.min(students.length, progressData.length); i++) {
-      const student = students[i];
-      const progress = progressData[i] || { 
+    const studentsData = students[0] as unknown as any[];
+    const progressDataRows = progressRows;
+    
+    for (let i = 0; i < Math.min(studentsData.length, progressDataRows.length); i++) {
+      const student = studentsData[i];
+      const progress = progressDataRows[i] || { 
         exercises_completed: Math.floor(Math.random() * 20) + 1,
         avg_score: Math.random() * 100,
         total_time: Math.floor(Math.random() * 10000)

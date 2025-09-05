@@ -298,3 +298,4 @@ INSERT INTO competence_prerequisites (competence_code, prerequisite_code, prereq
 
 ('CE1.MA.D3.5', 'CP.MA.D1.1', 'required', 80, 2.5, 'Données CP requises pour présentation claire'),
 ('CE1.MA.D3.5', 'CP.MA.D1.2', 'required', 80, 2.5, 'Lecture données CP requise pour lisibilité');
+

@@ -682,6 +682,133 @@ export class LeaderboardService {
   }
 
   /**
+   * 🎯 Get user-centric leaderboard view (user + nearby competitors)
+   */
+  async getUserCentricLeaderboard(
+    studentId: number,
+    type: string = 'global',
+    category: string = 'points',
+    range: number = 3
+  ): Promise<{
+    userEntry: LeaderboardEntry | null;
+    competitors: LeaderboardEntry[];
+    context: {
+      totalParticipants: number;
+      userRank: number;
+      percentile: number;
+      beatingCount: number;
+      nextTarget?: LeaderboardEntry;
+    };
+  }> {
+    
+    try {
+      const studentRank = await this.getStudentRank(studentId, type, category);
+      if (!studentRank) {
+        return {
+          userEntry: null,
+          competitors: [],
+          context: {
+            totalParticipants: 0,
+            userRank: 0,
+            percentile: 0,
+            beatingCount: 0
+          }
+        };
+      }
+
+      const startRank = Math.max(1, studentRank.rank - range);
+      const endRank = studentRank.rank + range;
+
+      // Get the leaderboard section around the user
+      const conditions = [
+        eq(leaderboards.type, type),
+        eq(leaderboards.category, category),
+        gte(leaderboards.rank, startRank),
+        lte(leaderboards.rank, endRank)
+      ];
+
+      const entries = await db
+        .select({
+          leaderboard: leaderboards,
+          student: {
+            id: students.id,
+            prenom: students.prenom,
+            nom: students.nom,
+            mascotteType: students.mascotteType,
+            mascotteColor: students.mascotteColor,
+            niveauScolaire: students.niveauScolaire
+          }
+        })
+        .from(leaderboards)
+        .innerJoin(students, eq(leaderboards.studentId, students.id))
+        .where(and(...conditions))
+        .orderBy(asc(leaderboards.rank));
+
+      // Get badges for all students
+      const studentIds = entries.map(entry => entry.student.id);
+      const badges = studentIds.length > 0 
+        ? await db
+            .select()
+            .from(studentBadges)
+            .where(inArray(studentBadges.studentId, studentIds))
+        : [];
+
+      // Format entries
+      const formattedEntries: LeaderboardEntry[] = entries.map(entry => {
+        const studentBadges = badges.filter(badge => badge.studentId === entry.student.id);
+        
+        return {
+          studentId: entry.leaderboard.studentId,
+          rank: entry.leaderboard.rank,
+          score: entry.leaderboard.score,
+          previousRank: entry.leaderboard.previousRank || undefined,
+          rankChange: entry.leaderboard.rankChange,
+          student: entry.student,
+          badges: studentBadges,
+          metadata: entry.leaderboard.metadata
+        };
+      });
+
+      const userEntry = formattedEntries.find(entry => entry.studentId === studentId);
+      const competitors = formattedEntries.filter(entry => entry.studentId !== studentId);
+      
+      // Find next target (person directly above user)
+      const nextTarget = formattedEntries.find(entry => 
+        entry.rank === studentRank.rank - 1
+      );
+
+      // Calculate context
+      const percentile = Math.round(((studentRank.totalParticipants - studentRank.rank + 1) / studentRank.totalParticipants) * 100);
+      const beatingCount = studentRank.totalParticipants - studentRank.rank;
+
+      return {
+        userEntry,
+        competitors,
+        context: {
+          totalParticipants: studentRank.totalParticipants,
+          userRank: studentRank.rank,
+          percentile,
+          beatingCount,
+          nextTarget
+        }
+      };
+      
+    } catch (error) {
+      logger.error('Error getting user-centric leaderboard:', { studentId, error: error.message });
+      return {
+        userEntry: null,
+        competitors: [],
+        context: {
+          totalParticipants: 0,
+          userRank: 0,
+          percentile: 0,
+          beatingCount: 0
+        }
+      };
+    }
+  }
+
+  /**
    * 🎯 Get nearby competitors (students close in ranking)
    */
   async getNearbyCompetitors(

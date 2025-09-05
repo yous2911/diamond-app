@@ -78,8 +78,8 @@ describe('AdvancedMascotSystem', () => {
 
   it('gère les éléments équipés', () => {
     const equippedItems = [
-      { id: '1', name: 'Chapeau magique', type: 'hat' },
-      { id: '2', name: 'Cape brillante', type: 'cape' },
+      'Chapeau magique',
+      'Cape brillante',
     ];
 
     expect(() => {

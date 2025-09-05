@@ -69,9 +69,16 @@ const mockStudent = {
   id: 1,
   prenom: 'Emma',
   nom: 'Martin',
+  identifiant: 'emma.martin',
+  classe: '5A',
+  niveau: 'CE1',
+  ageGroup: '6-8' as const,
   totalXp: 150,
   currentLevel: 3,
-  dateInscription: new Date('2024-01-15'),
+  currentStreak: 5,
+  heartsRemaining: 5,
+  dateInscription: '2024-01-15',
+  lastLogin: '2024-01-20T10:30:00Z',
   preferences: {
     mascotType: 'dragon',
     difficulty: 'normal',
@@ -190,7 +197,7 @@ describe('LoginScreen', () => {
       const user = userEvent.setup();
       mockApiService.login.mockResolvedValue({
         success: true,
-        data: { student: mockStudent, token: 'mock-token' }
+        data: { student: mockStudent, expiresIn: 3600 }
       });
 
       render(<LoginScreen />, { wrapper: TestWrapper });

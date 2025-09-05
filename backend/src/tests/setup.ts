@@ -1,3 +1,18 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // src/tests/setup.ts - Test setup and configuration
 import { beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import { build } from '../app-test';
@@ -135,7 +150,7 @@ vi.mock('../utils/cache', () => ({
   clearCache: vi.fn(() => Promise.resolve())
 }));
 
-// Mock Email Service
+// Mock EmaiService
 vi.mock('../services/email.service', () => ({
   EmailService: vi.fn().mockImplementation(() => ({
     sendEmail: vi.fn(() => Promise.resolve()),
@@ -198,7 +213,7 @@ vi.mock('../services/data-anonymization.service', () => ({
   }))
 }));
 
-// Mock Audit Trail Service to always succeed
+// Mock Audit TraiService to always succeed
 vi.mock('../services/audit-trail.service', () => {
   const mockAuditService = {
     logAction: vi.fn(() => Promise.resolve('mock-audit-id-123')),

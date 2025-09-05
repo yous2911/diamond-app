@@ -1,6 +1,8 @@
 
 import { FastifyInstance } from 'fastify';
 import { enhancedDatabaseService as databaseService } from '../services/enhanced-database.service.js';
+import { db } from '../db/connection';
+import { students } from '../db/schema';
 import crypto from 'crypto';
 
 // Mock authentication middleware for testing
@@ -65,23 +67,6 @@ export default async function studentRoutes(fastify: FastifyInstance) {
     }
 
     try {
-      // Mock student data for testing
-      if (process.env.NODE_ENV === 'test') {
-        if (studentId === 1) {
-          return reply.send({
-            success: true,
-            data: {
-              id: 1,
-              prenom: 'Alice',
-              nom: 'Dupont',
-              niveauActuel: 'CE1',
-              totalPoints: 150,
-              serieJours: 5
-            }
-          });
-        }
-      }
-
       const student = await databaseService.getStudentById(studentId);
       
       if (!student) {
@@ -282,46 +267,11 @@ export default async function studentRoutes(fastify: FastifyInstance) {
   // Get all students (for login selection)
   fastify.get('/', async (request, reply) => {
     try {
-      // For now, return mock data since database service might not be fully implemented
-      const mockStudents = [
-        {
-          id: 1,
-          prenom: 'Alice',
-          nom: 'Dupont',
-          niveauActuel: 'CP',
-          totalPoints: 150,
-          serieJours: 5,
-          mascotteType: 'dragon',
-          dernierAcces: new Date().toISOString(),
-          estConnecte: false
-        },
-        {
-          id: 2,
-          prenom: 'Lucas',
-          nom: 'Martin',
-          niveauActuel: 'CE1',
-          totalPoints: 320,
-          serieJours: 12,
-          mascotteType: 'robot',
-          dernierAcces: new Date().toISOString(),
-          estConnecte: false
-        },
-        {
-          id: 3,
-          prenom: 'Emma',
-          nom: 'Bernard',
-          niveauActuel: 'CP',
-          totalPoints: 85,
-          serieJours: 3,
-          mascotteType: 'fairy',
-          dernierAcces: new Date().toISOString(),
-          estConnecte: false
-        }
-      ];
+      const allStudents = await db.select().from(students);
 
       return {
         success: true,
-        data: mockStudents
+        data: allStudents
       };
     } catch (error) {
       (fastify.log as any).error('Get all students error:', error);

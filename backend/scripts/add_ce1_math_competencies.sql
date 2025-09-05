@@ -140,3 +140,4 @@ INSERT INTO cp2025_competence_codes (code, niveau, matiere, domaine, numero, com
 ('CE1.MA.D3.3', 'CE1', 'MATHEMATIQUES', 'D3', 3, 3, 'Construire un diagramme circulaire simple'),
 ('CE1.MA.D3.4', 'CE1', 'MATHEMATIQUES', 'D3', 3, 4, 'Choisir le type de graphique approprié'),
 ('CE1.MA.D3.5', 'CE1', 'MATHEMATIQUES', 'D3', 3, 5, 'Présenter des données de manière claire et lisible');
+

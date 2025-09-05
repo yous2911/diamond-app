@@ -1027,12 +1027,7 @@ export class AuditTrailService {
           entityType: alert.entityType,
           entityId: alert.entityId,
           description: alert.description,
-          detectedAt: alert.detectedAt,
-          auditEntries: alert.auditEntries,
-          resolved: alert.resolved,
-          resolvedAt: alert.resolvedAt,
-          resolvedBy: alert.resolvedBy,
-          metadata: {}
+          isResolved: alert.resolved || false
         });
       });
 

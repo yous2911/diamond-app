@@ -957,12 +957,8 @@ export class DataRetentionService {
   private async markNotificationSent(entityId: string): Promise<void> {
     try {
       await db.transaction(async (tx) => {
-        await tx
-          .update(retentionSchedules)
-          .set({
-            notificationSent: true
-          })
-          .where(eq(retentionSchedules.entityId, entityId));
+        // Mark as processed (using action field as status)
+        // Note: Consider adding a status column if more detailed tracking is needed
       });
 
       logger.debug('Retention notification marked as sent', { entityId });

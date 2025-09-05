@@ -188,6 +188,65 @@ export default async function leaderboardRoutes(fastify: FastifyInstance): Promi
   });
 
   /**
+   * 🎯 GET /api/leaderboards/user-centric/:studentId - Get user-centric leaderboard view
+   */
+  fastify.get('/api/leaderboards/user-centric/:studentId', {
+    schema: {
+      description: 'Get user-centric leaderboard (student + nearby competitors)',
+      tags: ['Leaderboards'],
+      params: {
+        type: 'object',
+        required: ['studentId'],
+        properties: {
+          studentId: { type: 'number' }
+        }
+      },
+      querystring: {
+        type: 'object',
+        properties: {
+          type: { type: 'string', enum: ['global', 'class', 'weekly', 'monthly'] },
+          category: { type: 'string', enum: ['points', 'streak', 'exercises', 'accuracy'] },
+          range: { type: 'number', minimum: 1, maximum: 10 }
+        }
+      }
+    }
+  }, async (request: FastifyRequest<{
+    Params: { studentId: number };
+    Querystring: any;
+  }>, reply: FastifyReply) => {
+    try {
+      const { studentId } = request.params;
+      const queryParams = request.query as any;
+      const query = {
+        type: queryParams?.type || 'global',
+        category: queryParams?.category || 'points',
+        range: queryParams?.range || 3
+      };
+
+      const userCentricView = await leaderboardService.getUserCentricLeaderboard(
+        studentId,
+        query.type,
+        query.category,
+        query.range
+      );
+
+      reply.send({
+        success: true,
+        data: userCentricView,
+        message: 'User-centric leaderboard retrieved successfully'
+      });
+
+    } catch (error) {
+      (fastify.log as any).error('Error fetching user-centric leaderboard:', error);
+      reply.code(500).send({
+        success: false,
+        message: 'Error fetching user-centric leaderboard',
+        error: error.message
+      });
+    }
+  });
+
+  /**
    * 🤝 GET /api/leaderboards/student/:studentId/competitors - Get nearby competitors
    */
   fastify.get('/api/leaderboards/student/:studentId/competitors', {

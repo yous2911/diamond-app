@@ -11,7 +11,7 @@ async function seedLeaderboards() {
     // Get existing students
     const students = await db.execute(sql`SELECT id, prenom, nom FROM students LIMIT 10`);
     
-    if (!students || students.length === 0) {
+    if (!students || !Array.isArray(students[0]) || students[0].length === 0) {
       console.log('⚠️ No students found in database');
       return;
     }

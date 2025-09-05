@@ -1,7 +1,100 @@
 import { FastifyInstance } from 'fastify';
 import { enhancedDatabaseService as databaseService } from '../services/enhanced-database.service.js';
+import { competenciesService } from '../services/competencies.service.js';
 
 export default async function competencesRoutes(fastify: FastifyInstance) {
+  // GET /api/competences - List all competencies with optional filtering
+  fastify.get('/', async (request, reply) => {
+    try {
+      const { level, subject, limit = 100, offset = 0 } = request.query as any;
+      const filters = { level, subject, limit, offset };
+      const cacheKey = competenciesService.generateListCacheKey(filters);
+      
+      // Try Redis cache first
+      let competencies;
+      try {
+        const cached = await fastify.redis.get(cacheKey);
+        if (cached) {
+          competencies = JSON.parse(cached);
+          return reply.send({ success: true, data: competencies, cached: true });
+        }
+      } catch (redisError) {
+        fastify.log.warn('Redis cache miss or error');
+      }
+
+      // Get competencies using service
+      competencies = await competenciesService.getCompetenciesList(fastify.db, filters);
+
+      // Cache for 5 minutes
+      try {
+        await fastify.redis.setex(cacheKey, 300, JSON.stringify(competencies));
+      } catch (redisError) {
+        fastify.log.warn('Redis cache set error');
+      }
+
+      reply.send({ success: true, data: competencies, cached: false });
+    } catch (error) {
+      fastify.log.error('Error listing competencies');
+      reply.status(500).send({
+        success: false,
+        error: { message: 'Failed to list competencies', code: 'COMPETENCIES_LIST_ERROR' }
+      });
+    }
+  });
+
+  // GET /api/competences/:code - Get specific competency with JSON content
+  fastify.get('/:code', async (request, reply) => {
+    try {
+      const { code } = request.params as { code: string };
+      
+      // Validate competency code format
+      if (!competenciesService.validateCompetencyCode(code)) {
+        return reply.status(400).send({
+          success: false,
+          error: { message: 'Invalid competency code format', code: 'INVALID_CODE_FORMAT' }
+        });
+      }
+
+      const cacheKey = competenciesService.generateItemCacheKey(code);
+      
+      // Try Redis cache first
+      let competency;
+      try {
+        const cached = await fastify.redis.get(cacheKey);
+        if (cached) {
+          competency = JSON.parse(cached);
+          return reply.send({ success: true, data: competency, cached: true });
+        }
+      } catch (redisError) {
+        fastify.log.warn('Redis cache miss or error');
+      }
+
+      // Get competency using service
+      competency = await competenciesService.getCompetencyWithContent(fastify.db, code);
+
+      if (!competency) {
+        return reply.status(404).send({
+          success: false,
+          error: { message: 'Competency not found', code: 'COMPETENCY_NOT_FOUND' }
+        });
+      }
+
+      // Cache for 5 minutes
+      try {
+        await fastify.redis.setex(cacheKey, 300, JSON.stringify(competency));
+      } catch (redisError) {
+        fastify.log.warn('Redis cache set error');
+      }
+
+      reply.send({ success: true, data: competency, cached: false });
+    } catch (error) {
+      fastify.log.error('Error getting competency');
+      reply.status(500).send({
+        success: false,
+        error: { message: 'Failed to get competency', code: 'COMPETENCY_GET_ERROR' }
+      });
+    }
+  });
   // GET /api/competences/:code/prerequisites - Get prerequisites for a competence
   fastify.get('/:code/prerequisites', {
     schema: {

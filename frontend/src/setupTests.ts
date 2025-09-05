@@ -15,11 +15,16 @@ import '@testing-library/jest-dom';
 
 // Mock IntersectionObserver (used by some UI libraries)
 global.IntersectionObserver = class IntersectionObserver {
+  root = null;
+  rootMargin = '';
+  thresholds = [];
+  
   constructor() {}
   observe() { return null; }
   disconnect() { return null; }
   unobserve() { return null; }
-};
+  takeRecords() { return []; }
+} as any;
 
 // Mock ResizeObserver (used by some UI libraries)
 global.ResizeObserver = class ResizeObserver {
@@ -137,7 +142,7 @@ HTMLCanvasElement.prototype.getContext = jest.fn((contextType) => {
     return mockWebGLContext;
   }
   return null;
-});
+}) as any;
 
 // =============================================================================
 // WEB AUDIO API MOCKS
@@ -158,7 +163,7 @@ const mockAudioContext = {
   currentTime: 0,
 };
 
-global.AudioContext = jest.fn(() => mockAudioContext);
+global.AudioContext = jest.fn(() => mockAudioContext) as any;
 // @ts-ignore
 global.webkitAudioContext = jest.fn(() => mockAudioContext);
 

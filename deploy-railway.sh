@@ -25,3 +25,4 @@ railway up
 
 echo "✅ Deployment complete!"
 echo "🌐 Your app will be available at: https://diamond-backend-production.up.railway.app"
+
