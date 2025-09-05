@@ -7,8 +7,8 @@ import * as bcrypt from 'bcrypt';
 import { db } from '../db/connection';
 import { students } from '../db/schema';
 import { eq, and, lt, gt } from 'drizzle-orm';
-import * as jwt from 'jsonwebtoken';
 import * as crypto from 'crypto';
+import { logger } from '../utils/logger';
 
 interface LoginCredentials {
   email?: string;
@@ -17,11 +17,10 @@ interface LoginCredentials {
   password: string;
 }
 
+// This will now return the student object on success, not tokens
 interface AuthResult {
   success: boolean;
   student?: any;
-  token?: string;
-  refreshToken?: string;
   error?: string;
   lockoutInfo?: {
     isLocked: boolean;
@@ -39,28 +38,24 @@ interface RegisterData {
   niveauActuel: string;
 }
 
+// Converted to an injectable class (no more 'static')
 export class AuthService {
-  private static readonly SALT_ROUNDS = 12;
-  private static readonly MAX_LOGIN_ATTEMPTS = 5;
-  private static readonly LOCKOUT_DURATION = 15 * 60 * 1000; // 15 minutes
-  private static readonly JWT_EXPIRES_IN = '15m';
-  private static readonly REFRESH_TOKEN_EXPIRES_IN = '7d';
+  private readonly SALT_ROUNDS = 12;
+  private readonly MAX_LOGIN_ATTEMPTS = 5;
+  private readonly LOCKOUT_DURATION = 15 * 60 * 1000; // 15 minutes
 
   /**
    * Hash password using bcrypt with secure salt rounds
    */
-  static async hashPassword(password: string): Promise<string> {
-    if (!password || password.length < 6) {
-      throw new Error('Password must be at least 6 characters long');
-    }
-
+  async hashPassword(password: string): Promise<string> {
+    // Password policy will be enforced by Zod schema at the route level
     return await bcrypt.hash(password, this.SALT_ROUNDS);
   }
 
   /**
    * Verify password against hash
    */
-  static async verifyPassword(password: string, hash: string): Promise<boolean> {
+  async verifyPassword(password: string, hash: string): Promise<boolean> {
     if (!password || !hash) {
       return false;
     }
@@ -69,50 +64,9 @@ export class AuthService {
   }
 
   /**
-   * Generate secure JWT tokens
-   */
-  static generateTokens(studentId: number, email: string) {
-    const jwtSecret = process.env.JWT_SECRET;
-    const refreshSecret = process.env.JWT_REFRESH_SECRET || jwtSecret + '_refresh';
-
-    if (!jwtSecret) {
-      throw new Error('JWT_SECRET not configured');
-    }
-
-    const payload = {
-      studentId,
-      email,
-      type: 'access'
-    };
-
-    const refreshPayload = {
-      studentId,
-      email,
-      type: 'refresh',
-      tokenId: crypto.randomUUID()
-    };
-
-    const accessToken = jwt.sign(payload, jwtSecret, {
-      expiresIn: this.JWT_EXPIRES_IN,
-      algorithm: 'HS256',
-      issuer: 'reved-kids',
-      audience: 'reved-kids-app'
-    });
-
-    const refreshToken = jwt.sign(refreshPayload, refreshSecret, {
-      expiresIn: this.REFRESH_TOKEN_EXPIRES_IN,
-      algorithm: 'HS256',
-      issuer: 'reved-kids',
-      audience: 'reved-kids-app'
-    });
-
-    return { accessToken, refreshToken };
-  }
-
-  /**
    * Check if account is locked
    */
-  static async isAccountLocked(studentId: number): Promise<boolean> {
+  async isAccountLocked(studentId: number): Promise<boolean> {
     const student = await db.select()
       .from(students)
       .where(eq(students.id, studentId))
@@ -129,7 +83,7 @@ export class AuthService {
   /**
    * Lock account after failed attempts
    */
-  static async lockAccount(studentId: number): Promise<void> {
+  async lockAccount(studentId: number): Promise<void> {
     const lockUntil = new Date(Date.now() + this.LOCKOUT_DURATION);
     
     await db.update(students)
@@ -143,7 +97,7 @@ export class AuthService {
   /**
    * Increment failed login attempts
    */
-  static async incrementFailedAttempts(studentId: number): Promise<number> {
+  async incrementFailedAttempts(studentId: number): Promise<number> {
     const student = await db.select()
       .from(students)
       .where(eq(students.id, studentId))
@@ -168,7 +122,7 @@ export class AuthService {
   /**
    * Reset failed login attempts on successful login
    */
-  static async resetFailedAttempts(studentId: number): Promise<void> {
+  async resetFailedAttempts(studentId: number): Promise<void> {
     await db.update(students)
       .set({
         failedLoginAttempts: 0,
@@ -180,7 +134,7 @@ export class AuthService {
   /**
    * Register new student with secure password
    */
-  static async registerStudent(data: RegisterData): Promise<AuthResult> {
+  async registerStudent(data: RegisterData): Promise<AuthResult> {
     try {
       // Check if email already exists
       const existingStudent = await db.select()
@@ -195,36 +149,26 @@ export class AuthService {
         };
       }
 
-      // Validate password strength
-      if (data.password.length < 6) {
-        return {
-          success: false,
-          error: 'Le mot de passe doit contenir au moins 6 caractères'
-        };
-      }
-
       // Hash password
       const passwordHash = await this.hashPassword(data.password);
 
       // Create student
-      const newStudent = await db.insert(students).values({
+      const newStudentResult = await db.insert(students).values({
         prenom: data.prenom,
         nom: data.nom,
         email: data.email,
         passwordHash,
         dateNaissance: new Date(data.dateNaissance),
         niveauActuel: data.niveauActuel,
-        niveauScolaire: data.niveauActuel, // Add required field
+        niveauScolaire: data.niveauActuel,
         totalPoints: 0,
         serieJours: 0,
         mascotteType: 'dragon'
       });
 
-      const studentId = newStudent[0].insertId as number;
+      const studentId = newStudentResult[0].insertId;
 
-      // Generate tokens
-      const { accessToken, refreshToken } = this.generateTokens(studentId, data.email);
-
+      // The service now returns the student data, not tokens.
       return {
         success: true,
         student: {
@@ -233,13 +177,11 @@ export class AuthService {
           nom: data.nom,
           email: data.email,
           niveauActuel: data.niveauActuel
-        },
-        token: accessToken,
-        refreshToken
+        }
       };
 
     } catch (error) {
-      console.error('Registration error:', error);
+      logger.error('Registration error:', error);
       return {
         success: false,
         error: 'Erreur lors de la création du compte'
@@ -250,7 +192,7 @@ export class AuthService {
   /**
    * Authenticate student with secure password verification
    */
-  static async authenticateStudent(credentials: LoginCredentials): Promise<AuthResult> {
+  async authenticateStudent(credentials: LoginCredentials): Promise<AuthResult> {
     try {
       let student;
 
@@ -333,9 +275,7 @@ export class AuthService {
         })
         .where(eq(students.id, student.id));
 
-      // Generate tokens
-      const { accessToken, refreshToken } = this.generateTokens(student.id, student.email || '');
-
+      // The service now returns the full student object. Token generation is moved to the route.
       return {
         success: true,
         student: {
@@ -347,13 +287,11 @@ export class AuthService {
           totalPoints: student.totalPoints,
           serieJours: student.serieJours,
           mascotteType: student.mascotteType
-        },
-        token: accessToken,
-        refreshToken
+        }
       };
 
     } catch (error) {
-      console.error('Authentication error:', error);
+      logger.error('Authentication error:', error);
       return {
         success: false,
         error: 'Erreur d\'authentification'
@@ -364,7 +302,7 @@ export class AuthService {
   /**
    * Logout student
    */
-  static async logoutStudent(studentId: number): Promise<void> {
+  async logoutStudent(studentId: number): Promise<void> {
     await db.update(students)
       .set({ estConnecte: false })
       .where(eq(students.id, studentId));
@@ -373,7 +311,7 @@ export class AuthService {
   /**
    * Generate password reset token
    */
-  static async generatePasswordResetToken(email: string): Promise<string | null> {
+  async generatePasswordResetToken(email: string): Promise<string | null> {
     const student = await db.select()
       .from(students)
       .where(eq(students.email, email))
@@ -399,7 +337,7 @@ export class AuthService {
   /**
    * Reset password using token
    */
-  static async resetPassword(token: string, newPassword: string): Promise<boolean> {
+  async resetPassword(token: string, newPassword: string): Promise<boolean> {
     const student = await db.select()
       .from(students)
       .where(
@@ -427,55 +365,5 @@ export class AuthService {
       .where(eq(students.id, student[0].id));
 
     return true;
-  }
-
-  /**
-   * Verify JWT token
-   */
-  static verifyToken(token: string): any {
-    const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) {
-      throw new Error('JWT_SECRET not configured');
-    }
-
-    return jwt.verify(token, jwtSecret, {
-      algorithms: ['HS256'],
-      issuer: 'reved-kids',
-      audience: 'reved-kids-app'
-    });
-  }
-
-  /**
-   * Refresh access token
-   */
-  static refreshAccessToken(refreshToken: string): string | null {
-    try {
-      const refreshSecret = process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET + '_refresh';
-      const payload = jwt.verify(refreshToken, refreshSecret, {
-        algorithms: ['HS256'],
-        issuer: 'reved-kids',
-        audience: 'reved-kids-app'
-      }) as any;
-
-      if (payload.type !== 'refresh') {
-        return null;
-      }
-
-      const newPayload = {
-        studentId: payload.studentId,
-        email: payload.email,
-        type: 'access'
-      };
-
-      return jwt.sign(newPayload, process.env.JWT_SECRET!, {
-        expiresIn: this.JWT_EXPIRES_IN,
-        algorithm: 'HS256',
-        issuer: 'reved-kids',
-        audience: 'reved-kids-app'
-      });
-
-    } catch (error) {
-      return null;
-    }
   }
 }

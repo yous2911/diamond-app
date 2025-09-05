@@ -103,80 +103,8 @@ const authPlugin = async (fastify: any) => {
 
   // Token refresh endpoint is handled in routes/auth.ts to avoid duplication
 
-  // Add authentication hooks for protected routes
-  fastify.addHook('preHandler', async (request: any, reply: any) => {
-    // Skip auth for public routes
-    const publicRoutes = [
-      '/api/auth/login',
-      '/api/auth/register', 
-      '/api/auth/refresh',
-      '/api/auth/password-reset',
-      '/api/auth/password-reset/confirm',
-      '/api/health',
-      '/api/metrics',
-      '/docs'
-    ];
-
-    // Skip auth for static files and Swagger UI
-    if (request.url.startsWith('/static/') || 
-        request.url.startsWith('/assets/') ||
-        request.url.startsWith('/documentation') ||
-        publicRoutes.some(route => request.url.startsWith(route))) {
-      return;
-    }
-
-    // Apply rate limiting to auth routes
-    if (request.url.startsWith('/api/auth/')) {
-      await authRateLimitMiddleware(request, reply);
-    }
-
-    // Auto-refresh expired access tokens
-    if (request.url.startsWith('/api/')) {
-      const accessToken = request.cookies['access-token'];
-      const refreshToken = request.cookies['refresh-token'];
-
-      if (!accessToken && refreshToken) {
-        // Try to refresh token automatically
-        try {
-          const decoded = await fastify.refreshJwt.verify(refreshToken);
-          if (decoded.type === 'refresh') {
-            const newAccessToken = await fastify.jwt.sign({
-              studentId: decoded.studentId,
-              email: decoded.email,
-              type: 'access'
-            });
-
-            // Set new access token cookie
-            reply.setCookie('access-token', newAccessToken, {
-              httpOnly: true,
-              secure: cookieConfig.secure,
-              sameSite: cookieConfig.sameSite,
-              maxAge: 15 * 60 * 1000,
-              path: '/',
-              signed: true
-            });
-
-            // Add user to request context
-            request.user = {
-              studentId: decoded.studentId,
-              email: decoded.email
-            };
-
-            logger.debug('Auto-refreshed access token', { 
-              studentId: decoded.studentId 
-            });
-          }
-        } catch (error) {
-          // Refresh failed, clear cookies
-          fastify.clearAuthCookies(reply);
-        }
-      }
-    }
-  });
-
-  // Add logout endpoint
-  // REMOVED: This route is now handled in ./routes/auth.ts
-  // fastify.post('/api/auth/logout', { ... });
+  // The preHandler hook for auto-refreshing tokens has been removed.
+  // Client-side should handle 401 responses and call the /refresh endpoint explicitly.
 
   (fastify.log as any).info('✅ Enhanced auth plugin registered with secure cookies and refresh tokens');
 };
