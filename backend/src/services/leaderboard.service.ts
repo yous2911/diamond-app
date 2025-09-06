@@ -362,7 +362,7 @@ export class LeaderboardService {
         .where(and(
           eq(leaderboards.type, type),
           eq(leaderboards.category, category),
-          period ? eq(leaderboards.period, period) : sql`1=1`
+          period ? eq(leaderboards.period, period) : undefined
         ));
 
       const previousRanks = new Map(
@@ -375,7 +375,7 @@ export class LeaderboardService {
         .where(and(
           eq(leaderboards.type, type),
           eq(leaderboards.category, category),
-          period ? eq(leaderboards.period, period) : sql`1=1`
+          period ? eq(leaderboards.period, period) : undefined
         ));
 
       // Insert new rankings
@@ -486,10 +486,10 @@ export class LeaderboardService {
       // Get progress stats
       const progressStats = await db
         .select({
-          totalExercises: sql`COUNT(*)`,
-          completedExercises: sql`SUM(CASE WHEN completed = 1 THEN 1 ELSE 0 END)`,
-          averageScore: sql`AVG(averageScore)`,
-          totalTimeSpent: sql`SUM(totalTimeSpent)`
+          totalExercises: count(),
+          completedExercises: sql<number>`SUM(CASE WHEN completed = 1 THEN 1 ELSE 0 END)`.mapWith(Number),
+          averageScore: avg(studentProgress.score),
+          totalTimeSpent: sum(studentProgress.timeSpent)
         })
         .from(studentProgress)
         .where(eq(studentProgress.studentId, studentId));
@@ -813,8 +813,8 @@ export class LeaderboardService {
    */
   async getNearbyCompetitors(
     studentId: number,
-    type: string = 'global',
-    category: string = 'points',
+    type: 'global' | 'class' | 'weekly' | 'monthly' = 'global',
+    category: 'points' | 'streak' | 'exercises' | 'accuracy' = 'points',
     range: number = 5
   ): Promise<LeaderboardEntry[]> {
     
@@ -825,7 +825,7 @@ export class LeaderboardService {
       const startRank = Math.max(1, studentRank.rank - range);
       const endRank = studentRank.rank + range;
 
-      const { entries } = await this.getLeaderboard(type as any, category as any, {
+      const { entries } = await this.getLeaderboard(type, category, {
         studentId
       });
 

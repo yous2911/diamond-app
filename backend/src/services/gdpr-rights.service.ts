@@ -4,6 +4,10 @@ import { logger } from '../utils/logger';
 import { AuditTrailService } from './audit-trail.service';
 import { EncryptionService } from './encryption.service';
 import { EmailService } from './email.service';
+import { db } from '../db/connection';
+import { gdprRequests, students } from '../db/schema';
+import { eq, and, desc, asc, sql, count, sum, avg, between, gte, lte, inArray } from 'drizzle-orm';
+
 
 // Validation schemas
 const GDPRRequestSchema = z.object({
@@ -173,7 +177,7 @@ export class GDPRRightsService {
         entityType: 'gdpr_request',
         entityId: requestId,
         action: 'create',
-        userId: null,
+        userId: undefined,
         studentId: validatedData.studentId,
         details: {
           requestType: validatedData.requestType,
@@ -257,7 +261,7 @@ export class GDPRRightsService {
         entityType: 'gdpr_request',
         entityId: requestId,
         action: 'verified',
-        userId: null,
+        userId: undefined,
         details: {
           verificationToken,
           verifiedAt: new Date()
@@ -315,7 +319,7 @@ export class GDPRRightsService {
         entityType: 'gdpr_request',
         entityId: requestId,
         action: 'completed',
-        userId: null,
+        userId: undefined,
         studentId: request.studentId,
         details: {
           requestType: 'access',
@@ -393,7 +397,7 @@ export class GDPRRightsService {
         entityType: 'gdpr_request',
         entityId: requestId,
         action: 'completed',
-        userId: null,
+        userId: undefined,
         studentId: request.studentId,
         details: {
           requestType: 'erasure',
@@ -470,7 +474,7 @@ export class GDPRRightsService {
         entityType: 'gdpr_request',
         entityId: requestId,
         action: 'completed',
-        userId: null,
+        userId: undefined,
         studentId: request.studentId,
         details: {
           requestType: 'portability',

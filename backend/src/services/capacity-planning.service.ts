@@ -10,6 +10,8 @@ import { performanceBenchmarkService } from './performance-benchmark.service';
 import { promises as fs } from 'fs';
 import { join } from 'path';
 import cron from 'node-cron';
+import os from 'os';
+import { RowDataPacket } from 'mysql2';
 
 interface CapacityMetrics {
   timestamp: Date;
@@ -463,14 +465,14 @@ class CapacityPlanningService {
       WHERE table_schema = DATABASE()
     `);
 
-    const [rowCountRows] = await connection.execute(`
+    const [rowCountRows] = await connection.execute<RowDataPacket[]>(`
       SELECT SUM(table_rows) as total_rows
       FROM information_schema.tables 
       WHERE table_schema = DATABASE() AND table_type = 'BASE TABLE'
     `);
 
-    const sizeData = (sizeRows as any[])[0];
-    const rowData = (rowCountRows as any[])[0];
+    const sizeData = sizeRows[0];
+    const rowData = rowCountRows[0];
 
     // Calculate growth rate from historical data
     const growthRate = this.calculateDatabaseGrowthRate();
@@ -493,7 +495,7 @@ class CapacityPlanningService {
       FROM students
     `);
 
-    const userData = (userRows as any[])[0];
+    const userData = userRows[0];
     const userGrowthRate = this.calculateUserGrowthRate();
 
     return {
@@ -521,7 +523,6 @@ class CapacityPlanningService {
     }
 
     // Get system metrics
-    const os = require('os');
     const cpuUsage = this.getCpuUsage();
     const memoryUsage = ((os.totalmem() - os.freemem()) / os.totalmem()) * 100;
 
@@ -535,7 +536,6 @@ class CapacityPlanningService {
   }
 
   private async getSystemMetrics(): Promise<any> {
-    const os = require('os');
     return {
       totalMemory: os.totalmem(),
       freeMemory: os.freemem(),
@@ -576,15 +576,14 @@ class CapacityPlanningService {
 
   private getCpuUsage(): number {
     // Simplified CPU usage calculation
-    const os = require('os');
     const cpus = os.cpus();
     
     let totalIdle = 0;
     let totalTick = 0;
     
-    cpus.forEach((cpu: any) => {
+    cpus.forEach((cpu) => {
       for (const type in cpu.times) {
-        totalTick += cpu.times[type];
+        totalTick += cpu.times[type as keyof NodeJS.CpuUsage];
       }
       totalIdle += cpu.times.idle;
     });

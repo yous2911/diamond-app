@@ -5,6 +5,7 @@ import { AuditTrailService } from './audit-trail.service';
 import { DataAnonymizationService } from './data-anonymization.service';
 import { EmailService } from './email.service';
 import { db } from '../db/connection';
+import { like } from 'drizzle-orm';
 import { 
   students, 
   studentProgress, 
@@ -154,7 +155,7 @@ export class DataRetentionService {
         entityType: 'retention_policy',
         entityId: policyId,
         action: 'create',
-        userId: null,
+        userId: undefined,
         details: {
           policyName: validatedData.policyName,
           entityType: validatedData.entityType,
@@ -216,7 +217,7 @@ export class DataRetentionService {
             entityType: 'retention_policy',
             entityId: policy.id,
             action: 'failed',
-            userId: null,
+            userId: undefined,
             details: {
               policyName: policy.policyName,
               error: error instanceof Error ? error.message : 'Unknown error'
@@ -232,7 +233,7 @@ export class DataRetentionService {
         entityType: 'retention_execution',
         entityId: crypto.randomUUID(),
         action: 'completed',
-        userId: null,
+        userId: undefined,
         details: {
           policiesExecuted,
           recordsProcessed,
@@ -295,7 +296,7 @@ export class DataRetentionService {
             entityType: 'retention_execution' as const,
             entityId: entity.id,
             action: 'data_retention_applied',
-            userId: null,
+            userId: undefined,
             details: {
               policyId: policy.id,
               policyName: policy.policyName,
@@ -384,7 +385,7 @@ export class DataRetentionService {
         entityType: 'retention_schedule',
         entityId: scheduleId,
         action: 'create',
-        userId: null,
+        userId: undefined,
         details: {
           targetEntityType: validatedData.entityType,
           targetEntityId: validatedData.entityId,
@@ -451,7 +452,7 @@ export class DataRetentionService {
         entityType: 'retention_report',
         entityId: reportId,
         action: 'create',
-        userId: null,
+        userId: undefined,
         details: {
           period: { startDate, endDate },
           policiesExecuted: executedPolicies.length,
@@ -677,20 +678,12 @@ export class DataRetentionService {
   private async savePolicyToDatabase(policy: RetentionPolicy): Promise<void> {
     try {
       await db.transaction(async (tx) => {
-        await (tx.insert(retentionPolicies) as any).values({
+        await tx.insert(retentionPolicies).values({
           id: policy.id.toString(),
           policyName: policy.policyName,
           entityType: policy.entityType,
           retentionPeriodDays: policy.retentionPeriodDays,
-          triggerCondition: policy.triggerCondition,
-          action: policy.action,
-          priority: policy.priority,
           active: policy.active,
-          legalBasis: policy.legalBasis,
-          exceptions: policy.exceptions,
-          notificationDays: policy.notificationDays,
-          lastExecuted: policy.lastExecuted,
-          recordsProcessed: policy.recordsProcessed
         });
       });
 
@@ -712,13 +705,10 @@ export class DataRetentionService {
           .set({
             policyName: policy.policyName,
             retentionPeriodDays: policy.retentionPeriodDays,
-            triggerCondition: policy.triggerCondition,
-            action: policy.action,
-            priority: policy.priority as any,
             active: policy.active,
             updatedAt: new Date()
-          } as any)
-          .where(eq(retentionPolicies.id, policy.id.toString() as any));
+          })
+          .where(eq(retentionPolicies.id, policy.id.toString()));
       });
 
       logger.debug('Retention policy updated in database', { policyId: policy.id });
@@ -734,18 +724,12 @@ export class DataRetentionService {
   private async saveScheduleToDatabase(schedule: RetentionSchedule): Promise<void> {
     try {
       await db.transaction(async (tx) => {
-        await (tx.insert(retentionSchedules) as any).values({
+        await tx.insert(retentionSchedules).values({
           id: schedule.id.toString(),
           entityType: schedule.entityType,
           entityId: schedule.entityId,
-          policyId: schedule.policyId,
           scheduledDate: schedule.scheduledDate,
           action: schedule.action,
-          priority: schedule.priority,
-          notificationSent: schedule.notificationSent,
-          completed: schedule.completed,
-          completedAt: schedule.completedAt,
-          errors: schedule.errors
         });
       });
 
@@ -921,7 +905,7 @@ export class DataRetentionService {
         entityType: 'retention_report',
         entityId: entity.id,
         action: 'create',
-        userId: null,
+        userId: undefined,
         details: {
           notificationType: 'retention_warning',
           policyId: policy.id,
@@ -994,7 +978,7 @@ export class DataRetentionService {
             break;
 
           case 'consent':
-            await tx.delete(gdprConsentRequests).where(eq(gdprConsentRequests.id, entity.id));
+            await tx.delete(gdprConsentRequests).where(eq(gdprConsentRequests.id, parseInt(entity.id)));
             break;
         }
       });
@@ -1004,7 +988,7 @@ export class DataRetentionService {
         entityType: entity.type as any,
         entityId: entity.id,
         action: 'delete',
-        userId: null,
+        userId: undefined,
         details: {
           reason: 'retention_policy',
           policyId: policy.id,
@@ -1057,7 +1041,7 @@ export class DataRetentionService {
         entityType: entity.type as any,
         entityId: entity.id,
         action: 'anonymize',
-        userId: null,
+        userId: undefined,
         details: {
           reason: 'retention_policy',
           policyId: policy.id,

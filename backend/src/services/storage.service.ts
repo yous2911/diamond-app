@@ -35,15 +35,13 @@ export class StorageService {
         await tx.insert(files).values({
           id: newFileId,
           originalName: file.originalName,
-          fileName: file.originalName,
+          fileName: file.filename,
           filePath: file.path,
           fileSize: file.size,
-          size: file.size,
-          path: file.path,
           mimeType: file.mimetype,
           url: file.url,
           thumbnailUrl: file.thumbnailUrl,
-          metadata: JSON.stringify(file.metadata),
+          metadata: file.metadata,
           uploadedBy: file.uploadedBy,
           uploadedAt: file.uploadedAt instanceof Date ? file.uploadedAt : new Date(file.uploadedAt),
           category: file.category,
@@ -62,13 +60,10 @@ export class StorageService {
             filePath: variant.path,
             fileSize: variant.size,
             fileId: newFileId,
-            path: variant.path,
-            type: variant.type,
             filename: variant.filename,
             url: variant.url,
-            size: variant.size,
             mimetype: variant.mimetype,
-            metadata: JSON.stringify(variant.metadata)
+            metadata: variant.metadata
           }));
 
           await tx.insert(fileVariants).values(variantValues);
@@ -108,32 +103,32 @@ export class StorageService {
         .where(eq(fileVariants.fileId, fileId));
 
       const processedVariants: ProcessedVariant[] = variants.map(variant => ({
-        id: variant.id.toString(),
-        type: variant.type as any,
+        id: variant.id,
+        type: variant.type as VariantType,
         filename: variant.filename,
         path: variant.path,
         url: variant.url,
         size: variant.size,
         mimetype: variant.mimetype,
-        metadata: JSON.parse((variant.metadata as any) || '{}'),
+        metadata: (variant.metadata || '{}') as FileMetadata,
         createdAt: new Date(variant.createdAt)
       }));
 
       return {
-        id: (file.id as any).toString(),
-        originalName: file.fileName,
+        id: file.id,
+        originalName: file.originalName,
         filename: file.fileName,
         mimetype: file.mimeType,
         size: file.size,
         path: file.path,
         url: file.url,
         thumbnailUrl: file.thumbnailUrl || undefined,
-        metadata: JSON.parse((file.metadata as any) || '{}'),
+        metadata: (file.metadata || '{}') as FileMetadata,
         uploadedBy: file.uploadedBy,
         uploadedAt: new Date(file.uploadedAt),
         category: file.category as FileCategory,
         isPublic: file.isPublic,
-        status: file.status as any,
+        status: file.status as FileStatus,
         checksum: file.checksum,
         processedVariants
       };
@@ -292,9 +287,11 @@ export class StorageService {
         .where(eq(files.status, 'ready'))
         .groupBy(files.category);
 
-      const categorySizes: Record<FileCategory, number> = {} as any;
+      const categorySizes: Record<string, number> = {};
       for (const stat of categoryStats) {
-        categorySizes[stat.category as FileCategory] = stat.size;
+        if(stat.category) {
+          categorySizes[stat.category] = stat.size;
+        }
       }
 
       // Get recent uploads

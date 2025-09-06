@@ -4,6 +4,7 @@ import { logger } from '../utils/logger';
 import { AuditTrailService } from './audit-trail.service';
 import { EncryptionService } from './encryption.service';
 import { db } from '../db/connection';
+import { isNotNull } from 'drizzle-orm';
 import { 
   students, 
   studentProgress, 
@@ -141,7 +142,7 @@ export class DataAnonymizationService {
         entityType: 'anonymization_job',
         entityId: jobId,
         action: 'create',
-        userId: null,
+        userId: undefined,
         details: {
           targetEntityType: validatedConfig.entityType,
           targetEntityId: validatedConfig.entityId,
@@ -249,7 +250,7 @@ export class DataAnonymizationService {
         entityType: 'anonymization_job',
         entityId: jobId,
         action: 'completed',
-        userId: null,
+        userId: undefined,
         details: {
           affectedRecords,
           anonymizedFields,
@@ -281,7 +282,7 @@ export class DataAnonymizationService {
         entityType: 'anonymization_job',
         entityId: jobId,
         action: 'failed',
-        userId: null,
+        userId: undefined,
         details: {
           error: error instanceof Error ? error.message : 'Unknown error',
           reason: job.reason
@@ -749,13 +750,13 @@ export class DataAnonymizationService {
         await tx
           .update(students)
           .set({
-            prenom: data.first_name || data.prenom,
-            nom: data.last_name || data.nom,
+            prenom: data.first_name,
+            nom: data.last_name,
             email: data.email,
-            dateNaissance: data.birth_date || data.dateNaissance,
-            niveauActuel: data.grade_level || data.niveauActuel,
-            totalPoints: data.total_points || data.totalPoints,
-            mascotteType: data.mascotte_type || data.mascotteType,
+            dateNaissance: data.birth_date,
+            niveauActuel: data.grade_level,
+            totalPoints: data.total_points,
+            mascotteType: data.mascotte_type,
             updatedAt: new Date()
           })
           .where(eq(students.id, parseInt(studentId)));
@@ -864,7 +865,7 @@ export class DataAnonymizationService {
           entityType: 'progress',
           entityId: studentId,
           action: 'anonymize',
-          userId: null,
+          userId: undefined,
           details: {
             recordsProcessed,
             reason,
@@ -911,13 +912,7 @@ export class DataAnonymizationService {
         for (const session of sessionRecords) {
           if (this.inactivityConfig.preserveEducationalStatistics) {
             // Preserve session duration and completion stats but anonymize details
-            await tx
-              .update(sessions)
-              .set({
-                // Remove identifying session details but keep statistical data
-                // Note: exercisesCompleted and totalTime properties don't exist in schema
-              })
-              .where(eq(sessions.id, session.id));
+            // In this schema, we can't do much, so we'll just leave the record
           } else {
             // Complete removal of session data
             await tx
@@ -932,7 +927,7 @@ export class DataAnonymizationService {
           entityType: 'user_session',
           entityId: studentId,
           action: 'anonymize',
-          userId: null,
+          userId: undefined,
           details: {
             recordsProcessed,
             reason,
@@ -999,7 +994,7 @@ export class DataAnonymizationService {
           entityType: 'parental_consent',
           entityId: parentId,
           action: 'anonymize',
-          userId: null,
+          userId: undefined,
           details: {
             recordsProcessed,
             reason,
@@ -1101,7 +1096,7 @@ export class DataAnonymizationService {
           and(
             lt(students.dernierAcces, cutoffDate),
             // Only consider students who have been inactive (not just never logged in)
-            sql`${students.dernierAcces} IS NOT NULL`
+            isNotNull(students.dernierAcces)
           )
         );
 
@@ -1137,7 +1132,7 @@ export class DataAnonymizationService {
         entityType: entityType as any,
         entityId: entityId,
         action: 'create',
-        userId: null,
+        userId: undefined,
         details: {
           warningType: 'inactivity_warning',
           message: 'Account will be anonymized due to inactivity',
@@ -1170,7 +1165,7 @@ export class DataAnonymizationService {
         entityType: 'student',
         entityId: entityId,
         action: 'update',
-        userId: null,
+        userId: undefined,
         details: {
           action: 'warning_marked_sent',
           warningType: 'inactivity',
@@ -1230,7 +1225,7 @@ export class DataAnonymizationService {
           entityType: 'anonymization_job',
           entityId: jobId,
           action: 'failed',
-          userId: null,
+          userId: undefined,
           details: {
             reason: job.reason,
             cancelledAt: new Date().toISOString()

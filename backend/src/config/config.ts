@@ -161,13 +161,13 @@ const configSchema = z.object({
 // Directly parse the environment. If it fails, the app will crash. This is what we want.
 const config = configSchema.parse(process.env);
 
-// Now, call your validation function to perform production-specific checks.
-validateEnvironment();
-
 // Environment helpers
 export const isDevelopment = config.NODE_ENV === 'development';
 export const isProduction = config.NODE_ENV === 'production';
 export const isTest = config.NODE_ENV === 'test';
+
+// Now, call your validation function to perform production-specific checks.
+validateEnvironment();
 
 // Database configuration for Drizzle
 export const dbConfig = {

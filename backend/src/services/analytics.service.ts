@@ -143,41 +143,40 @@ class AnalyticsService {
       const topStudents = await this.db
         .select({
           studentId: studentProgress.studentId,
-          completionRate: sql<number>`(COUNT(CASE WHEN ${studentProgress.completed} THEN 1 END) * 100.0 / COUNT(*))`,
-          averageScore: avg(sql<number>`CAST(${studentProgress.score} AS DECIMAL(5,2))`),
-          totalXP: sum(sql<number>`COALESCE(SUM(10), 0)`)
+          completionRate: sql<number>`(SUM(CASE WHEN ${studentProgress.completed} THEN 1 ELSE 0 END) * 100.0 / COUNT(*))`,
+          averageScore: avg(studentProgress.score),
+          totalXP: sum(exercises.xp)
         })
         .from(studentProgress)
+        .leftJoin(exercises, eq(studentProgress.exerciseId, exercises.id))
         .where(gte(studentProgress.createdAt, startDate))
         .groupBy(studentProgress.studentId)
-        .having(sql`COUNT(*) >= 5`)
-        .orderBy(desc(sql`(COUNT(CASE WHEN ${studentProgress.completed} THEN 1 END) * 100.0 / COUNT(*))`))
+        .having(gt(count(), 4))
+        .orderBy(desc(sql<number>`(SUM(CASE WHEN ${studentProgress.completed} THEN 1 ELSE 0 END) * 100.0 / COUNT(*))`))
         .limit(10);
 
-      // Get student details for top performers
-      const topPerformingStudents = await Promise.all(
-        topStudents.map(async (student) => {
-          const [studentDetails] = await this.db
-            .select()
-            .from(students)
-            .where(eq(students.id, student.studentId));
+      const topStudentIds = topStudents.map(s => s.studentId);
+      const topStudentDetails = await this.db.select().from(students).where(inArray(students.id, topStudentIds));
+      const studentMap = new Map(topStudentDetails.map(s => [s.id, s]));
 
-          return {
-            student: studentDetails,
-            completionRate: Number(student.completionRate) || 0,
-            averageScore: Number(student.averageScore) || 0,
-            totalXP: Number(student.totalXP) || 0
-          };
-        })
-      );
+      // Get student details for top performers
+      const topPerformingStudents = topStudents.map(student => {
+        const studentDetails = studentMap.get(student.studentId);
+        return {
+          student: studentDetails,
+          completionRate: Number(student.completionRate) || 0,
+          averageScore: Number(student.averageScore) || 0,
+          totalXP: Number(student.totalXP) || 0
+        };
+      });
 
       // Subject analysis
       const subjectAnalysis = await this.db
         .select({
           subject: exercises.matiere,
           exerciseCount: count(),
-          averageScore: avg(sql<number>`CAST(${studentProgress.score} AS DECIMAL(5,2))`),
-          completionRate: sql<number>`(COUNT(CASE WHEN ${studentProgress.completed} THEN 1 END) * 100.0 / COUNT(*))`
+          averageScore: avg(studentProgress.score),
+          completionRate: sql<number>`(SUM(CASE WHEN ${studentProgress.completed} THEN 1 ELSE 0 END) * 100.0 / COUNT(*))`
         })
         .from(exercises)
         .leftJoin(studentProgress, eq(exercises.id, studentProgress.exerciseId))
@@ -189,7 +188,7 @@ class AnalyticsService {
         .select({
           difficulty: exercises.difficulte,
           exerciseCount: count(),
-          averageScore: avg(sql<number>`CAST(${studentProgress.score} AS DECIMAL(5,2))`),
+          averageScore: avg(studentProgress.score),
           averageTime: avg(studentProgress.timeSpent)
         })
         .from(exercises)
@@ -243,12 +242,13 @@ class AnalyticsService {
       const [progressMetrics] = await this.db
         .select({
           totalExercises: count(),
-          completedExercises: sql<number>`COUNT(CASE WHEN ${studentProgress.completed} THEN 1 END)`,
-          averageScore: avg(sql<number>`CAST(${studentProgress.score} AS DECIMAL(5,2))`),
+          completedExercises: sql<number>`SUM(CASE WHEN ${studentProgress.completed} THEN 1 ELSE 0 END)`,
+          averageScore: avg(studentProgress.score),
           totalTimeSpent: sum(studentProgress.timeSpent),
-          xpEarned: sum(sql<number>`COALESCE(SUM(10), 0)`)
+          xpEarned: sum(exercises.xp)
         })
         .from(studentProgress)
+        .leftJoin(exercises, eq(studentProgress.exerciseId, exercises.id))
         .where(eq(studentProgress.studentId, studentId));
 
       const totalExercises = progressMetrics.totalExercises || 0;
@@ -294,7 +294,7 @@ class AnalyticsService {
         competenceProgress: competenceProgress.map(cp => ({
           competenceCode: cp.competenceCode,
           masteryLevel: cp.masteryLevel,
-          progress: (cp.successfulAttempts / Math.max(cp.totalAttempts, 1)) * 100
+          progress: parseFloat(cp.progressPercent)
         })),
         recentActivity: recentActivity.map(activity => ({
           date: activity.date,
@@ -327,15 +327,15 @@ class AnalyticsService {
       const [dailyMetrics] = await this.db
         .select({
           totalExercises: count(),
-          completedExercises: sql<number>`COUNT(CASE WHEN ${studentProgress.completed} THEN 1 END)`,
+          completedExercises: sql<number>`SUM(CASE WHEN ${studentProgress.completed} THEN 1 ELSE 0 END)`,
           totalTimeMinutes: sql<number>`ROUND(SUM(${studentProgress.timeSpent}) / 60)`,
-          averageScore: avg(sql<number>`CAST(${studentProgress.score} AS DECIMAL(5,2))`),
+          averageScore: avg(studentProgress.score),
           competencesWorked: sql<number>`COUNT(DISTINCT ${studentProgress.competenceCode})`
         })
         .from(studentProgress)
         .where(and(
           eq(studentProgress.studentId, studentId),
-          sql`DATE(${studentProgress.createdAt}) = ${dateStr}`
+          eq(sql`DATE(${studentProgress.createdAt})`, dateStr)
         ));
 
       // Insert or update daily analytics

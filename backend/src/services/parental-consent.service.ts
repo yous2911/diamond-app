@@ -5,6 +5,7 @@ import { EmailService } from './email.service';
 import { AuditTrailService } from './audit-trail.service';
 import { DataAnonymizationService } from './data-anonymization.service';
 import { db } from '../db/connection';
+import { like } from 'drizzle-orm';
 import { gdprConsentRequests, students } from '../db/schema';
 import { eq, and } from 'drizzle-orm';
 
@@ -121,7 +122,7 @@ export class ParentalConsentService {
         entityType: 'parental_consent',
         entityId: consentId,
         action: 'create',
-        userId: null,
+        userId: undefined,
         details: {
           parentEmail: validatedData.parentEmail,
           childName: validatedData.childName,
@@ -189,7 +190,7 @@ export class ParentalConsentService {
         entityType: 'parental_consent',
         entityId: consent.id,
         action: 'first_consent',
-        userId: null,
+        userId: undefined,
         details: {
           parentEmail: consent.parentEmail,
           firstConsentDate: new Date()
@@ -266,7 +267,7 @@ export class ParentalConsentService {
         entityType: 'parental_consent',
         entityId: consent.id,
         action: 'verified',
-        userId: null,
+        userId: undefined,
         details: {
           parentEmail: consent.parentEmail,
           childName: consent.childName,
@@ -327,7 +328,7 @@ export class ParentalConsentService {
         entityType: 'parental_consent',
         entityId: consentId,
         action: 'revoked',
-        userId: null,
+        userId: undefined,
         details: {
           parentEmail,
           reason: reason || 'Révocation par le parent',
@@ -545,7 +546,7 @@ export class ParentalConsentService {
         entityType: 'parental_consent',
         entityId: consent.id,
         action: 'anonymize',
-        userId: null,
+        userId: undefined,
         details: {
           reason: 'consent_revoked',
           childName: consent.childName,
@@ -627,7 +628,7 @@ export class ParentalConsentService {
           entityType: 'parental_consent',
           entityId: consent.id,
           action: 'create',
-          userId: null,
+          userId: undefined,
           details: {
             parentName: consent.parentName,
             parentEmail: consent.parentEmail,
@@ -681,7 +682,7 @@ export class ParentalConsentService {
           entityType: 'parental_consent',
           entityId: id,
           action: 'update',
-          userId: null,
+          userId: undefined,
           details: {
             updates,
             updatedAt: new Date()

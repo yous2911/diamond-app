@@ -20,12 +20,12 @@ import {
   type Exercise,
   type StudentProgress as Progress,
   type StudentCompetenceProgress,
-  competencePrerequisites as CompetencePrerequisite,
+  type CompetencePrerequisite,
   type DailyLearningAnalytics,
   type WeeklyProgressSummary,
   type LearningSessionTracking,
   type ExercisePerformanceAnalytics,
-  type StudentAchievements as StudentAchievement,
+  type StudentAchievement,
   MasteryLevels
 } from '../db/schema';
 import { eq, and, or, desc, asc, sql, count, sum, avg, between, inArray, gte, lte } from 'drizzle-orm';
@@ -186,7 +186,7 @@ class EnhancedDatabaseService {
           .update(studentCompetenceProgress)
           .set({
             masteryLevel: newMasteryLevel,
-            currentScore: newAverageScore.toFixed(2),
+            currentScore: newAverageScore,
             totalAttempts: newTotalAttempts,
             successfulAttempts: newSuccessfulAttempts,
             lastAttemptAt: now,
@@ -269,7 +269,7 @@ class EnhancedDatabaseService {
         conditions.push(eq(studentAchievements.achievementType, filters.category));
       }
       if (filters.difficulty) {
-        conditions.push(sql`${studentAchievements.achievementCode} LIKE ${`%${filters.difficulty}%`}`);
+        conditions.push(like(studentAchievements.achievementCode, `%${filters.difficulty}%`));
       }
       if (typeof filters.completed === 'boolean') {
         // All achievements in table are completed by definition
@@ -378,12 +378,13 @@ class EnhancedDatabaseService {
       const [progressMetrics] = await this.db
         .select({
           totalExercises: count(),
-          completedExercises: sql<number>`COUNT(CASE WHEN ${studentProgress.completed} THEN 1 END)`,
-          averageScore: avg(sql<number>`CAST(${studentProgress.score} AS DECIMAL(5,2))`),
+          completedExercises: sql<number>`SUM(CASE WHEN ${studentProgress.completed} THEN 1 ELSE 0 END)`,
+          averageScore: avg(studentProgress.score),
           totalTimeSpent: sum(studentProgress.timeSpent),
-          xpEarned: sql<number>`COALESCE(SUM(10), 0)` // Default XP value
+          xpEarned: sum(exercises.xp)
         })
         .from(studentProgress)
+        .leftJoin(exercises, eq(studentProgress.exerciseId, exercises.id))
         .where(eq(studentProgress.studentId, studentId));
 
       // Get competence breakdown
@@ -534,7 +535,7 @@ class EnhancedDatabaseService {
         .from(dailyLearningAnalytics)
         .where(and(
           eq(dailyLearningAnalytics.studentId, studentId),
-          sql`${dailyLearningAnalytics.completedExercises} > 0`
+          gt(dailyLearningAnalytics.completedExercises, 0)
         ))
         .orderBy(desc(dailyLearningAnalytics.date))
         .limit(30);
@@ -665,8 +666,8 @@ class EnhancedDatabaseService {
         .select({
           matiere: exercises.matiere,
           totalExercises: count(),
-          completedExercises: sql<number>`COUNT(CASE WHEN ${studentProgress.completed} THEN 1 END)`,
-          averageScore: avg(sql<number>`CAST(${studentProgress.score} AS DECIMAL(5,2))`)
+          completedExercises: sql<number>`SUM(CASE WHEN ${studentProgress.completed} THEN 1 ELSE 0 END)`,
+          averageScore: avg(studentProgress.score)
         })
         .from(studentProgress)
         .innerJoin(exercises, eq(studentProgress.exerciseId, exercises.id))

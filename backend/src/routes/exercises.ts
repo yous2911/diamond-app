@@ -1,5 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { eq, and, desc, asc, sql } from 'drizzle-orm';
+import { eq, and, desc, asc, sql, inArray } from 'drizzle-orm';
 import { exercises, studentProgress, modules, spacedRepetition } from '../db/schema';
 import { SuperMemoService, SuperMemoCard } from '../services/supermemo.service';
 
@@ -158,7 +158,7 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
         const whereConditions = [];
         
         if (difficulte) {
-          whereConditions.push(eq(exercises.difficulte, difficulte as any));
+          whereConditions.push(eq(exercises.difficulte, difficulte));
         }
 
         // Get exercises
@@ -801,7 +801,7 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
           allExercises = await fastify.db
             .select()
             .from(exercises)
-            .where(eq(exercises.type, exclude_types[0]));
+            .where(inArray(exercises.type, exclude_types));
         } else {
           allExercises = await fastify.db
             .select()
