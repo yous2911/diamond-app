@@ -2,6 +2,9 @@
 # Alternative registries: mcr.microsoft.com, ghcr.io, quay.io
 FROM node:18-alpine
 
+# Install dumb-init for proper signal handling in production
+RUN apk add --no-cache dumb-init
+
 # Set working directory
 WORKDIR /app
 
@@ -28,9 +31,11 @@ USER revedkids
 # Expose the application port
 EXPOSE 3003
 
-# Add health check
+# Add comprehensive health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3003/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
 
+# Use dumb-init for proper signal handling
+ENTRYPOINT ["dumb-init", "--"]
 # Start the application
 CMD ["node", "dist/server.js"]
