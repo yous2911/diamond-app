@@ -2,14 +2,13 @@
 import fp from 'fastify-plugin';
 import websocket from '@fastify/websocket';
 import { FastifyInstance, FastifyPluginAsync } from 'fastify';
-import { config } from '../config/config';
 
 const websocketPlugin: FastifyPluginAsync = async (fastify: FastifyInstance) => {
   // Register websocket support
   await fastify.register(websocket, {
     options: {
       maxPayload: 1048576, // 1MB
-      verifyClient: (info: any, callback: (result: boolean) => void) => {
+      verifyClient: (_info: any, callback: (result: boolean) => void) => {
         // Add authentication logic here if needed
         callback(true);
       },

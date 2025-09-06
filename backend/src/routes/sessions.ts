@@ -3,9 +3,7 @@ import { eq, and, desc, sql } from 'drizzle-orm';
 import { 
   learningSessions, 
   exerciseResults, 
-  students, 
-  competencesCp,
-  studentProgress
+  competencesCp
 } from '../db/schema-mysql-cp2025';
 import { getDatabase } from '../db/connection';
 
@@ -81,7 +79,7 @@ export default async function sessionsRoutes(fastify: FastifyInstance) {
         }
 
         // Create new learning session
-        const sessionResult = await db
+        await db
           .insert(learningSessions)
           .values({
             studentId,

@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { eq, and } from 'drizzle-orm';
-import { mascots, students, studentWardrobe, wardrobeItems } from '../db/schema-mysql-cp2025';
+import { eq } from 'drizzle-orm';
+import { mascots } from '../db/schema-mysql-cp2025';
 import { getDatabase } from '../db/connection';
 
 interface AuthenticatedUser {
@@ -78,7 +78,7 @@ export default async function mascotsRoutes(fastify: FastifyInstance) {
             personalityTraits: ['enthusiastic', 'helpful']
           };
 
-          const newMascot = await db
+          await db
             .insert(mascots)
             .values({
               studentId: parseInt(studentId),
@@ -395,11 +395,6 @@ export default async function mascotsRoutes(fastify: FastifyInstance) {
         }
 
         const mascot = mascotData[0];
-        const aiState: AIState = mascot.aiState ? JSON.parse(mascot.aiState as string) : {
-          mood: 'happy',
-          energy: 50,
-          personalityTraits: ['enthusiastic', 'helpful']
-        };
 
         // Generate contextual dialogue based on mascot type and current state
         const dialogues: Record<string, Record<string, string>> = {

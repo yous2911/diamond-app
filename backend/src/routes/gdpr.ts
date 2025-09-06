@@ -2,9 +2,8 @@
 
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { eq, and, desc } from 'drizzle-orm';
-import { students, gdprConsentRequests, gdprDataProcessingLog, files } from '../db/schema';
+import { students, gdprConsentRequests, gdprDataProcessingLog } from '../db/schema';
 import { consentService } from '../services/consent.service.js';
-import { encryptionService } from '../services/encryption.service.js';
 import { anonymizationService } from '../services/anonymization.service.js';
 import { gdprService } from '../services/gdpr.service.js';
 
@@ -421,10 +420,10 @@ export default async function gdprRoutes(fastify: FastifyInstance) {
       description: 'GDPR service health check',
       tags: ['GDPR'],
     },
-    handler: async (request: FastifyRequest, reply: FastifyReply) => {
+    handler: async (_request: FastifyRequest, reply: FastifyReply) => {
       try {
         // Test database connectivity
-        const testQuery = await fastify.db
+        await fastify.db
           .select({ count: gdprConsentRequests.id })
           .from(gdprConsentRequests)
           .limit(1);

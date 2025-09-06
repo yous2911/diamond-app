@@ -30,10 +30,10 @@ export default async function analyticsRoutes(fastify: FastifyInstance): Promise
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { metrics } = request.body as { metrics: any[] };
-      
-      (fastify.log as any).info('Performance metrics received', { 
+
+      (fastify.log as any).info('Performance metrics received', {
         count: metrics.length,
-        sessionId: metrics[0]?.sessionId 
+        sessionId: metrics[0]?.sessionId
       });
 
       return reply.send({
@@ -67,7 +67,7 @@ export default async function analyticsRoutes(fastify: FastifyInstance): Promise
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const { studentId } = request.params as { studentId: number };
-      
+
       const progress = await analyticsService.getStudentAnalytics(studentId);
 
       return reply.send({
@@ -105,9 +105,6 @@ export default async function analyticsRoutes(fastify: FastifyInstance): Promise
     }
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { studentId } = request.params as { studentId: number };
-      const { days } = request.query as { days?: number };
-      
       const stats = await analyticsService.getLearningInsights('month');
 
       return reply.send({
@@ -138,8 +135,6 @@ export default async function analyticsRoutes(fastify: FastifyInstance): Promise
     }
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const { exerciseId } = request.params as { exerciseId: number };
-      
       const completion = await analyticsService.getLearningInsights('month');
 
       return reply.send({
@@ -212,13 +207,13 @@ export default async function analyticsRoutes(fastify: FastifyInstance): Promise
         totalSessionTime: analyticsData.reduce((sum, day) => sum + (day.totalTimeMinutes || 0), 0),
         totalExercises: analyticsData.reduce((sum, day) => sum + (day.totalExercises || 0), 0),
         totalCompletedExercises: analyticsData.reduce((sum, day) => sum + (day.completedExercises || 0), 0),
-        averageScore: analyticsData.length > 0 ? 
+        averageScore: analyticsData.length > 0 ?
           analyticsData.reduce((sum, day) => sum + parseFloat(day.averageScore.toString()), 0) / analyticsData.length : 0,
         totalXpEarned: 0,
         totalCompetencesMastered: analyticsData.reduce((sum, day) => sum + (day.competencesWorked || 0), 0),
         maxStreakDays: 0,
-        completionRate: analyticsData.length > 0 ? 
-          analyticsData.reduce((sum, day) => sum + (day.completedExercises || 0), 0) / 
+        completionRate: analyticsData.length > 0 ?
+          analyticsData.reduce((sum, day) => sum + (day.completedExercises || 0), 0) /
           Math.max(analyticsData.reduce((sum, day) => sum + (day.totalExercises || 0), 0), 1) * 100 : 0
       };
 
@@ -311,8 +306,8 @@ export default async function analyticsRoutes(fastify: FastifyInstance): Promise
       const summaryStats = {
         totalSessions: formattedSessions.length,
         totalDuration: formattedSessions.reduce((sum, session) => sum + session.duration, 0),
-        averageDuration: formattedSessions.length > 0 
-          ? formattedSessions.reduce((sum, session) => sum + session.duration, 0) / formattedSessions.length 
+        averageDuration: formattedSessions.length > 0
+          ? formattedSessions.reduce((sum, session) => sum + session.duration, 0) / formattedSessions.length
           : 0,
         totalExercisesAttempted: 0,
         totalExercisesCompleted: 0,

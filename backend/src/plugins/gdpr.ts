@@ -1,6 +1,6 @@
 import fp from 'fastify-plugin';
 import { FastifyInstance } from 'fastify';
-import { gdprConfig, emailConfig } from '../config/config';
+import { gdprConfig } from '../config/config';
 import { AuditTrailService } from '../services/audit-trail.service';
 import { EncryptionService } from '../services/encryption.service';
 import { EmailService } from '../services/email.service';
@@ -67,7 +67,7 @@ const gdprPlugin = async (fastify: FastifyInstance, options: GDPRPluginOptions =
 
     // Middleware d'audit automatique
     if (opts.auditMiddleware) {
-      fastify.decorate('gdprAuditMiddleware', async (request: any, reply: any) => {
+      fastify.decorate('gdprAuditMiddleware', async (request: any, _reply: any) => {
         try {
           // Capturer les informations de la requête
           const auditData = {
@@ -117,7 +117,7 @@ const gdprPlugin = async (fastify: FastifyInstance, options: GDPRPluginOptions =
     }
 
     // Helpers pour chiffrement/déchiffrement
-    fastify.decorate('gdprDataEncryption', async (data: any, usage: string = 'student_data') => {
+    fastify.decorate('gdprDataEncryption', async (data: any, _usage: string = 'student_data') => {
       return await encryptionService.encryptStudentData(data);
     });
 

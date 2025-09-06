@@ -1,4 +1,3 @@
-
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { authSchemas, loginSchema, registerSchema } from '../schemas/auth.schema';
@@ -8,10 +7,6 @@ import { createRateLimitMiddleware } from '../services/rate-limit.service';
 // Types will be inferred from Zod schemas, removing manual interfaces
 type LoginRequestBody = z.infer<typeof loginSchema>;
 type RegisterRequestBody = z.infer<typeof registerSchema>;
-
-interface RefreshTokenBody {
-  refreshToken: string;
-}
 
 interface PasswordResetBody {
   email: string;
@@ -129,9 +124,6 @@ export default async function authRoutes(fastify: FastifyInstance) {
         const { student } = authResult;
         const payload = { studentId: student.id, email: student.email };
 
-        const { student } = authResult;
-        const payload = { studentId: student.id, email: student.email };
-
         const accessToken = await reply.jwtSign(payload);
         const refreshToken = await (fastify as any).refreshJwt.sign({ ...payload, type: 'refresh' });
 
@@ -177,10 +169,6 @@ export default async function authRoutes(fastify: FastifyInstance) {
           });
         }
         
-        const decoded = await (fastify as any).refreshJwt.verify(refreshToken);
-        const payload = { studentId: decoded.studentId, email: decoded.email };
-        const newAccessToken = await reply.jwtSign(payload);
-
         const decoded = await (fastify as any).refreshJwt.verify(refreshToken);
         const payload = { studentId: decoded.studentId, email: decoded.email };
         const newAccessToken = await reply.jwtSign(payload);
@@ -348,7 +336,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
   // Health endpoint for authentication service
   fastify.get('/health', {
     schema: authSchemas.health,
-    handler: async (request: FastifyRequest, reply: FastifyReply) => {
+    handler: async (_request: FastifyRequest, reply: FastifyReply) => {
       // Basic health check, can be expanded
       return reply.send({
         success: true,

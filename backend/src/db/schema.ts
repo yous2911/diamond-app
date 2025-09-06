@@ -1,7 +1,7 @@
 
 
 import { mysqlTable, varchar, int, decimal, timestamp, text, boolean, json, date } from 'drizzle-orm/mysql-core';
-import { InferInsertModel, InferSelectModel, relations, sql } from 'drizzle-orm';
+import { InferInsertModel, InferSelectModel, relations } from 'drizzle-orm';
 
 // =============================================================================
 // CORE TABLES

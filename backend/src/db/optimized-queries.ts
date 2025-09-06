@@ -3,7 +3,7 @@
  * Implements N+1 problem prevention, efficient joins, and query optimization
  */
 
-import { eq, and, or, like, desc, asc, inArray, sql, gt, lt, gte, lte, isNotNull, isNull } from 'drizzle-orm';
+import { eq, and, or, desc, asc, inArray, sql, gt, gte, lte, isNull } from 'drizzle-orm';
 import { db } from './connection';
 import { 
   students, 
@@ -11,8 +11,6 @@ import {
   studentProgress, 
   studentLearningPath, 
   sessions, 
-  revisions, 
-  modules 
 } from './schema';
 import { logger } from '../utils/logger';
 

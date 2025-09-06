@@ -44,7 +44,7 @@ const rateLimitPlugin = async (fastify: any) => {
       {
         id: 'auth-strict',
         name: 'Strict Auth Limits',
-        condition: (req) => req.url.startsWith('/api/auth/'),
+        condition: (_req) => _req.url.startsWith('/api/auth/'),
         limit: {
           windowMs: authRateLimitConfig.timeWindow,
           max: authRateLimitConfig.max,
@@ -58,7 +58,7 @@ const rateLimitPlugin = async (fastify: any) => {
       {
         id: 'ddos-protection',
         name: 'DDoS Protection',
-        condition: (req) => true, // Apply to all requests
+        condition: (_req) => true, // Apply to all requests
         limit: {
           windowMs: ddosConfig.timeWindow,
           max: ddosConfig.maxRequests,
@@ -72,7 +72,7 @@ const rateLimitPlugin = async (fastify: any) => {
       {
         id: 'api-burst',
         name: 'API Burst Protection',
-        condition: (req) => req.url.startsWith('/api/') && !req.url.includes('/health'),
+        condition: (_req) => _req.url.startsWith('/api/') && !_req.url.includes('/health'),
         limit: {
           windowMs: 1000, // 1 second window
           max: 10, // Max 10 requests per second
@@ -146,7 +146,7 @@ const rateLimitPlugin = async (fastify: any) => {
       summary: 'Get rate limiting statistics',
       security: [{ adminAuth: [] }]
     }
-  }, async (request: any, reply: any) => {
+  }, async (_request: any, _reply: any) => {
     const stats = enhancedRateLimit.getStats();
     return {
       success: true,
@@ -182,14 +182,14 @@ const rateLimitPlugin = async (fastify: any) => {
         }
       }
     }
-  }, async (request: any, reply: any) => {
-    const { ip, duration } = request.body;
+  }, async (_request: any, _reply: any) => {
+    const { ip, duration } = _request.body;
     enhancedRateLimit.blockIP(ip, duration);
     
     (fastify.log as any).info('IP manually blocked', { 
       ip, 
       duration: duration / 1000, 
-      admin: request.user?.id 
+      admin: _request.user?.id
     });
     
     return { success: true, message: `IP ${ip} blocked for ${duration / 1000} seconds` };
@@ -208,13 +208,13 @@ const rateLimitPlugin = async (fastify: any) => {
         }
       }
     }
-  }, async (request: any, reply: any) => {
-    const { ip } = request.body;
+  }, async (_request: any, _reply: any) => {
+    const { ip } = _request.body;
     enhancedRateLimit.unblockIP(ip);
     
     (fastify.log as any).info('IP manually unblocked', { 
       ip, 
-      admin: request.user?.id 
+      admin: _request.user?.id
     });
     
     return { success: true, message: `IP ${ip} unblocked` };

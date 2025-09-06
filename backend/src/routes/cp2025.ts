@@ -3,8 +3,8 @@ import { CP2025Service } from '../services/cp2025.service';
 
 export default async function cp2025Routes(fastify: FastifyInstance): Promise<void> {
   const service = new CP2025Service();
-  
-  fastify.get('/exercises', async (request: FastifyRequest, reply: FastifyReply) => {
+
+  fastify.get('/exercises', async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
       const exercises = await service.getAllExercises();
       return reply.send({
@@ -19,7 +19,7 @@ export default async function cp2025Routes(fastify: FastifyInstance): Promise<vo
     }
   });
 
-  fastify.get('/statistics', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/statistics', async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
       const stats = await service.getExerciseStatistics();
       return reply.send({
@@ -33,4 +33,4 @@ export default async function cp2025Routes(fastify: FastifyInstance): Promise<vo
       });
     }
   });
-} 
+}

@@ -3,28 +3,15 @@
  * Provides rollback capabilities, validation, and safe schema changes
  */
 
-import { readdir, readFile, writeFile } from 'fs/promises';
+import { readdir, readFile } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
 import { connection, db } from './connection';
 import { logger } from '../utils/logger';
-import { sql, eq } from 'drizzle-orm';
-import { mysqlTable, varchar, timestamp, text, int, boolean } from 'drizzle-orm/mysql-core';
+import { mysqlTable, varchar, timestamp, text, int } from 'drizzle-orm/mysql-core';
 import * as schema from './schema';
 
 // Migration metadata table
-const migrations = mysqlTable('migrations', {
-  id: int('id').primaryKey().autoincrement(),
-  filename: varchar('filename', { length: 255 }).notNull().unique(),
-  version: varchar('version', { length: 20 }).notNull(),
-  description: text('description'),
-  checksum: varchar('checksum', { length: 64 }).notNull(),
-  executedAt: timestamp('executed_at').notNull().defaultNow(),
-  executionTime: int('execution_time').notNull(), // in milliseconds
-  rollbackSql: text('rollback_sql'),
-  status: varchar('status', { length: 20 }).notNull().default('completed'),
-  error: text('error'),
-});
 
 interface Migration {
   filename: string;

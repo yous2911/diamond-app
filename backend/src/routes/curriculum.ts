@@ -21,10 +21,10 @@ const SUPPORTED_LEVELS: CurriculumLevel[] = [
   { id: 'cp-ce1', name: 'CP-CE1', displayName: 'Bridge CP-CE1', order: 1.5 }
 ];
 
-const curriculumPlugin: FastifyPluginAsync = async (fastify, opts) => {
+const curriculumPlugin: FastifyPluginAsync = async (fastify, _opts) => {
   // Get exercises by subject (for frontend compatibility)
   fastify.get('/subjects/exercises', {
-    handler: async (request, reply) => {
+    handler: async (_request, reply) => {
       try {
         // Get all exercises grouped by type (since we don't have matiere field)
         const exercisesData = await db
@@ -64,7 +64,7 @@ const curriculumPlugin: FastifyPluginAsync = async (fastify, opts) => {
   // Get all supported levels
   fastify.get('/levels', {
     schema: curriculumSchemas.getLevels,
-    handler: async (request, reply) => {
+    handler: async (_request, reply) => {
       try {
         // Get levels from database with counts (using modules table instead)
         const levelsData = await db
@@ -222,19 +222,9 @@ const curriculumPlugin: FastifyPluginAsync = async (fastify, opts) => {
       try {
         const { level } = request.params;
         const { 
-          subject, 
-          difficulty, 
-          type, 
           limit = 20, 
           offset = 0 
         } = request.query;
-
-        // Build query conditions (exercises don't have niveau/matiere, so we'll get all exercises)
-        const conditions = [];
-
-        if (difficulty) {
-          conditions.push(eq(exercises.difficulte, difficulty.toUpperCase()));
-        }
 
         // Get exercises with pagination (all exercises since they don't have level/subject)
         const exercisesData = await db
@@ -279,7 +269,7 @@ const curriculumPlugin: FastifyPluginAsync = async (fastify, opts) => {
   // Get statistics across all levels
   fastify.get('/statistics', {
     schema: curriculumSchemas.getStatistics,
-    handler: async (request, reply) => {
+    handler: async (_request, reply) => {
       try {
         // Get statistics from modules table (since exercises don't have niveau/matiere)
         const stats = await db
@@ -334,4 +324,4 @@ const curriculumPlugin: FastifyPluginAsync = async (fastify, opts) => {
   });
 };
 
-export default curriculumPlugin; 
+export default curriculumPlugin;

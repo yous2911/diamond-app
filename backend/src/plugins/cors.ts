@@ -3,26 +3,6 @@ import * as cors from '@fastify/cors';
 import { FastifyRequest } from 'fastify';
 import { logger } from '../utils/logger';
 
-interface CorsOptions {
-  development: {
-    origin: string[];
-    credentials: boolean;
-    methods: string[];
-    allowedHeaders: string[];
-    exposedHeaders: string[];
-  };
-  production: {
-    origin: string[] | ((origin: string, callback: (err: Error | null, allow?: boolean) => void) => void);
-    credentials: boolean;
-    methods: string[];
-    allowedHeaders: string[];
-    exposedHeaders: string[];
-    maxAge: number;
-    preflightContinue: boolean;
-    optionsSuccessStatus: number;
-  };
-}
-
 /**
  * Enhanced CORS configuration with production security
  */
@@ -222,9 +202,7 @@ export class CorsConfigurationService {
  * CORS middleware with additional security features
  */
 export const createCorsMiddleware = () => {
-  const corsService = new CorsConfigurationService();
-  
-  return async (request: FastifyRequest, reply: any) => {
+  return async (request: FastifyRequest, _reply: any) => {
     const origin = request.headers.origin;
     
     // Log CORS requests for monitoring
@@ -261,7 +239,6 @@ export const createCorsMiddleware = () => {
 
       // Rate limit preflight requests more aggressively
       if (request.method === 'OPTIONS') {
-        const preflightKey = `preflight:${request.ip}:${origin}`;
         // This would integrate with rate limiting service
       }
     }
@@ -280,7 +257,7 @@ const corsPlugin = async (fastify: any) => {
 
   // Add CORS configuration endpoint for debugging (development only)
   if (process.env.NODE_ENV === 'development') {
-    fastify.get('/api/debug/cors-config', async (request: any, reply: any) => {
+    fastify.get('/api/debug/cors-config', async (_request: any, _reply: any) => {
       return {
         allowedOrigins: corsService.getAllowedOrigins(),
         environment: process.env.NODE_ENV,
@@ -297,16 +274,16 @@ const corsPlugin = async (fastify: any) => {
   if (process.env.NODE_ENV === 'production') {
     fastify.post('/api/admin/cors/origins', {
       preHandler: [fastify.authenticate, fastify.authorizeAdmin]
-    }, async (request: any, reply: any) => {
-      const { origin } = request.body;
+    }, async (_request: any, _reply: any) => {
+      const { origin } = _request.body;
       corsService.addAllowedOrigin(origin);
       return { success: true, message: 'Origin added to CORS allowlist' };
     });
 
     fastify.delete('/api/admin/cors/origins', {
       preHandler: [fastify.authenticate, fastify.authorizeAdmin]
-    }, async (request: any, reply: any) => {
-      const { origin } = request.body;
+    }, async (_request: any, _reply: any) => {
+      const { origin } = _request.body;
       const removed = corsService.removeAllowedOrigin(origin);
       return { 
         success: removed, 
@@ -316,7 +293,7 @@ const corsPlugin = async (fastify: any) => {
 
     fastify.get('/api/admin/cors/origins', {
       preHandler: [fastify.authenticate, fastify.authorizeAdmin]
-    }, async (request: any, reply: any) => {
+    }, async (_request: any, _reply: any) => {
       return {
         origins: corsService.getAllowedOrigins(),
         count: corsService.getAllowedOrigins().length

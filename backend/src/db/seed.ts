@@ -1,6 +1,6 @@
 import { db } from './connection';
 import * as schema from './schema';
-import { NewStudent, NewExercise } from './schema';
+import { NewExercise } from './schema';
 
 export async function seedDatabase() {
   try {
@@ -8,7 +8,7 @@ export async function seedDatabase() {
 
     // Seed students
     console.log('📚 Seeding students...');
-    const students = await db.insert(schema.students).values([
+    await db.insert(schema.students).values([
       {
         prenom: 'Lucas',
         nom: 'Martin',
@@ -57,7 +57,7 @@ export async function seedDatabase() {
 
     // Seed modules
     console.log('📖 Seeding modules...');
-    const modules = await db.insert(schema.modules).values([
+    await db.insert(schema.modules).values([
       {
         titre: 'Les nombres jusqu\'à 100',
         matiere: 'mathematiques',

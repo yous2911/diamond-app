@@ -9,8 +9,6 @@ import {
   authRateLimitMiddleware 
 } from '../middleware/auth.middleware';
 import { jwtConfig, cookieConfig, config } from '../config/config';
-import { AuthService } from '../services/auth.service';
-import { logger } from '../utils/logger';
 
 const authPlugin = async (fastify: any) => {
   // Register cookie support with secure configuration

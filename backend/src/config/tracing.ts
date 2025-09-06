@@ -1,6 +1,5 @@
 // Conditional OpenTelemetry import
 let openTelemetryApi: any;
-let NodeSDK: any;
 
 try {
   openTelemetryApi = require('@opentelemetry/api');
@@ -19,7 +18,7 @@ try {
   openTelemetryApi = {
     trace: {
       getTracer: () => ({
-        startSpan: (name: string) => ({
+        startSpan: (_name: string) => ({
           end: () => {},
           setStatus: () => {},
           setAttributes: () => {},

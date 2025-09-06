@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { eq, and, desc, asc, sql } from 'drizzle-orm';
-import { exercises, studentProgress, modules, spacedRepetition } from '../db/schema';
+import { eq, and, desc, sql } from 'drizzle-orm';
+import { exercises, studentProgress, spacedRepetition } from '../db/schema';
 import { SuperMemoService, SuperMemoCard } from '../services/supermemo.service';
 
 // Mock authentication middleware for testing
@@ -126,9 +126,6 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
           competence,
           page = '1', 
           limit = '20', 
-          search, 
-          matiere, 
-          niveau, 
           difficulte 
         } = request.query;
 
@@ -359,7 +356,6 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
       Querystring: { limit?: string; offset?: string };
     }>, reply: FastifyReply) => {
       try {
-        const { moduleId } = request.params;
         const { limit = '20', offset = '0' } = request.query;
 
         // Get exercises (no moduleId in exercises schema, so get all exercises)
@@ -909,4 +905,4 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
       }
     }
   });
-} 
+}

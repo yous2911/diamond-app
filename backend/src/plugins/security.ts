@@ -3,7 +3,7 @@ import { FastifyPluginAsync } from 'fastify';
 import fp from 'fastify-plugin';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
-import { config, helmetConfig, rateLimitConfig, corsConfig } from '../config/config';
+import { config, helmetConfig, rateLimitConfig } from '../config/config';
 
 const securityPlugin: FastifyPluginAsync = async (fastify) => {
   // Enhanced Helmet configuration
@@ -38,10 +38,10 @@ const securityPlugin: FastifyPluginAsync = async (fastify) => {
   // Enhanced rate limiting with different rules for different endpoints
   await fastify.register(rateLimit, {
     ...rateLimitConfig,
-    keyGenerator: (request) => {
-      return `${request.ip}:${request.headers['user-agent'] || 'unknown'}`;
+    keyGenerator: (_request) => {
+      return `${_request.ip}:${_request.headers['user-agent'] || 'unknown'}`;
     },
-    errorResponseBuilder: (request, context) => {
+    errorResponseBuilder: (_request, context) => {
       return {
         success: false,
         error: {
@@ -109,10 +109,10 @@ const securityPlugin: FastifyPluginAsync = async (fastify) => {
     const requestString = JSON.stringify(request.body || {}) + request.url;
     for (const pattern of suspiciousPatterns) {
       if (pattern.test(requestString)) {
-        (fastify.log as any).warn('Suspicious request blocked:', { 
-          ip: request.ip, 
+        (fastify.log as any).warn('Suspicious request blocked:', {
+          ip: request.ip,
           url: request.url,
-          userAgent: request.headers['user-agent'] 
+          userAgent: request.headers['user-agent']
         });
         reply.code(400).send({
           success: false,

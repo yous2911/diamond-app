@@ -15,7 +15,7 @@ import { createSecureAuthRateLimiter } from '../services/secure-rate-limiter.ser
  */
 export async function authenticateMiddleware(
   request: FastifyRequest,
-  reply: FastifyReply
+  _reply: FastifyReply
 ): Promise<void> {
   try {
     // Get token from HTTP-only cookie
@@ -101,7 +101,7 @@ export async function authenticateMiddleware(
  */
 export async function optionalAuthMiddleware(
   request: FastifyRequest,
-  reply: FastifyReply
+  _reply: FastifyReply
 ) {
   try {
     const token = request.cookies.auth_token;
@@ -130,7 +130,7 @@ export async function optionalAuthMiddleware(
  */
 export async function authenticateAdminMiddleware(
   request: FastifyRequest,
-  reply: FastifyReply
+  _reply: FastifyReply
 ): Promise<void> {
   // First check regular authentication
   await authenticateMiddleware(request, reply);

@@ -159,7 +159,7 @@ const fileUploadPlugin: FastifyPluginAsync<FileUploadPluginOptions> = async (
           }
         }
       },
-      handler: async (request, reply) => {
+      handler: async (_request, reply) => {
         try {
           const storageHealth = await storageService.getStorageHealth();
           
@@ -203,7 +203,7 @@ const fileUploadPlugin: FastifyPluginAsync<FileUploadPluginOptions> = async (
         }
       },
       preHandler: [fastify.authenticateAdmin], // Admin only - storage optimization is sensitive
-      handler: async (request, reply) => {
+      handler: async (_request, reply) => {
         try {
           const result = await storageService.optimizeStorage();
           

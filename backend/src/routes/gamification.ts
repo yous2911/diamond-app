@@ -1,6 +1,6 @@
 /**
  * 🎮 Gamification Routes - Production Ready
- * 
+ *
  * Psychology-driven endpoints with anti-cheat protection:
  * - Server-side XP validation with daily caps
  * - Redis caching with smart invalidation
@@ -12,27 +12,14 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { db } from '../db/connection';
-import { eq, and, desc, asc, sql, gte, lte, inArray } from 'drizzle-orm';
+import { eq, desc, sql, gte } from 'drizzle-orm';
 import { students } from '../db/schema';
 
 // Request schemas
-const XpProgressSchema = z.object({
-  delta: z.number().min(1).max(500), // Anti-cheat: cap XP gains
-  reason: z.enum(['login', 'exercise_complete', 'streak_bonus', 'achievement', 'daily_challenge'])
-});
-
 const LeaderboardQuerySchema = z.object({
   scope: z.enum(['all', 'month', 'friends']).default('month'),
   centerOnMe: z.boolean().default(true),
   limit: z.number().min(3).max(20).default(7) // ±3 around user = 7 total
-});
-
-const KudosSchema = z.object({
-  toUser: z.number().positive()
-});
-
-const AchievementCheckSchema = z.object({
-  event: z.enum(['FIRST_WIN', 'TEN_GAMES', 'STREAK_3', 'STREAK_7', 'STREAK_30', 'TOP_10'])
 });
 
 // XP/Level calculation functions
@@ -66,7 +53,7 @@ export default async function gamificationRoutes(fastify: FastifyInstance): Prom
     try {
       const { id } = request.params;
       const cacheKey = `profile:${id}`;
-      
+
       // Try Redis cache first
       const cached = await fastify.redis.get(cacheKey);
       if (cached) {
@@ -181,7 +168,7 @@ export default async function gamificationRoutes(fastify: FastifyInstance): Prom
   }, async (request: FastifyRequest<{ Body: { userId: number; delta: number; reason: string } }>, reply: FastifyReply) => {
     try {
       const { userId, delta, reason } = request.body;
-      
+
       // Anti-cheat: Daily XP caps
       const dailyCaps = {
         login: 50,
@@ -223,7 +210,7 @@ export default async function gamificationRoutes(fastify: FastifyInstance): Prom
       // Update XP in database
       await db
         .update(students)
-        .set({ 
+        .set({
           xp: newXp,
           updatedAt: new Date()
         })
@@ -282,13 +269,13 @@ export default async function gamificationRoutes(fastify: FastifyInstance): Prom
     try {
       const query = LeaderboardQuerySchema.parse(request.query);
       const userId = (request.query as any).userId;
-      
+
       if (!userId) {
         return reply.code(400).send({ success: false, message: 'userId is required' });
       }
 
       const cacheKey = `leaderboard:${query.scope}:window:${userId}`;
-      
+
       // Try cache first
       const cached = await fastify.redis.get(cacheKey);
       if (cached) {
@@ -319,7 +306,7 @@ export default async function gamificationRoutes(fastify: FastifyInstance): Prom
       const half = Math.floor(query.limit / 2);
       const startIndex = Math.max(0, userIndex - half);
       const endIndex = Math.min(leaderboard.length, startIndex + query.limit);
-      
+
       const window = leaderboard.slice(startIndex, endIndex).map((student, idx) => ({
         ...student,
         rank: startIndex + idx + 1,
@@ -381,11 +368,11 @@ export default async function gamificationRoutes(fastify: FastifyInstance): Prom
     try {
       const { userId } = request.body;
       const today = new Date().toISOString().split('T')[0];
-      
+
       // Check if already pinged today
       const todayKey = `streak:pinged:${userId}:${today}`;
       const alreadyPinged = await fastify.redis.get(todayKey);
-      
+
       if (alreadyPinged) {
         return reply.send({
           success: true,
@@ -397,9 +384,9 @@ export default async function gamificationRoutes(fastify: FastifyInstance): Prom
       const streakKey = `streak:${userId}`;
       const streakData = await fastify.redis.get(streakKey);
       const current = streakData ? JSON.parse(streakData) : { current: 0, best: 0, lastDate: null };
-      
+
       const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-      
+
       let newStreak;
       if (current.lastDate === yesterday) {
         // Continue streak
@@ -423,7 +410,7 @@ export default async function gamificationRoutes(fastify: FastifyInstance): Prom
         // Award XP for streak milestone
         await db
           .update(students)
-          .set({ 
+          .set({
             xp: sql`${students.xp} + ${bonusXp}`,
             updatedAt: new Date()
           })
@@ -475,7 +462,7 @@ export default async function gamificationRoutes(fastify: FastifyInstance): Prom
   }, async (request: FastifyRequest<{ Body: { fromUser: number; toUser: number } }>, reply: FastifyReply) => {
     try {
       const { fromUser, toUser } = request.body;
-      
+
       if (fromUser === toUser) {
         return reply.code(400).send({ success: false, message: 'Cannot give kudos to yourself' });
       }

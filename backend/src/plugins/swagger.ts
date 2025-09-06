@@ -545,11 +545,11 @@ A comprehensive educational platform API designed for children's learning manage
       }
     },
     uiHooks: {
-      onRequest: function (request: any, reply: any, next: any) {
+      onRequest: function (_request: any, _reply: any, next: any) {
         // Add any pre-processing for Swagger UI requests
         next();
       },
-      preHandler: function (request: any, reply: any, next: any) {
+      preHandler: function (_request: any, _reply: any, next: any) {
         // Add any authentication or validation for Swagger UI
         next();
       }

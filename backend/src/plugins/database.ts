@@ -160,7 +160,7 @@ const databasePlugin: FastifyPluginAsync = async (fastify) => {
   });
 
   // Request hook to ensure connection before each request
-  fastify.addHook('preHandler', async (request, reply): Promise<void> => {
+  fastify.addHook('preHandler', async (_request, reply): Promise<void> => {
     if (!isConnected) {
       (fastify.log as any).warn('Database not connected, attempting reconnection...');
       
@@ -182,9 +182,9 @@ const databasePlugin: FastifyPluginAsync = async (fastify) => {
   });
 
   // Add database info to request context
-  fastify.addHook('onRequest', async (request) => {
-    (request as any).dbConnected = isConnected;
-    (request as any).dbAttempts = connectionAttempts;
+  fastify.addHook('onRequest', async (_request) => {
+    (_request as any).dbConnected = isConnected;
+    (_request as any).dbAttempts = connectionAttempts;
   });
 
   (fastify.log as any).info('✅ Database plugin registered successfully');

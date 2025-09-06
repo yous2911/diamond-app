@@ -1,7 +1,7 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 
 export const health = async (fastify: FastifyInstance) => {
-  fastify.get('/health', async (request: FastifyRequest, reply: FastifyReply) => {
+  fastify.get('/health', async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
       // Basic health check
       const healthStatus: any = {
@@ -40,4 +40,4 @@ export const health = async (fastify: FastifyInstance) => {
       });
     }
   });
-}; 
+};

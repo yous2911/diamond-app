@@ -36,7 +36,7 @@ export class AuditMiddleware {
    * Middleware principal d'audit pour Fastify
    */
   createMiddleware(): (request: FastifyRequest, reply: FastifyReply) => Promise<void> {
-    return async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
+    return async (request: FastifyRequest, _reply: FastifyReply): Promise<void> => {
       try {
         // Vérifier si cette route doit être exclue
         if (this.shouldExcludeRoute(request)) {
@@ -72,7 +72,7 @@ export class AuditMiddleware {
    * Middleware spécialisé pour les routes sensibles
    */
   createSensitiveRouteMiddleware(): (request: FastifyRequest, reply: FastifyReply) => Promise<void> {
-    return async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
+    return async (request: FastifyRequest, _reply: FastifyReply): Promise<void> => {
       try {
         const auditData = this.prepareSensitiveAuditData(request);
         

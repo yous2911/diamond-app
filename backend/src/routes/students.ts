@@ -1,4 +1,3 @@
-
 import { FastifyInstance } from 'fastify';
 import { enhancedDatabaseService as databaseService } from '../services/enhanced-database.service.js';
 import { db } from '../db/connection';
@@ -265,7 +264,7 @@ export default async function studentRoutes(fastify: FastifyInstance) {
   });
 
   // Get all students (for login selection)
-  fastify.get('/', async (request, reply) => {
+  fastify.get('/', async (_request, reply) => {
     try {
       const allStudents = await db.select().from(students);
 
@@ -732,7 +731,7 @@ export default async function studentRoutes(fastify: FastifyInstance) {
         inProgressCount: competenceProgress.filter(cp => ['practicing', 'mastering'].includes(cp.masteryLevel)).length,
         averageScore: competenceProgress.length > 0 ? 
           competenceProgress.reduce((sum, cp) => sum + parseFloat(cp.currentScore.toString()), 0) / competenceProgress.length : 0,
-        totalTimeSpent: competenceProgress.reduce((sum, cp) => sum + 0, 0)
+        totalTimeSpent: competenceProgress.reduce((sum, _cp) => sum + 0, 0)
       };
 
       return {
@@ -900,9 +899,8 @@ export default async function studentRoutes(fastify: FastifyInstance) {
       // Calculate summary stats
       const summary = {
         totalAchievements: achievements.length,
-        completedCount: achievements.filter(a => true).length,
+        completedCount: achievements.filter(() => true).length,
         totalXpEarned: achievements
-          .filter(a => true)
           .reduce((sum, a) => sum + a.xpReward, 0),
         byCategory: {
           academic: achievements.filter(a => a.achievementType === 'academic').length,
@@ -957,7 +955,7 @@ export default async function studentRoutes(fastify: FastifyInstance) {
   });
 
   // Health check for student service
-  fastify.get('/health', async (request, reply) => {
+  fastify.get('/health', async (_request, reply) => {
     try {
       const dbHealth = await databaseService.healthCheck();
       

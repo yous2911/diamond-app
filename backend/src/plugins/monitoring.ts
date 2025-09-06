@@ -1,7 +1,6 @@
 // src/plugins/monitoring.ts
 import fp from 'fastify-plugin';
 import { FastifyInstance, FastifyPluginAsync } from 'fastify';
-import { config } from '../config/config';
 
 // FIXED: Monitoring service interface
 interface MonitoringService {

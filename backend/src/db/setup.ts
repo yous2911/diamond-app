@@ -5,25 +5,15 @@ import {
   studentProgress,
   sessions,
   revisions,
-  modules,
-  parentalConsent,
-  gdprRequests,
-  auditLogs,
-  encryptionKeys,
-  retentionPolicies,
-  consentPreferences,
-  gdprConsentRequests,
-  gdprDataProcessingLog
 } from './schema';
 import { sql } from 'drizzle-orm';
-import { config } from '../config/config';
 
 export async function setupDatabase() {
   try {
     console.log('🔄 Setting up database...');
     
     // Test the database connection
-    const testResult = await db.execute(sql`SELECT 1 as test`);
+    await db.execute(sql`SELECT 1 as test`);
     console.log('✅ Database connection test successful');
 
     // For MySQL with Drizzle, tables should be created using migrations
@@ -38,7 +28,7 @@ export async function setupDatabase() {
         console.log('🌱 Seeding database with test data...');
         
         // Insert test students
-        const insertedStudents = await db.insert(students).values([
+        await db.insert(students).values([
           {
             prenom: 'Alice',
             nom: 'Dupont',

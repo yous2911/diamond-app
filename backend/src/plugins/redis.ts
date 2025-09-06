@@ -95,7 +95,7 @@ const redisPlugin = async (fastify: any) => {
         logger.info('Redis connection established successfully');
       });
       
-      redis.on('error', (error) => {
+      redis.on('error', (error: Error) => {
         isRedisAvailable = false;
         stats.operations.errors++;
         logger.warn('Redis connection error, falling back to memory cache:', { 

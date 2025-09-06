@@ -1,6 +1,6 @@
 /**
  * 🏆 Leaderboard Routes
- * 
+ *
  * Endpoints for accessing leaderboards, competitions, and badges
  */
 
@@ -96,10 +96,10 @@ export default async function leaderboardRoutes(fastify: FastifyInstance): Promi
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const query = LeaderboardQuerySchema.parse(request.query);
-      
+
       // Get student ID from auth if available
       const studentId = (request as any).user?.studentId;
-      
+
       const result = await leaderboardService.getLeaderboard(
         query.type,
         query.category,
@@ -149,7 +149,7 @@ export default async function leaderboardRoutes(fastify: FastifyInstance): Promi
         }
       }
     }
-  }, async (request: FastifyRequest<{ 
+  }, async (request: FastifyRequest<{
     Params: { studentId: number };
     Querystring: any;
   }>, reply: FastifyReply) => {
@@ -319,8 +319,6 @@ export default async function leaderboardRoutes(fastify: FastifyInstance): Promi
     Params: { studentId: number }
   }>, reply: FastifyReply) => {
     try {
-      const { studentId } = request.params;
-
       // This would be implemented in the leaderboard service
       // For now, let's create a simple response
       const badges = [
@@ -367,7 +365,7 @@ export default async function leaderboardRoutes(fastify: FastifyInstance): Promi
         }
       }
     }
-  }, async (request: FastifyRequest, reply: FastifyReply) => {
+  }, async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
       // In a real app, you'd check for admin permissions here
       // await checkAdminPermission(request);
@@ -415,7 +413,7 @@ export default async function leaderboardRoutes(fastify: FastifyInstance): Promi
         }
       }
     }
-  }, async (request: FastifyRequest, reply: FastifyReply) => {
+  }, async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
       // Get basic stats
       const stats = {
@@ -474,7 +472,7 @@ export default async function leaderboardRoutes(fastify: FastifyInstance): Promi
         }
       }
     }
-  }, async (request: FastifyRequest, reply: FastifyReply) => {
+  }, async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
       // Mock competitions data - would come from database
       const competitions = [

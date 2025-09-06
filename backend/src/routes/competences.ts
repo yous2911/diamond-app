@@ -231,7 +231,7 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
   }, async (request, reply) => {
     try {
       const { code: competenceCode } = request.params as { code: string };
-      const { studentId, limit = 50, offset = 0 } = request.query as any;
+      const { studentId } = request.query as any;
 
       if (studentId) {
         // Get specific student's progress
