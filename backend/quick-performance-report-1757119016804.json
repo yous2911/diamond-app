@@ -1,0 +1,107 @@
+{
+  "timestamp": "2025-09-06T00:36:56.802Z",
+  "testType": "Quick Performance Test",
+  "results": {
+    "health": {
+      "requestsPerSecond": 4015.4,
+      "latencyMean": 2.01,
+      "errors": 0,
+      "totalRequests": 20073
+    },
+    "endpoints": [
+      {
+        "endpoint": "Health Check",
+        "path": "/api/health",
+        "requestsPerSecond": 2112.34,
+        "latencyMean": 1.85,
+        "errors": 0,
+        "successRate": "100.00"
+      },
+      {
+        "endpoint": "Root Endpoint",
+        "path": "/",
+        "requestsPerSecond": 1669.67,
+        "latencyMean": 2.48,
+        "errors": 0,
+        "successRate": "100.00"
+      },
+      {
+        "endpoint": "Competences",
+        "path": "/api/competences",
+        "requestsPerSecond": 1521.34,
+        "latencyMean": 2.75,
+        "errors": 0,
+        "successRate": "100.00"
+      }
+    ],
+    "concurrency": [
+      {
+        "scenario": "Single User",
+        "users": 1,
+        "requestsPerSecond": 1222.34,
+        "latencyMean": 0.2,
+        "errors": 0,
+        "errorRate": "0.00",
+        "totalRequests": 3667
+      },
+      {
+        "scenario": "Small Class",
+        "users": 10,
+        "requestsPerSecond": 1289.5,
+        "latencyMean": 7.24,
+        "errors": 0,
+        "errorRate": "0.00",
+        "totalRequests": 5158
+      },
+      {
+        "scenario": "Full Classroom",
+        "users": 30,
+        "requestsPerSecond": 1258.41,
+        "latencyMean": 23.28,
+        "errors": 0,
+        "errorRate": "0.00",
+        "totalRequests": 6292
+      },
+      {
+        "scenario": "Large Scale",
+        "users": 50,
+        "requestsPerSecond": 941.17,
+        "latencyMean": 52.46,
+        "errors": 0,
+        "errorRate": "0.00",
+        "totalRequests": 5647
+      }
+    ],
+    "auth": {
+      "requestsPerSecond": 846.67,
+      "latencyMean": 3.07,
+      "errors": 0,
+      "successRate": "100.00",
+      "totalRequests": 2540
+    },
+    "exercise": {
+      "requestsPerSecond": 877.5,
+      "latencyMean": 5.18,
+      "errors": 0,
+      "successRate": "100.00",
+      "totalRequests": 3510
+    }
+  },
+  "summary": {
+    "healthStatus": "PASS",
+    "classroomReady": "READY",
+    "performanceScore": 100,
+    "keyMetrics": {
+      "healthCheckLatency": 2.01,
+      "classroomPerformance": {
+        "latency": 23.28,
+        "throughput": 1258.41,
+        "errorRate": "0.00"
+      },
+      "authPerformance": {
+        "latency": 3.07,
+        "successRate": "100.00"
+      }
+    }
+  }
+}

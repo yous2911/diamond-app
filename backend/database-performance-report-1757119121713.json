@@ -1,0 +1,190 @@
+{
+  "timestamp": "2025-09-06T00:38:41.711Z",
+  "testType": "Database Performance Analysis",
+  "results": {
+    "connectionPool": {
+      "totalAttempts": 50,
+      "successful": 47,
+      "failed": 3,
+      "successRate": "94.00",
+      "totalTime": 30,
+      "averageConnectionTime": 19.43378942128779,
+      "poolEfficiency": 1566.6666666666667
+    },
+    "queryPerformance": [
+      {
+        "name": "Student Select",
+        "type": "SELECT",
+        "complexity": "simple",
+        "iterations": 10,
+        "averageTime": 17.383579999999995,
+        "minTime": 9.9328,
+        "maxTime": 27.841399999999993,
+        "p95Time": 27.841399999999993,
+        "performanceRating": "GOOD"
+      },
+      {
+        "name": "Competences Join",
+        "type": "JOIN",
+        "complexity": "medium",
+        "iterations": 10,
+        "averageTime": 46.09123000000001,
+        "minTime": 24.125499999999988,
+        "maxTime": 72.57339999999999,
+        "p95Time": 72.57339999999999,
+        "performanceRating": "GOOD"
+      },
+      {
+        "name": "Progress Aggregation",
+        "type": "AGGREGATE",
+        "complexity": "complex",
+        "iterations": 10,
+        "averageTime": 78.71178000000002,
+        "minTime": 44.759900000000016,
+        "maxTime": 135.1784,
+        "p95Time": 135.1784,
+        "performanceRating": "GOOD"
+      },
+      {
+        "name": "Student Insert",
+        "type": "INSERT",
+        "complexity": "simple",
+        "iterations": 10,
+        "averageTime": 33.694189999999956,
+        "minTime": 16.74129999999991,
+        "maxTime": 47.4224999999999,
+        "p95Time": 47.4224999999999,
+        "performanceRating": "ACCEPTABLE"
+      },
+      {
+        "name": "Progress Update",
+        "type": "UPDATE",
+        "complexity": "medium",
+        "iterations": 10,
+        "averageTime": 44.40823999999996,
+        "minTime": 21.880299999999806,
+        "maxTime": 61.23749999999973,
+        "p95Time": 61.23749999999973,
+        "performanceRating": "GOOD"
+      },
+      {
+        "name": "Exercise Statistics",
+        "type": "COMPLEX_JOIN",
+        "complexity": "complex",
+        "iterations": 10,
+        "averageTime": 116.63622000000001,
+        "minTime": 58.48610000000008,
+        "maxTime": 205.42319999999972,
+        "p95Time": 205.42319999999972,
+        "performanceRating": "ACCEPTABLE"
+      }
+    ],
+    "concurrentOperations": [
+      {
+        "scenario": "10 Concurrent Reads",
+        "operations": 10,
+        "totalTime": 35,
+        "operationsPerSecond": "285.71",
+        "averageOperationTime": 19.76197948909338,
+        "readOps": 10,
+        "writeOps": 0,
+        "efficiency": "EXCELLENT"
+      },
+      {
+        "scenario": "30 Concurrent Mixed",
+        "operations": 30,
+        "totalTime": 79,
+        "operationsPerSecond": "379.75",
+        "averageOperationTime": 29.684681074682413,
+        "readOps": 20,
+        "writeOps": 10,
+        "efficiency": "EXCELLENT"
+      },
+      {
+        "scenario": "50 High Load",
+        "operations": 50,
+        "totalTime": 80,
+        "operationsPerSecond": "625.00",
+        "averageOperationTime": 35.12413020557282,
+        "readOps": 33,
+        "writeOps": 17,
+        "efficiency": "EXCELLENT"
+      }
+    ],
+    "memoryUsage": [
+      {
+        "iteration": 0,
+        "rss": 48779264,
+        "heapUsed": 4775120,
+        "heapTotal": 6848512,
+        "external": 1542532,
+        "timestamp": 1757119120291
+      },
+      {
+        "iteration": 20,
+        "rss": 49737728,
+        "heapUsed": 4979568,
+        "heapTotal": 7110656,
+        "external": 1542532,
+        "timestamp": 1757119120569
+      },
+      {
+        "iteration": 40,
+        "rss": 51482624,
+        "heapUsed": 4635200,
+        "heapTotal": 9207808,
+        "external": 1542532,
+        "timestamp": 1757119120848
+      },
+      {
+        "iteration": 60,
+        "rss": 51482624,
+        "heapUsed": 4990776,
+        "heapTotal": 9207808,
+        "external": 1542532,
+        "timestamp": 1757119121136
+      },
+      {
+        "iteration": 80,
+        "rss": 51482624,
+        "heapUsed": 5350360,
+        "heapTotal": 9207808,
+        "external": 1542532,
+        "timestamp": 1757119121423
+      }
+    ],
+    "memoryMonitoring": {
+      "initialMemory": {
+        "rss": 48525312,
+        "heapTotal": 6848512,
+        "heapUsed": 4575392,
+        "external": 1542492,
+        "arrayBuffers": 10515
+      },
+      "finalMemory": {
+        "rss": 51482624,
+        "heapTotal": 9207808,
+        "heapUsed": 5540368,
+        "external": 1542532,
+        "arrayBuffers": 10515
+      },
+      "memoryDelta": {
+        "rss": 2957312,
+        "heapUsed": 964976,
+        "heapTotal": 2359296
+      },
+      "samplesCount": 5,
+      "memoryLeakDetected": false
+    }
+  },
+  "summary": {
+    "connectionPoolHealth": "ACCEPTABLE",
+    "queryPerformanceRating": "ACCEPTABLE",
+    "concurrencyRating": "EXCELLENT",
+    "memoryEfficiency": "EXCELLENT",
+    "overallRating": 80,
+    "recommendations": [
+      "Optimize database connection pool configuration"
+    ]
+  }
+}
