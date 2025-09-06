@@ -31,7 +31,7 @@
 # Download from: https://dev.mysql.com/downloads/installer/
 
 # Or use Docker
-docker run --name mysql-reved -e MYSQL_ROOT_PASSWORD=password -e MYSQL_DATABASE=reved_kids -p 3306:3306 -d mysql:8.0
+docker run --name mysql-reved -e MYSQL_ROOT_PASSWORD=your_secure_password -e MYSQL_DATABASE=reved_kids -p 3306:3306 -d mysql:8.0
 ```
 
 ### **2. Configure Environment Variables**

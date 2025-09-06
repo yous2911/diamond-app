@@ -4,10 +4,14 @@ services:
   # Service for your Node.js backend application
   app:
     build: .
-    container_name: revedkids_backend_app
+    container_name: diamond_app_backend
     restart: unless-stopped
     ports:
       - "3003:3003"
+    # This tells the app container where to find the other services
+    environment:
+      - DB_HOST=db
+      - REDIS_HOST=redis
     # Load environment variables from a secure, git-ignored file
     env_file:
       - ./.env.docker
@@ -23,7 +27,7 @@ services:
   # Service for the MySQL database
   db:
     image: mysql:8.0
-    container_name: revedkids_mysql_db
+    container_name: mysql_db
     restart: unless-stopped
     # IMPORTANT: All secrets are now loaded from a secure file
     env_file:
@@ -36,7 +40,7 @@ services:
     networks:
       - revedkids-network
     healthcheck:
-      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost", "-u", "root", "-p$${MYSQL_ROOT_PASSWORD}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -44,7 +48,7 @@ services:
   # Service for the Redis cache
   redis:
     image: redis:7-alpine
-    container_name: revedkids_redis_cache
+    container_name: redis_cache
     restart: unless-stopped
     ports:
       - "6379:6379"
@@ -57,11 +61,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      
+
   # Service for the Adminer database UI (useful for development)
   adminer:
     image: adminer
-    container_name: revedkids_adminer_ui
+    container_name: adminer_ui
     restart: unless-stopped
     ports:
       - "8080:8080"

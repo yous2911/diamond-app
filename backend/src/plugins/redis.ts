@@ -84,7 +84,7 @@ const redisPlugin = async (fastify: any) => {
             return null; // Stop retrying
           }
           const delay = Math.min(times * 50, 2000);
-          logger.info(`Redis connection retry ${times} in ${delay}ms`);
+          logger.warn(`Redis connection retry ${times} in ${delay}ms`);
           return delay;
         }
       });
@@ -142,7 +142,7 @@ const redisPlugin = async (fastify: any) => {
         }
       } catch (error) {
         stats.operations.errors++;
-        logger.debug('Redis get error, falling back to memory cache:', {
+        logger.warn('Redis get error, falling back to memory cache:', {
           key, 
           error: error instanceof Error ? error.message : 'Unknown error'
         });
@@ -171,7 +171,7 @@ const redisPlugin = async (fastify: any) => {
         }
       } catch (error) {
         stats.operations.errors++;
-        logger.debug('Redis set error, falling back to memory cache:', {
+        logger.warn('Redis set error, falling back to memory cache:', {
           key, 
           error: error instanceof Error ? error.message : 'Unknown error'
         });
@@ -194,7 +194,7 @@ const redisPlugin = async (fastify: any) => {
         }
       } catch (error) {
         stats.operations.errors++;
-        logger.debug('Redis mget error:', error);
+        logger.warn('Redis mget error:', error);
       }
       
       // Memory cache fallback
@@ -218,7 +218,7 @@ const redisPlugin = async (fastify: any) => {
         }
       } catch (error) {
         stats.operations.errors++;
-        logger.debug('Redis mset error:', error);
+        logger.warn('Redis mset error:', error);
       }
       
       // Memory cache fallback
@@ -238,7 +238,7 @@ const redisPlugin = async (fastify: any) => {
         }
       } catch (error) {
         stats.operations.errors++;
-        logger.debug('Redis del error:', error);
+        logger.warn('Redis del error:', error);
       }
       
       // Memory cache fallback
@@ -258,7 +258,7 @@ const redisPlugin = async (fastify: any) => {
         }
       } catch (error) {
         stats.operations.errors++;
-        logger.debug('Redis exists error:', error);
+        logger.warn('Redis exists error:', error);
       }
       
       // Memory cache fallback
@@ -273,7 +273,7 @@ const redisPlugin = async (fastify: any) => {
         }
       } catch (error) {
         stats.operations.errors++;
-        logger.debug('Redis expire error:', error);
+        logger.warn('Redis expire error:', error);
       }
       
       // Memory cache fallback
@@ -296,7 +296,7 @@ const redisPlugin = async (fastify: any) => {
         }
       } catch (error) {
         stats.operations.errors++;
-        logger.debug('Redis incr error:', error);
+        logger.warn('Redis incr error:', error);
       }
       
       // Memory cache fallback
@@ -317,7 +317,7 @@ const redisPlugin = async (fastify: any) => {
         }
       } catch (error) {
         stats.operations.errors++;
-        logger.debug('Redis flush error:', error);
+        logger.warn('Redis flush error:', error);
       }
       
       // Clear memory cache
@@ -331,7 +331,7 @@ const redisPlugin = async (fastify: any) => {
         }
       } catch (error) {
         stats.operations.errors++;
-        logger.debug('Redis keys error:', error);
+        logger.warn('Redis keys error:', error);
       }
       
       // Memory cache fallback - simple pattern matching
@@ -348,7 +348,7 @@ const redisPlugin = async (fastify: any) => {
           return await redis.ping();
         }
       } catch (error) {
-        logger.debug('Redis ping error:', error);
+        logger.warn('Redis ping error:', error);
       }
       
       return 'PONG (memory cache)';
@@ -361,7 +361,7 @@ const redisPlugin = async (fastify: any) => {
           return { redis: true, info };
         }
       } catch (error) {
-        logger.debug('Redis info error:', error);
+        logger.warn('Redis info error:', error);
       }
       
       return { 
@@ -401,7 +401,7 @@ const redisPlugin = async (fastify: any) => {
           baseStats.keys = keyCount;
         }
       } catch (error) {
-        logger.debug('Redis stats error:', error);
+        logger.warn('Redis stats error:', error);
       }
       
       return baseStats;
@@ -418,7 +418,7 @@ const redisPlugin = async (fastify: any) => {
       try {
         return JSON.parse(value);
       } catch (error) {
-        logger.debug('JSON parse error for cache key:', { key, error });
+        logger.warn('JSON parse error for cache key:', { key, error });
         return null;
       }
     }
