@@ -291,7 +291,7 @@ export class AuditTrailService {
         id: reportId,
         title: `Compliance Report ${entityType ? `- ${entityType}` : ''}`,
         description: `Audit trail report for period ${startDate.toISOString()} to ${endDate.toISOString()}`,
-        generatedBy: userContext ? userContext.email : 'system'
+        generatedBy: userContext ? userContext.email : 'system',
         generatedAt: new Date(),
         period: { startDate, endDate },
         filters: { entityType },

@@ -302,6 +302,20 @@ vi.mock('../services/consent.service', () => ({
 export let app: FastifyInstance;
 let setupComplete = false;
 
+// Test authentication tokens
+export const TEST_AUTH_TOKEN = 'Bearer test-jwt-token-for-testing-' + Date.now();
+export const TEST_USER = {
+  id: 'test-user-123',
+  email: 'test@example.com',
+  role: 'admin'
+};
+
+// Set environment variables for testing
+process.env.NODE_ENV = 'test';
+process.env.JWT_SECRET = 'test-jwt-secret-key-for-testing-only';
+process.env.DATABASE_URL = 'test://mock-database';
+process.env.REDIS_URL = 'redis://localhost:6379/15';
+
 beforeAll(async () => {
   if (setupComplete) {
     return; // Skip if already setup
