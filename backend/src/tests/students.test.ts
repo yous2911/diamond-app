@@ -7,6 +7,19 @@ describe('Students Routes', () => {
   const studentId = 1;
 
   beforeEach(async () => {
+    // First register a test student
+    await app.inject({
+      method: 'POST',
+      url: '/api/auth/register',
+      payload: {
+        prenom: 'Alice',
+        nom: 'Dupont',
+        dateNaissance: '2015-05-15',
+        niveauScolaire: 'CP'
+      }
+    });
+
+    // Then login
     const loginResponse = await app.inject({
       method: 'POST',
       url: '/api/auth/login',
@@ -15,7 +28,11 @@ describe('Students Routes', () => {
         nom: 'Dupont'
       }
     });
+
+    expect(loginResponse.statusCode).toBe(200);
     const loginData = JSON.parse(loginResponse.body);
+    expect(loginData.success).toBe(true);
+    expect(loginData.data.token).toBeDefined();
     authToken = loginData.data.token;
   });
 

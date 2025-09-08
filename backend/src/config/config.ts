@@ -8,9 +8,13 @@ if (process.env.NODE_ENV === 'test') {
   process.env.REDIS_ENABLED = 'false';
   process.env.DB_HOST = process.env.DB_HOST || 'localhost';
   process.env.DB_USER = process.env.DB_USER || 'root';
-  // DO NOT set a default password for tests. It should be provided by the test environment.
-  // process.env.DB_PASSWORD = process.env.DB_PASSWORD || 'thisisREALLYIT29!';
+  process.env.DB_PASSWORD = process.env.DB_PASSWORD || 'thisisREALLYIT29!';
   process.env.DB_NAME = process.env.DB_NAME || 'reved_kids';
+  // Set required secrets for tests
+  process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only';
+  process.env.JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'test-jwt-refresh-secret-for-testing-only-32-chars';
+  process.env.ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'testtesttest32charabcdefghijklmn';
+  process.env.COOKIE_SECRET = process.env.COOKIE_SECRET || 'test-cookie-secret-for-testing-only-32-chars';
 } else {
   // FORCE load ONLY env.backend - ignore all other .env files
   const envPath = path.join(process.cwd(), 'env.backend');
@@ -161,13 +165,13 @@ const configSchema = z.object({
 // Directly parse the environment. If it fails, the app will crash. This is what we want.
 const config = configSchema.parse(process.env);
 
-// Now, call your validation function to perform production-specific checks.
-validateEnvironment();
-
 // Environment helpers
 export const isDevelopment = config.NODE_ENV === 'development';
 export const isProduction = config.NODE_ENV === 'production';
 export const isTest = config.NODE_ENV === 'test';
+
+// Now, call your validation function to perform production-specific checks.
+validateEnvironment();
 
 // Database configuration for Drizzle
 export const dbConfig = {

@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 // Import newly extracted components
-import SkeletonLoader from './components/SkeletonLoader';
+import SkeletonLoader from './components/ui/SkeletonLoader';
 import ParticleEngine from './components/ParticleEngine';
 import MascottePremium from './components/MascottePremium';
 
