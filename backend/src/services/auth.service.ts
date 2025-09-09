@@ -194,6 +194,22 @@ export class AuthService {
    */
   async authenticateStudent(credentials: LoginCredentials): Promise<AuthResult> {
     try {
+      logger.info('AuthenticateStudent called with:', { 
+        prenom: credentials.prenom, 
+        nom: credentials.nom, 
+        email: credentials.email 
+      });
+      console.log('🔍 AUTH DEBUG - Credentials:', credentials);
+      
+      // Test database connection
+      try {
+        await db.select().from(students).limit(1);
+        logger.info('Database connection test: SUCCESS');
+      } catch (dbError) {
+        logger.error('Database connection test: FAILED', dbError);
+        throw dbError;
+      }
+      
       let student;
 
       // Find student by email or name combination
@@ -205,6 +221,7 @@ export class AuthService {
         student = result[0];
       } else if (credentials.prenom && credentials.nom) {
         // Legacy support for name-based login
+        logger.info('Searching by name:', { prenom: credentials.prenom, nom: credentials.nom });
         const result = await db.select()
           .from(students)
           .where(
@@ -214,6 +231,13 @@ export class AuthService {
             )
           )
           .limit(1);
+        logger.info('Database query result:', { 
+          found: result.length, 
+          student: result[0] ? 'found' : 'not found',
+          result: result
+        });
+        console.log('🔍 AUTH DEBUG - Query result:', result);
+        console.log('🔍 AUTH DEBUG - Student found:', result[0]);
         student = result[0];
       }
 
@@ -292,6 +316,11 @@ export class AuthService {
 
     } catch (error) {
       logger.error('Authentication error:', error);
+      logger.error('Authentication error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        credentials: { prenom: credentials.prenom, nom: credentials.nom, email: credentials.email }
+      });
       return {
         success: false,
         error: 'Erreur d\'authentification'

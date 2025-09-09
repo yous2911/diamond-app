@@ -1,42 +1,59 @@
-const { build } = require('./dist/app-test');
+const bcrypt = require('bcrypt');
+const mysql = require('mysql2/promise');
 
 async function debugAuth() {
-  console.log('🔍 Debugging auth endpoint...');
-
-  const app = await build();
-  await app.ready();
-
-  // Test 1: Name-based login
-  console.log('\n🧪 Test 1: Name-based login');
-  const response1 = await app.inject({
-    method: 'POST',
-    url: '/api/auth/login',
-    payload: {
-      prenom: 'Alice',
-      nom: 'Dupont',
-      password: 'CHANGE_ME_PASSWORD'
-    }
+  const connection = await mysql.createConnection({
+    host: 'localhost',
+    user: 'root',
+    password: 'thisisREALLYIT29!',
+    database: 'reved_kids'
   });
 
-  console.log('Status:', response1.statusCode);
-  console.log('Body:', response1.body);
-
-  // Test 2: Check what's in the request body
-  console.log('\n🧪 Test 2: Check request body parsing');
-  const response2 = await app.inject({
-    method: 'POST',
-    url: '/api/auth/login',
-    payload: {
-      prenom: 'Test',
-      nom: 'User',
-      password: 'CHANGE_ME_PASSWORD'
+  try {
+    console.log('🔍 Debugging authentication...');
+    
+    // Test 1: Check if we can find a student
+    const [students] = await connection.execute(
+      'SELECT id, prenom, nom, email, password_hash FROM students WHERE email LIKE "%@test.com" LIMIT 1'
+    );
+    
+    if (students.length === 0) {
+      console.log('❌ No test students found');
+      return;
     }
-  });
-
-  console.log('Status:', response2.statusCode);
-  console.log('Body:', response2.body);
-
-  await app.close();
+    
+    const student = students[0];
+    console.log('✅ Found student:', student);
+    
+    // Test 2: Check password hash
+    if (!student.password_hash) {
+      console.log('❌ Student has no password hash');
+      return;
+    }
+    
+    console.log('✅ Student has password hash');
+    
+    // Test 3: Test password verification
+    const password = 'password123456';
+    const isValid = await bcrypt.compare(password, student.password_hash);
+    console.log(`🔐 Password verification: ${isValid ? '✅ Valid' : '❌ Invalid'}`);
+    
+    // Test 4: Check all required fields
+    const [fullStudent] = await connection.execute(
+      'SELECT * FROM students WHERE id = ?',
+      [student.id]
+    );
+    
+    console.log('📋 Student fields:');
+    Object.keys(fullStudent[0]).forEach(key => {
+      console.log(`  ${key}: ${fullStudent[0][key]}`);
+    });
+    
+  } catch (error) {
+    console.error('❌ Error:', error);
+  } finally {
+    await connection.end();
+  }
 }
 
-debugAuth().catch(console.error);
+debugAuth();

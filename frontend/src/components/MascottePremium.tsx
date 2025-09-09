@@ -1,26 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useMascot } from '../hooks/useApiData';
 
-const MascottePremium: React.FC<{
+// =============================================================================
+// 🐸 MASCOTTE PREMIUM DIAMANT AVEC ÉMOTIONS
+// =============================================================================
+interface MascottePremiumProps {
   emotion: 'idle' | 'happy' | 'excited' | 'thinking' | 'celebrating' | 'sleepy';
   message?: string;
   onInteraction?: () => void;
-}> = ({ emotion, message, onInteraction }) => {
+}
+
+const MascottePremium: React.FC<MascottePremiumProps> = ({ 
+  emotion, 
+  message, 
+  onInteraction 
+}) => {
   const [currentEmotion, setCurrentEmotion] = useState(emotion);
   const [showMessage, setShowMessage] = useState(false);
   const [isInteracting, setIsInteracting] = useState(false);
-  const [dialogueText, setDialogueText] = useState<string>('');
-
-  // Utilisation du hook mascot API
-  const { data: mascotApiData, getDialogue } = useMascot();
 
   const emotionEmojis = {
-    idle: mascotApiData?.mascot?.type === 'dragon' ? '🐲' :
-          mascotApiData?.mascot?.type === 'fairy' ? '🧚‍♀️' :
-          mascotApiData?.mascot?.type === 'robot' ? '🤖' :
-          mascotApiData?.mascot?.type === 'cat' ? '🐱' :
-          mascotApiData?.mascot?.type === 'owl' ? '🦉' : '🐸',
+    idle: '👤',
     happy: '😊',
     excited: '🤩',
     thinking: '🤔',
@@ -41,29 +41,15 @@ const MascottePremium: React.FC<{
     setCurrentEmotion(emotion);
     if (message) {
       setShowMessage(true);
-      setDialogueText(message);
       setTimeout(() => setShowMessage(false), 3000);
     }
   }, [emotion, message]);
 
-  const handleClick = async () => {
+  const handleClick = () => {
     setIsInteracting(true);
     setCurrentEmotion('excited');
-
-    // Obtenir un dialogue contextuel de l'API
-    try {
-      const dialogueData = await getDialogue('greeting');
-      if (dialogueData) {
-        setDialogueText(dialogueData.dialogue);
-      } else {
-        setDialogueText(emotionMessages.excited[Math.floor(Math.random() * emotionMessages.excited.length)]);
-      }
-    } catch (error) {
-      setDialogueText(emotionMessages.excited[Math.floor(Math.random() * emotionMessages.excited.length)]);
-    }
-
     setShowMessage(true);
-
+    
     setTimeout(() => {
       setCurrentEmotion('happy');
       setIsInteracting(false);
@@ -89,10 +75,10 @@ const MascottePremium: React.FC<{
   };
 
   return (
-    <div className="mascot-container fixed bottom-4 right-4 z-40">
+    <div className="fixed bottom-6 right-6 z-40">
       {/* Aura magique */}
       <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-400/20 via-blue-400/20 to-green-400/20 blur-xl animate-pulse" />
-
+      
       {/* Particules autour de la mascotte */}
       <div className="absolute inset-0">
         {[...Array(6)].map((_, i) => (
@@ -130,10 +116,10 @@ const MascottePremium: React.FC<{
         whileTap={{ scale: 0.95 }}
         initial={{ scale: 0, rotate: -180 }}
         animate={{ scale: 1, rotate: 0 }}
-        transition={{
-          type: "spring",
-          stiffness: 260,
-          damping: 20
+        transition={{ 
+          type: "spring", 
+          stiffness: 260, 
+          damping: 20 
         }}
       >
         {emotionEmojis[currentEmotion]}
@@ -152,9 +138,9 @@ const MascottePremium: React.FC<{
             <div className="absolute bottom-0 right-4 transform translate-y-full">
               <div className="w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-white/95" />
             </div>
-
+            
             <p className="text-sm font-medium text-gray-800 text-center">
-              {dialogueText || emotionMessages[currentEmotion][Math.floor(Math.random() * emotionMessages[currentEmotion].length)]}
+              {message || emotionMessages[currentEmotion][Math.floor(Math.random() * emotionMessages[currentEmotion].length)]}
             </p>
           </motion.div>
         )}

@@ -14,8 +14,10 @@ describe('Students Routes', () => {
       payload: {
         prenom: 'Alice',
         nom: 'Dupont',
+        email: 'alice.dupont@test.com',
+        password: 'test-password-123456',
         dateNaissance: '2015-05-15',
-        niveauScolaire: 'CP'
+        niveauActuel: 'CP'
       }
     });
 
@@ -25,7 +27,8 @@ describe('Students Routes', () => {
       url: '/api/auth/login',
       payload: {
         prenom: 'Alice',
-        nom: 'Dupont'
+        nom: 'Dupont',
+        password: 'test-password-123456'
       }
     });
 

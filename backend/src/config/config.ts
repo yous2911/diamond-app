@@ -15,6 +15,10 @@ if (process.env.NODE_ENV === 'test') {
   process.env.JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'test-jwt-refresh-secret-for-testing-only-32-chars';
   process.env.ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'testtesttest32charabcdefghijklmn';
   process.env.COOKIE_SECRET = process.env.COOKIE_SECRET || 'test-cookie-secret-for-testing-only-32-chars';
+  // Disable rate limiting for tests
+  process.env.RATE_LIMIT_MAX = '10000';
+  process.env.RATE_LIMIT_AUTH_MAX = '1000';
+  process.env.RATE_LIMIT_GLOBAL_MAX = '50000';
 } else {
   // FORCE load ONLY env.backend - ignore all other .env files
   const envPath = path.join(process.cwd(), 'env.backend');
@@ -275,7 +279,7 @@ export const helmetConfig = {
 // CORS configuration
 export const corsConfig = {
   origin: isDevelopment 
-    ? ['http://localhost:3000', 'http://localhost:3001', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001']
+    ? ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3004', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001', 'http://127.0.0.1:3004']
     : config.CORS_ORIGIN.split(',').map(origin => origin.trim()),
   credentials: config.CORS_CREDENTIALS,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],

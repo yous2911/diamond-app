@@ -15,11 +15,12 @@ const TestAccounts: React.FC<{
   onSelectAccount: (prenom: string, nom: string) => void;
 }> = ({ onSelectAccount }) => {
   const testAccounts = [
-    { prenom: 'Emma', nom: 'Martin', level: 'CP', age: '6-8', emoji: '👧', color: 'from-pink-400 to-purple-500' },
-    { prenom: 'Lucas', nom: 'Dubois', level: 'CP', age: '6-8', emoji: '👦', color: 'from-blue-400 to-cyan-500' },
-    { prenom: 'Léa', nom: 'Bernard', level: 'CP', age: '6-8', emoji: '👧', color: 'from-green-400 to-teal-500' },
-    { prenom: 'Noah', nom: 'Garcia', level: 'CE1', age: '9-11', emoji: '👦', color: 'from-orange-400 to-red-500' },
-    { prenom: 'Alice', nom: 'Rodriguez', level: 'CE1', age: '9-11', emoji: '👧', color: 'from-purple-400 to-pink-500' },
+    { prenom: 'Alice', nom: 'Dupont', level: 'CP', age: '6-8', emoji: '👧', color: 'from-slate-500 to-gray-600' },
+    { prenom: 'Bob', nom: 'Martin', level: 'CP', age: '6-8', emoji: '👦', color: 'from-blue-500 to-indigo-600' },
+    { prenom: 'Charlie', nom: 'Durand', level: 'CP', age: '6-8', emoji: '👦', color: 'from-emerald-500 to-teal-600' },
+    { prenom: 'Lucas', nom: 'Martin', level: 'CE1', age: '9-11', emoji: '👦', color: 'from-amber-500 to-orange-600' },
+    { prenom: 'Emma', nom: 'Dubois', level: 'CE1', age: '9-11', emoji: '👧', color: 'from-violet-500 to-purple-600' },
+    { prenom: 'Noah', nom: 'Lefevre', level: 'CE1', age: '9-11', emoji: '👦', color: 'from-cyan-500 to-blue-600' },
   ];
 
   return (
@@ -63,7 +64,7 @@ const TestAccounts: React.FC<{
       
       <div className="mt-4 text-center">
         <p className="text-xs text-gray-500">
-          Mot de passe pour tous : <code className="bg-gray-100 px-2 py-1 rounded">password123</code>
+          Mot de passe pour tous : <code className="bg-gray-100 px-2 py-1 rounded">password123456</code>
         </p>
       </div>
     </motion.div>
@@ -101,7 +102,7 @@ const LoginScreen: React.FC = React.memo(() => {
     setFormData({
       prenom,
       nom,
-      password: 'password123'
+      password: 'password123456'
     });
     setShowTestAccounts(false);
     setMagicalParticles(true);
@@ -129,10 +130,14 @@ const LoginScreen: React.FC = React.memo(() => {
         console.log('🎉 Login successful!');
       } else {
         setMagicalParticles(false);
+        // Show error to user
+        console.error('❌ Login failed:', response.error);
+        // The error will be displayed by the AuthContext error state
       }
     } catch (error) {
       setMagicalParticles(false);
       console.error('Login error:', error);
+      // The error will be displayed by the AuthContext error state
     }
   };
 
@@ -145,7 +150,7 @@ const LoginScreen: React.FC = React.memo(() => {
       {[...Array(12)].map((_, i) => (
         <motion.div
           key={i}
-          className="absolute w-2 h-2 bg-yellow-400 rounded-full opacity-70"
+          className="absolute w-2 h-2 bg-cyan-400 rounded-full opacity-70"
           initial={{
             x: Math.random() * window.innerWidth,
             y: window.innerHeight + 50,
@@ -171,7 +176,7 @@ const LoginScreen: React.FC = React.memo(() => {
   // =============================================================================
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-500 to-blue-500 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-600 via-blue-600 to-indigo-700 flex items-center justify-center p-6">
       <MagicalBackground />
       
       {/* Magical particles on interaction */}
@@ -186,7 +191,7 @@ const LoginScreen: React.FC = React.memo(() => {
             {[...Array(20)].map((_, i) => (
               <motion.div
                 key={i}
-                className="absolute w-3 h-3 bg-yellow-300 rounded-full"
+                className="absolute w-3 h-3 bg-cyan-300 rounded-full"
                 initial={{
                   x: window.innerWidth / 2,
                   y: window.innerHeight / 2,
@@ -234,18 +239,21 @@ const LoginScreen: React.FC = React.memo(() => {
           >
             ✨
           </motion.div>
-          <h1 className="text-3xl font-bold text-white mb-2">FastRevEd Kids</h1>
-          <p className="text-white/90 text-lg">Interface Diamant 💎</p>
-          <p className="text-white/70">Pour les 6-8 ans</p>
+          <h1 className="text-4xl font-bold text-white mb-2 bg-gradient-to-r from-cyan-300 to-blue-300 bg-clip-text text-transparent">
+            FastRevEd Kids
+          </h1>
+          <p className="text-white/90 text-xl font-semibold">Interface Diamant 💎</p>
+          <p className="text-white/80 text-lg">Apprentissage Magique pour les 6-8 ans</p>
         </motion.div>
 
         {/* Login Form */}
         <motion.form
           onSubmit={handleSubmit}
-          className="bg-white/95 backdrop-blur-sm rounded-3xl p-8 shadow-2xl"
+          className="bg-white/95 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-white/20"
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.4, type: "spring" }}
+          whileHover={{ scale: 1.02 }}
         >
           <div className="text-center mb-6">
             <h2 className="text-xl font-bold text-gray-800">Connexion</h2>
@@ -331,8 +339,8 @@ const LoginScreen: React.FC = React.memo(() => {
           <motion.button
             type="submit"
             disabled={isLoading || !formData.prenom || !formData.nom || !formData.password}
-            className="w-full mt-6 bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 px-4 rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-lg transform hover:scale-105 transition-all duration-300"
-            whileHover={{ scale: 1.05 }}
+            className="w-full mt-6 bg-gradient-to-r from-purple-600 via-pink-500 to-blue-500 text-white py-4 px-6 rounded-xl font-bold text-lg disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-2xl transform hover:scale-105 transition-all duration-300 border border-white/20"
+            whileHover={{ scale: 1.05, boxShadow: "0 20px 40px rgba(0,0,0,0.3)" }}
             whileTap={{ scale: 0.95 }}
           >
             {isLoading ? (

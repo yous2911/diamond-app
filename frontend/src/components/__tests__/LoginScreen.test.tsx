@@ -134,7 +134,7 @@ describe('LoginScreen', () => {
 
       // Check password hint
       expect(screen.getByText('Mot de passe pour tous :')).toBeInTheDocument();
-      expect(screen.getByText('password123')).toBeInTheDocument();
+      expect(screen.getByText('password123456')).toBeInTheDocument();
     });
 
     it('should have form validation attributes', () => {
@@ -209,13 +209,13 @@ describe('LoginScreen', () => {
 
       await user.type(prenomInput, 'Emma');
       await user.type(nomInput, 'Martin');
-      await user.type(passwordInput, 'password123');
+      await user.type(passwordInput, 'password123456');
       await user.click(submitButton);
 
       expect(mockApiService.login).toHaveBeenCalledWith({
         prenom: 'Emma',
         nom: 'Martin',
-        password: 'password123'
+        password: 'password123456'
       });
     });
   });

@@ -1,6 +1,8 @@
-import React, { useRef, useCallback, useMemo, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import React, { useRef, useCallback, useEffect } from 'react';
 
+// =============================================================================
+// ✨ MOTEUR DE PARTICULES DIAMANT 3D
+// =============================================================================
 interface Particle {
   id: string;
   x: number;
@@ -14,21 +16,28 @@ interface Particle {
   type: 'sparkle' | 'crystal' | 'star' | 'heart';
 }
 
-const ParticleEngine: React.FC<{
+interface ParticleEngineProps {
   isActive: boolean;
-  intensity: 0 | 1 | 2 | 3 | 4 | 5; // SuperMemo quality levels
+  intensity: 'low' | 'medium' | 'high' | 'epic';
   type: 'success' | 'levelup' | 'magic';
   position?: { x: number; y: number };
-}> = ({ isActive, intensity, type, position = { x: 50, y: 50 } }) => {
+}
+
+const ParticleEngine: React.FC<ParticleEngineProps> = ({ 
+  isActive, 
+  intensity, 
+  type, 
+  position = { x: 50, y: 50 } 
+}) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const particlesRef = useRef<Particle[]>([]);
-  const animationRef = useRef<number | undefined>(undefined);
+  const animationRef = useRef<number>();
 
-  const colors = useMemo(() => ({
+  const colors = {
     success: ['#10b981', '#34d399', '#6ee7b7', '#d1fae5'],
     levelup: ['#8b5cf6', '#a78bfa', '#c4b5fd', '#ede9fe'],
     magic: ['#3b82f6', '#60a5fa', '#93c5fd', '#dbeafe']
-  }), []);
+  };
 
   const createParticle = useCallback((x: number, y: number): Particle => {
     const particleColors = colors[type];
@@ -44,7 +53,7 @@ const ParticleEngine: React.FC<{
       maxLife: Math.random() * 80 + 40,
       type: (['sparkle', 'crystal', 'star', 'heart'] as const)[Math.floor(Math.random() * 4)]
     };
-  }, [type, colors]);
+  }, [type]);
 
   const updateParticles = useCallback(() => {
     particlesRef.current = particlesRef.current.filter(particle => {
@@ -69,13 +78,13 @@ const ParticleEngine: React.FC<{
     particlesRef.current.forEach(particle => {
       const alpha = Math.max(0, 1 - (particle.life / particle.maxLife));
       ctx.save();
-
+      
       ctx.globalAlpha = alpha;
       ctx.fillStyle = particle.color;
-
+      
       ctx.translate(particle.x, particle.y);
       ctx.rotate(particle.life * 0.1);
-
+      
       // Dessiner selon le type avec effets 3D
       switch (particle.type) {
         case 'sparkle':
@@ -94,7 +103,7 @@ const ParticleEngine: React.FC<{
           ctx.closePath();
           ctx.fill();
           break;
-
+          
         case 'crystal':
           // Cristal 3D
           ctx.shadowBlur = 8;
@@ -116,7 +125,7 @@ const ParticleEngine: React.FC<{
           ctx.closePath();
           ctx.fill();
           break;
-
+          
         case 'star':
           // Étoile 5 branches
           ctx.shadowBlur = 6;
@@ -133,7 +142,7 @@ const ParticleEngine: React.FC<{
           ctx.closePath();
           ctx.fill();
           break;
-
+          
         case 'heart':
           // Cœur 3D
           ctx.shadowBlur = 8;
@@ -146,7 +155,7 @@ const ParticleEngine: React.FC<{
           ctx.fill();
           break;
       }
-
+      
       ctx.restore();
     });
   }, []);
@@ -161,12 +170,7 @@ const ParticleEngine: React.FC<{
     if (isActive) {
       const intensityConfig = {
         low: { count: 15, interval: 80 },
-        0: { count: 10, interval: 100 }, // BLACKOUT
-        1: { count: 15, interval: 80 },  // HARD
-        2: { count: 20, interval: 70 },  // DIFFICULT
-        3: { count: 30, interval: 50 },  // GOOD
-        4: { count: 40, interval: 40 },  // EASY
-        5: { count: 50, interval: 30 },  // PERFECT
+        medium: { count: 30, interval: 50 },
         high: { count: 60, interval: 30 },
         epic: { count: 120, interval: 15 }
       };
@@ -200,7 +204,7 @@ const ParticleEngine: React.FC<{
   return (
     <canvas
       ref={canvasRef}
-      className="particle-canvas"
+      className="fixed inset-0 pointer-events-none z-50"
       style={{ background: 'transparent' }}
     />
   );

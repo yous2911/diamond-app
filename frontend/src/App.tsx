@@ -2,43 +2,33 @@ import React, { useState, Suspense, lazy } from 'react';
 import { Routes, Route, Outlet } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { PremiumFeaturesProvider } from './contexts/PremiumFeaturesContext';
+import { CelebrationProvider } from './contexts/CelebrationContext';
+import GlobalPremiumLayout from './components/GlobalPremiumLayout';
 
 // Import newly extracted components
 import SkeletonLoader from './components/ui/SkeletonLoader';
-import ParticleEngine from './components/ParticleEngine';
-import MascottePremium from './components/MascottePremium';
 
 // Lazy load pages for code-splitting
 const HomePage = lazy(() => import('./pages/HomePage'));
 const ExercisePage = lazy(() => import('./pages/ExercisePage'));
+const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage'));
 const LoginScreen = lazy(() => import('./components/LoginScreen'));
 
 // =============================================================================
 //  LAYOUT PRINCIPAL AVEC ÉLÉMENTS PARTAGÉS
 // =============================================================================
 const MainLayout = () => {
-  // State for shared UI elements like particles and mascot messages
-  const [showParticles, setShowParticles] = useState(false);
-  const [particleType, setParticleType] = useState<'success' | 'levelup' | 'magic'>('magic');
-  const [mascotEmotion, setMascotEmotion] = useState<'idle' | 'happy' | 'excited' | 'thinking' | 'celebrating' | 'sleepy'>('happy');
-  const [mascotMessage, setMascotMessage] = useState('');
-
-  // This layout will wrap all authenticated pages
+  // This layout will wrap all authenticated pages with premium features
   return (
-    <div className="min-h-screen bg-gradient-to-br from-magic-sky/30 via-magic-ocean/20 to-magic-forest/30">
-      <ParticleEngine
-        isActive={showParticles}
-        intensity={4}
-        type={particleType}
-        position={{ x: 50, y: 50 }}
-      />
-      <MascottePremium
-        emotion={mascotEmotion}
-        message={mascotMessage}
-      />
-      {/* Outlet renders the current page component from the router */}
-      <Outlet context={{ setShowParticles, setParticleType, setMascotEmotion, setMascotMessage }} />
-    </div>
+    <PremiumFeaturesProvider initialXP={75} initialLevel={3}>
+      <CelebrationProvider>
+        <GlobalPremiumLayout showXPBar={false} xpPosition="floating">
+          {/* Outlet renders the current page component from the router */}
+          <Outlet />
+        </GlobalPremiumLayout>
+      </CelebrationProvider>
+    </PremiumFeaturesProvider>
   );
 };
 
@@ -53,7 +43,8 @@ const AppRouter = () => {
         <Route element={<MainLayout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/exercise" element={<ExercisePage />} />
-          {/* Add other routes here, e.g., /leaderboard, /wardrobe */}
+          <Route path="/leaderboard" element={<LeaderboardPage />} />
+          {/* Add other routes here, e.g., /wardrobe */}
         </Route>
       </Routes>
     </Suspense>

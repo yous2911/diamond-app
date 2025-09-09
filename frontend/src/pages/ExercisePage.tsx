@@ -1,15 +1,17 @@
-import React, { useMemo } from 'react';
-import { useLocation, useNavigate, useOutletContext } from 'react-router-dom';
+import React, { useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Star, Home } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { usePremiumFeatures } from '../contexts/PremiumFeaturesContext';
+import { useCelebrations } from '../contexts/CelebrationContext';
 import { useStudentStats, useExerciseSubmission, useXpTracking, useMascot } from '../hooks/useApiData';
+import XPCrystalsPremium from '../components/XPCrystalsPremium';
+import MicroInteraction from '../components/MicroInteractions';
 
 const ExercisePage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { setMascotEmotion, setMascotMessage, setShowParticles, setParticleType } = useOutletContext<any>();
-
   const currentExercise = location.state?.exercise;
 
   const { student } = useAuth();
@@ -17,6 +19,24 @@ const ExercisePage = () => {
   const { submitExercise } = useExerciseSubmission();
   const { addXp } = useXpTracking();
   const { updateEmotion: updateMascotEmotion } = useMascot();
+  const { checkForCelebrations } = useCelebrations();
+  
+  // Use global premium features
+  const { 
+    setMascotEmotion, 
+    setMascotMessage, 
+    triggerParticles,
+    addXP: addGlobalXP,
+    currentXP,
+    maxXP,
+    level
+  } = usePremiumFeatures();
+
+  // Local state for showing XP after exercise completion
+  const [showXPAfterCompletion, setShowXPAfterCompletion] = useState(false);
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [confidenceLevel, setConfidenceLevel] = useState(50); // 0-100 scale for SuperMemo
+  const [showConfidenceSlider, setShowConfidenceSlider] = useState(false);
 
   const studentData = useMemo(() => ({
     stars: statsData?.stats?.totalCorrectAnswers || 0,
@@ -29,8 +49,9 @@ const ExercisePage = () => {
       if (isCorrect) {
         setMascotEmotion('celebrating');
         setMascotMessage('BRAVO ! Tu as réussi ! 🎉');
-        setShowParticles(true);
-        setParticleType('success');
+        
+        // Use global particle system
+        triggerParticles('success', 2000);
 
         const exerciseResult = {
           score: 100,
@@ -43,15 +64,35 @@ const ExercisePage = () => {
 
         if (submission.success) {
           await addXp(submission.xpEarned || 15);
+          // Add XP to global system for exercise completion
+          addGlobalXP(submission.xpEarned || 15, 'exercise');
+          
+          // Trigger contextual celebrations based on performance
+          checkForCelebrations({
+            score: 100,
+            timeSpent: Math.floor((Date.now() - startTime) / 1000),
+            difficulty: currentExercise.difficulty || 'Moyen',
+            isCorrect: true,
+            xpGained: submission.xpEarned || 15,
+            streakBefore: student?.currentStreak || 0,
+            streakAfter: (student?.currentStreak || 0) + 1
+          }, {
+            totalExercises: statsData?.stats?.totalExercises || 1,
+            correctAnswers: (statsData?.stats?.totalCorrectAnswers || 0) + 1,
+            currentLevel: level,
+            previousLevel: Math.max(1, level - (submission.masteryLevelChanged ? 1 : 0)) // Detect level ups properly
+          });
+          
+          setShowXPAfterCompletion(true);
         }
 
         await updateMascotEmotion('excellent', 'exercise_complete');
 
         setTimeout(() => {
-          setShowParticles(false);
           navigate('/');
           setMascotEmotion('happy');
-        }, 2000);
+          setMascotMessage('Prêt pour le prochain défi ?');
+        }, 3000);
       } else {
         setMascotEmotion('thinking');
         setMascotMessage('Essaie encore, tu vas y arriver ! 💪');
@@ -62,33 +103,57 @@ const ExercisePage = () => {
     }
   };
 
+  // Debug logging
+  console.log('🎯 ExercisePage - currentExercise:', currentExercise);
+  console.log('🎯 ExercisePage - location.state:', location.state);
+  console.log('🎯 ExercisePage - Exercise has options:', !!currentExercise?.options);
+  console.log('🎯 ExercisePage - Exercise options:', currentExercise?.options);
+  console.log('🎯 ExercisePage - Exercise answer:', currentExercise?.answer);
+
   if (!currentExercise) {
-    return (
-        <div className="min-h-screen p-6 flex items-center justify-center text-center">
-            <div>
-                <p className="text-xl font-semibold text-gray-700">Oups ! Aucun exercice n'a été chargé.</p>
-                <button onClick={() => navigate('/')} className="mt-4 bg-blue-500 text-white px-4 py-2 rounded-lg">
-                    Retour à l'accueil
-                </button>
-            </div>
-        </div>
-    )
+    // Automatically redirect to homepage if no exercise data
+    console.log('🎯 No exercise data, redirecting to homepage...');
+    navigate('/', { replace: true });
+    return null;
   }
 
   return (
     <div className="min-h-screen p-6">
+      {/* Show XP System only after exercise completion */}
+      {showXPAfterCompletion && (
+        <div className="fixed top-6 left-6 z-40">
+          <XPCrystalsPremium
+            currentXP={currentXP}
+            maxXP={maxXP}
+            level={level}
+            onLevelUp={(newLevel) => {
+              setMascotEmotion('excited');
+              setMascotMessage(`Niveau ${newLevel} ! 🎉`);
+            }}
+            studentName={student?.prenom || 'Élève'}
+            achievements={[
+              'Exercice complété avec succès !',
+              'Bonne réponse !',
+              'Progression excellente !'
+            ]}
+          />
+        </div>
+      )}
+
       <motion.div
         className="flex justify-between items-center mb-8"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <button
+        <MicroInteraction
+          type="button"
+          intensity="medium"
           onClick={() => navigate('/')}
-          className="flex items-center space-x-2 bg-white/80 rounded-xl px-4 py-2 hover:bg-white transition-colors"
+          className="flex items-center space-x-2 bg-white/80 backdrop-blur-sm rounded-xl px-4 py-2 hover:bg-white transition-all duration-300 border border-gray-200/30 shadow-md hover:shadow-lg"
         >
-          <Home className="w-5 h-5" />
-          <span>Accueil</span>
-        </button>
+          <Home className="w-5 h-5 text-gray-600" />
+          <span className="font-medium text-gray-700">Accueil</span>
+        </MicroInteraction>
 
         <h2 className="text-2xl font-bold text-gray-800">Exercice</h2>
 
@@ -111,7 +176,7 @@ const ExercisePage = () => {
             {currentExercise.options.map((option: string, index: number) => (
               <motion.button
                 key={index}
-                onClick={() => handleAnswerSubmit(option, option === currentExercise.correctAnswer)}
+                onClick={() => handleAnswerSubmit(option, option === (currentExercise.correctAnswer || currentExercise.answer))}
                 className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white py-3 px-6 rounded-xl font-semibold hover:shadow-lg transform hover:scale-105 transition-all duration-300 text-left"
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}

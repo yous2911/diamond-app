@@ -366,7 +366,7 @@ const AdvancedParticleEngine: React.FC<AdvancedParticleEngineProps> = ({
     
     sortedParticles.forEach(particle => {
       const alpha = 1 - (particle.life / particle.maxLife);
-      const size = particle.size * (1 + particle.z * 0.1); // 3D size scaling
+      const size = Math.max(particle.size * (1 + particle.z * 0.1), 0.5); // 3D size scaling with minimum
       
       ctx.save();
       
@@ -375,9 +375,9 @@ const AdvancedParticleEngine: React.FC<AdvancedParticleEngineProps> = ({
       const screenY = particle.y + particle.z * 0.05;
       
       // Render trail first
-      if (enableTrails && particle.trail && particle.trail.length > 1) {
+      if (enableTrails && particle.trail && particle.trail.length > 1 && size > 0) {
         ctx.strokeStyle = `rgba(${particle.color.r}, ${particle.color.g}, ${particle.color.b}, ${alpha * 0.3})`;
-        ctx.lineWidth = size * 0.5;
+        ctx.lineWidth = Math.max(size * 0.5, 0.5);
         ctx.lineCap = 'round';
         ctx.beginPath();
         ctx.moveTo(particle.trail[0].x, particle.trail[0].y);
@@ -394,10 +394,11 @@ const AdvancedParticleEngine: React.FC<AdvancedParticleEngineProps> = ({
       
       // Glow effect for certain particle types
       const particleConfig = getParticleConfig(particle.type);
-      if (particleConfig.glow) {
+      if (particleConfig.glow && size > 0) {
+        const glowRadius = Math.max(size * 2, 1); // Ensure minimum radius of 1
         const gradient = ctx.createRadialGradient(
           screenX, screenY, 0,
-          screenX, screenY, size * 2
+          screenX, screenY, glowRadius
         );
         gradient.addColorStop(0, `rgba(${particle.color.r}, ${particle.color.g}, ${particle.color.b}, ${alpha})`);
         gradient.addColorStop(0.5, `rgba(${particle.color.r}, ${particle.color.g}, ${particle.color.b}, ${alpha * 0.5})`);
@@ -405,7 +406,7 @@ const AdvancedParticleEngine: React.FC<AdvancedParticleEngineProps> = ({
         
         ctx.fillStyle = gradient;
         ctx.beginPath();
-        ctx.arc(screenX, screenY, size * 2, 0, Math.PI * 2);
+        ctx.arc(screenX, screenY, glowRadius, 0, Math.PI * 2);
         ctx.fill();
       }
       

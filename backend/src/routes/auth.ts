@@ -48,7 +48,9 @@ export default async function authRoutes(fastify: FastifyInstance) {
       reply: FastifyReply
     ) => {
       try {
+        fastify.log.info('Login attempt started:', { body: request.body });
         const authResult = await authService.authenticateStudent(request.body);
+        fastify.log.info('Auth service result:', { success: authResult.success });
 
         if (!authResult.success || !authResult.student) {
           const statusCode = authResult.lockoutInfo?.isLocked ? 429 : 401;
@@ -66,9 +68,6 @@ export default async function authRoutes(fastify: FastifyInstance) {
         const payload = { studentId: student.id, email: student.email };
 
         const accessToken = await reply.jwtSign(payload);
-        const refreshToken = await (fastify as any).refreshJwt.sign({ ...payload, type: 'refresh' });
-
-        (reply as any).setAuthCookies(accessToken, refreshToken);
 
         return reply.send({
           success: true,
@@ -80,11 +79,17 @@ export default async function authRoutes(fastify: FastifyInstance) {
 
       } catch (error) {
         fastify.log.error('Login error:', error);
+        fastify.log.error('Error details:', {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined,
+          body: request.body
+        });
         return reply.status(500).send({
           success: false,
           error: {
             message: 'Erreur interne du serveur',
             code: 'INTERNAL_ERROR',
+            details: error instanceof Error ? error.message : 'Unknown error'
           },
         });
       }
@@ -129,13 +134,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
         const { student } = authResult;
         const payload = { studentId: student.id, email: student.email };
 
-        const { student } = authResult;
-        const payload = { studentId: student.id, email: student.email };
-
         const accessToken = await reply.jwtSign(payload);
-        const refreshToken = await (fastify as any).refreshJwt.sign({ ...payload, type: 'refresh' });
-
-        (reply as any).setAuthCookies(accessToken, refreshToken);
 
         return reply.status(201).send({
           success: true,
@@ -177,10 +176,6 @@ export default async function authRoutes(fastify: FastifyInstance) {
           });
         }
         
-        const decoded = await (fastify as any).refreshJwt.verify(refreshToken);
-        const payload = { studentId: decoded.studentId, email: decoded.email };
-        const newAccessToken = await reply.jwtSign(payload);
-
         const decoded = await (fastify as any).refreshJwt.verify(refreshToken);
         const payload = { studentId: decoded.studentId, email: decoded.email };
         const newAccessToken = await reply.jwtSign(payload);
