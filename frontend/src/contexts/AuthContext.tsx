@@ -3,7 +3,7 @@
  * Manages user authentication state and provides auth methods to components
  */
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { apiService, Student, ApiResponse } from '../services/api';
 
 // =============================================================================
@@ -68,8 +68,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setIsAuthenticated(true);
         setStudent(response.data.student);
         setError(null);
-        
-        console.log('✅ Login successful:', response.data.student.prenom);
       } else {
         setError(response.error?.message || 'Login failed');
         console.error('❌ Login failed:', response.error);
@@ -101,7 +99,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsAuthenticated(false);
       setStudent(null);
       setError(null);
-      console.log('✅ Logout successful');
     } catch (error) {
       console.error('❌ Logout error:', error);
       // Even if logout fails on server, clear local state
@@ -128,11 +125,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         const currentStudentData = apiService.currentStudentData;
         setIsAuthenticated(true);
         setStudent(currentStudentData);
-        console.log('✅ Auth status verified:', currentStudentData?.prenom);
       } else {
         setIsAuthenticated(false);
         setStudent(null);
-        console.log('ℹ️ No active authentication');
       }
     } catch (error) {
       console.error('❌ Auth status check error:', error);
@@ -143,7 +138,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const refreshStudentData = async (): Promise<void> => {
+  const refreshStudentData = useCallback(async (): Promise<void> => {
     if (!isAuthenticated) return;
 
     try {
@@ -151,14 +146,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       if (response.success && response.data) {
         setStudent(response.data.student);
-        console.log('✅ Student data refreshed');
       } else {
         console.error('❌ Failed to refresh student data:', response.error);
       }
     } catch (error) {
       console.error('❌ Error refreshing student data:', error);
     }
-  };
+  }, [isAuthenticated]);
 
   const clearError = (): void => {
     setError(null);

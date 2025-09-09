@@ -898,7 +898,7 @@ class SchemaValidationService {
 export const schemaValidationService = new SchemaValidationService();
 
 // Export types
-export {
+export type {
   SchemaDefinition,
   TableDefinition,
   ColumnDefinition,

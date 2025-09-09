@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react';
+import React, { useState, useEffect, useRef, memo } from 'react';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { useMagicalSounds } from '../hooks/useMagicalSounds';
 import EnhancedLevelUpSystem from './EnhancedLevelUpSystem';

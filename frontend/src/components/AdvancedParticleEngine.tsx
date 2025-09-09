@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useCallback, useState } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 
 interface Particle {
   id: number;
@@ -118,7 +118,7 @@ const AdvancedParticleEngine: React.FC<AdvancedParticleEngineProps> = ({
   }
 
   // Particle type configurations
-  const getParticleConfig = (type: string): ParticleConfig => {
+  const getParticleConfig = useCallback((type: string): ParticleConfig => {
     switch (type) {
       case 'fire':
         return {
@@ -200,7 +200,7 @@ const AdvancedParticleEngine: React.FC<AdvancedParticleEngineProps> = ({
       default:
         return getParticleConfig('magic');
     }
-  };
+  }, []);
 
   // Create particle with advanced properties
   const createParticle = useCallback((x: number, y: number): Particle => {
@@ -248,7 +248,7 @@ const AdvancedParticleEngine: React.FC<AdvancedParticleEngineProps> = ({
       behavior,
       trail: enableTrails ? [] : []
     };
-  }, [particleType, behavior, config, enableTrails]);
+  }, [particleType, behavior, config, enableTrails, getParticleConfig]);
 
   // Advanced physics simulation
   const updateParticlePhysics = useCallback((particle: Particle, deltaTime: number) => {
@@ -534,7 +534,7 @@ const AdvancedParticleEngine: React.FC<AdvancedParticleEngineProps> = ({
     
     lastTimeRef.current = currentTime;
     animationFrameRef.current = requestAnimationFrame(animate);
-  }, [isActive, config, emitterPosition, createParticle, updateParticlePhysics, renderParticles]);
+  }, [isActive, config, emitterPosition, createParticle, updateParticlePhysics, renderParticles, height, width]);
 
   // Mouse tracking
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {

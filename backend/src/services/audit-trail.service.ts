@@ -3,8 +3,8 @@ import { z } from 'zod';
 import { logger } from '../utils/logger';
 import { EncryptionService } from './encryption.service';
 import { db } from '../db/connection';
-import { auditLogs, securityAlerts, complianceReports } from '../db/schema';
-import { eq, and, gte, lte, desc, asc, inArray, sql, count } from 'drizzle-orm';
+import { auditLogs, securityAlerts } from '../db/schema';
+import { eq, and, gte, lte, desc, inArray, count } from 'drizzle-orm';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { createObjectCsvWriter } from 'csv-writer';
@@ -313,7 +313,7 @@ export class AuditTrailService {
         entityType: 'admin_action',
         entityId: reportId,
         action: 'create',
-        userId: userContext?.userId || null,
+        userId: userContext?.userId?.toString() || null,
         details: {
           reportType: 'compliance',
           period: { startDate, endDate },
@@ -321,7 +321,8 @@ export class AuditTrailService {
           format
         },
         severity: 'low',
-        category: 'compliance'
+        category: 'compliance',
+        timestamp: new Date()
       });
 
       logger.info('Compliance report generated', { 
@@ -346,7 +347,8 @@ export class AuditTrailService {
       const entries = await this.queryAuditLogs({
         studentId,
         includeDetails: true,
-        limit: 1000
+        limit: 1000,
+        offset: 0
       });
 
       // Log access to student audit trail
@@ -354,13 +356,14 @@ export class AuditTrailService {
         entityType: 'student',
         entityId: studentId,
         action: 'read',
-        userId: userContext?.userId || null,
+        userId: userContext?.userId?.toString() || null,
         details: {
           action: 'audit_trail_access',
           entriesReturned: entries.entries.length
         },
         severity: 'medium',
-        category: 'data_access'
+        category: 'data_access',
+        timestamp: new Date()
       });
 
       return entries.entries;
@@ -378,7 +381,9 @@ export class AuditTrailService {
     try {
       const entries = await this.queryAuditLogs({
         studentId,
-        limit: 1000
+        limit: 1000,
+        offset: 0,
+        includeDetails: false
       });
 
       let anonymizedCount = 0;
@@ -395,14 +400,15 @@ export class AuditTrailService {
         entityType: 'student',
         entityId: studentId,
         action: 'anonymize',
-        userId: userContext?.userId || null,
+        userId: userContext?.userId?.toString() || null,
         details: {
           action: 'audit_anonymization',
           entriesAnonymized: anonymizedCount,
           reason
         },
         severity: 'high',
-        category: 'compliance'
+        category: 'compliance',
+        timestamp: new Date()
       });
 
       logger.info('Student audit logs anonymized', { 
@@ -715,7 +721,7 @@ export class AuditTrailService {
       logger.debug('Audit entry stored successfully', { auditId: entry.id });
     } catch (error) {
       logger.error('Failed to store audit entry:', error);
-      throw new Error(`Failed to store audit entry: ${error.message}`);
+      throw new Error(`Failed to store audit entry: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -808,7 +814,7 @@ export class AuditTrailService {
 
     } catch (error) {
       logger.error('Error executing audit query:', error);
-      throw new Error(`Failed to execute audit query: ${error.message}`);
+      throw new Error(`Failed to execute audit query: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -849,7 +855,7 @@ export class AuditTrailService {
 
     } catch (error) {
       logger.error('Error getting audit entry:', error);
-      throw new Error(`Failed to get audit entry: ${error.message}`);
+      throw new Error(`Failed to get audit entry: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -874,7 +880,7 @@ export class AuditTrailService {
       logger.debug('Audit entry updated successfully', { auditId: entry.id });
     } catch (error) {
       logger.error('Error updating audit entry:', error);
-      throw new Error(`Failed to update audit entry: ${error.message}`);
+      throw new Error(`Failed to update audit entry: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -921,7 +927,7 @@ export class AuditTrailService {
 
     } catch (error) {
       logger.error('Error getting audit entries for period:', error);
-      throw new Error(`Failed to get audit entries for period: ${error.message}`);
+      throw new Error(`Failed to get audit entries for period: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -1132,7 +1138,7 @@ export class AuditTrailService {
 
     } catch (error) {
       logger.error('Error exporting report:', error);
-      throw new Error(`Failed to export report: ${error.message}`);
+      throw new Error(`Failed to export report: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 }

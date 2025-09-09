@@ -640,7 +640,7 @@ class ConnectionResilienceService extends EventEmitter {
 export const connectionResilienceService = new ConnectionResilienceService();
 
 // Export types
-export {
+export type {
   ConnectionConfig,
   ConnectionMetrics,
   RetryOperation

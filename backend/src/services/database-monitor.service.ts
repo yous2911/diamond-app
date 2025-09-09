@@ -895,7 +895,7 @@ class DatabaseMonitorService extends EventEmitter {
 export const databaseMonitorService = new DatabaseMonitorService();
 
 // Export types
-export {
+export type {
   DatabaseMetrics,
   PerformanceAlert,
   MonitoringConfig,

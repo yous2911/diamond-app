@@ -774,7 +774,7 @@ class SlowQueryOptimizerService {
 export const slowQueryOptimizerService = new SlowQueryOptimizerService();
 
 // Export types
-export {
+export type {
   SlowQueryEntry,
   QueryOptimization,
   QueryPerformanceStats,

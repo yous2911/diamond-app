@@ -48,9 +48,9 @@ export default async function authRoutes(fastify: FastifyInstance) {
       reply: FastifyReply
     ) => {
       try {
-        fastify.log.info('Login attempt started:', { body: request.body });
-        const authResult = await authService.authenticateStudent(request.body);
-        fastify.log.info('Auth service result:', { success: authResult.success });
+        (fastify.log as any).info('Login attempt started:', { body: request.body });
+        const authResult = await authService.authenticateStudent(request.body as any);
+        (fastify.log as any).info('Auth service result:', { success: authResult.success });
 
         if (!authResult.success || !authResult.student) {
           const statusCode = authResult.lockoutInfo?.isLocked ? 429 : 401;
@@ -78,12 +78,12 @@ export default async function authRoutes(fastify: FastifyInstance) {
         });
 
       } catch (error) {
-        fastify.log.error('Login error:', error);
-        fastify.log.error('Error details:', {
+        (fastify.log as any).error('Login error:', error);
+        (fastify.log as any).error('Error details:', {
           message: error instanceof Error ? error.message : 'Unknown error',
           stack: error instanceof Error ? error.stack : undefined,
           body: request.body
-        });
+        } as any);
         return reply.status(500).send({
           success: false,
           error: {
@@ -119,7 +119,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
       reply: FastifyReply
     ) => {
       try {
-        const authResult = await authService.registerStudent(request.body);
+        const authResult = await authService.registerStudent(request.body as any);
 
         if (!authResult.success || !authResult.student) {
           return reply.status(400).send({
@@ -146,7 +146,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
         });
 
       } catch (error) {
-        fastify.log.error('Registration error:', error);
+        (fastify.log as any).error('Registration error:', error);
         return reply.status(500).send({
           success: false,
           error: {
@@ -192,7 +192,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
         });
 
       } catch (error) {
-        fastify.log.error('Token refresh error:', error);
+        (fastify.log as any).error('Token refresh error:', error);
         reply.clearCookie('refresh-token', { path: '/api/auth/refresh' });
         return reply.status(401).send({
           success: false,
@@ -230,7 +230,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
         // await emailService.sendPasswordReset(email, resetToken);
 
       } catch (error) {
-        fastify.log.error('Password reset error:', error);
+        (fastify.log as any).error('Password reset error:', error);
         // Do not send 500 to prevent leaking information
         return reply.send({
           success: true,
@@ -272,7 +272,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
         });
 
       } catch (error) {
-        fastify.log.error('Password reset confirm error:', error);
+        (fastify.log as any).error('Password reset confirm error:', error);
         return reply.status(500).send({
           success: false,
           error: {
@@ -305,7 +305,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
         });
 
       } catch (error) {
-        fastify.log.error('Logout error:', error);
+        (fastify.log as any).error('Logout error:', error);
         return reply.status(500).send({
           success: false,
           error: {
@@ -357,7 +357,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
 
   // This endpoint seems for testing/verification, should be secured or removed
   fastify.get('/verify/:studentId', {
-    preHandler: [fastify.authenticateAdmin], // Secure this endpoint
+    preHandler: [(fastify as any).authenticateAdmin], // Secure this endpoint
     handler: async (
       request: FastifyRequest<{ Params: { studentId: string } }>,
       reply: FastifyReply

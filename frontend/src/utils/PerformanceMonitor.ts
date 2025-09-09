@@ -83,14 +83,14 @@ class PerformanceMonitor {
     this.monitorMemory();
     this.monitorBundleSize();
     
-    console.log('🚀 Performance monitoring started');
+    // Performance monitoring started
   }
 
   // Stop monitoring
   stopMonitoring() {
     this.isMonitoring = false;
     this.observers.forEach(observer => observer.disconnect());
-    console.log('⏹️ Performance monitoring stopped');
+    // Performance monitoring stopped
   }
 
   // Monitor FPS

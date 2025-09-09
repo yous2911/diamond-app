@@ -604,8 +604,9 @@ const HybridMascotSystem: React.FC<HybridMascotProps> = ({
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
-      if (mountRef.current && renderer.domElement) {
-        mountRef.current.removeChild(renderer.domElement);
+      const mountElement = mountRef.current;
+      if (mountElement && renderer.domElement) {
+        mountElement.removeChild(renderer.domElement);
       }
       renderer.dispose();
     };

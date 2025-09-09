@@ -108,7 +108,7 @@ const PsychologyDrivenDashboard: React.FC<PsychologyDrivenDashboardProps> = ({
     
     if (result.success) {
       // Show success toast
-      console.log('Kudos sent!', result);
+      // Kudos sent successfully
       refetchLeaderboard();
     }
   }, [userId, giveKudos, refetchLeaderboard]);

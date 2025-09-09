@@ -148,7 +148,6 @@ export const useGPUPerformance = () => {
         
         // Only update if tier changed significantly
         if (newTier !== performanceTier) {
-          console.log(`🎯 Performance tier adjusted: ${performanceTier} → ${newTier} (${fps.toFixed(1)} FPS)`);
           setPerformanceTier(newTier);
           setConfig(PERFORMANCE_CONFIGS[newTier]);
         }
@@ -224,8 +223,6 @@ export const useGPUPerformance = () => {
     } else {
       finalTier = 'low';
     }
-    
-    console.log(`🎮 Performance detection: GPU=${gpuTier}, System=${systemScore}, Final=${finalTier}`);
     
     setPerformanceTier(finalTier);
     setConfig(PERFORMANCE_CONFIGS[finalTier]);

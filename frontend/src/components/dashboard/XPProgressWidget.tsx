@@ -77,7 +77,7 @@ const XPProgressWidget: React.FC<XPProgressWidgetProps> = ({
     .map((badge: any) => badge.title) || [];
 
   const handleLevelUp = (newLevel: number) => {
-    console.log('🎉 Level up!', newLevel);
+    // Level up achieved
     setShowCelebration(true);
     
     // Create confetti effect
@@ -87,7 +87,7 @@ const XPProgressWidget: React.FC<XPProgressWidgetProps> = ({
   };
 
   const handleMilestone = (milestone: number) => {
-    console.log('🏆 Milestone reached:', milestone);
+    // Milestone reached
   };
 
   if (badgesLoading) {

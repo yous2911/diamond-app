@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import AdvancedParticleEngine from './AdvancedParticleEngine';
 import HybridMascotSystem from './HybridMascotSystem';
 import XPCrystalsPremium from './XPCrystalsPremium';
@@ -22,15 +22,14 @@ const GlobalPremiumLayout: React.FC<GlobalPremiumLayoutProps> = ({
     showParticles,
     particleType,
     mascotEmotion,
-    mascotMessage,
     currentXP,
     maxXP,
     level,
-    addXP,
     onLevelUp,
-    setMascotEmotion,
-    setMascotMessage
+    setMascotEmotion
   } = usePremiumFeatures();
+
+  const [mascotMessage, setMascotMessage] = useState<string>('');
 
   // Convert particle types for AdvancedParticleEngine
   const getAdvancedParticleType = (type: 'success' | 'levelup' | 'magic') => {
@@ -60,10 +59,6 @@ const GlobalPremiumLayout: React.FC<GlobalPremiumLayoutProps> = ({
     onLevelUp?.(newLevel);
   };
 
-  const handleMascotInteraction = () => {
-    setMascotEmotion('excited');
-    setMascotMessage('Tu es fantastique ! ✨');
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 relative overflow-hidden">
@@ -116,11 +111,11 @@ const GlobalPremiumLayout: React.FC<GlobalPremiumLayoutProps> = ({
           currentActivity={getMascotActivity(mascotEmotion)}
           equippedItems={['golden_crown', 'magic_cape']}
           onMascotInteraction={(interaction) => {
-            console.log('Mascot interaction:', interaction);
+            // Mascot interaction handled
             setMascotMessage('Interaction avec le mascot ! 🐉');
           }}
           onEmotionalStateChange={(state) => {
-            console.log('Mascot emotional state:', state);
+            // Mascot emotional state updated
           }}
         />
       </div>

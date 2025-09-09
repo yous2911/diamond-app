@@ -152,7 +152,6 @@ export const useUpdateProgress = () => {
       // });
       // const data = await response.json();
       
-      console.log('Progress updated:', { competenceId, newProgress });
       return { success: true };
     } catch (err) {
       const errorMessage = 'Failed to update progress';

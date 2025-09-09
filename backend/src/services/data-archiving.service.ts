@@ -862,7 +862,7 @@ class DataArchivingService {
 export const dataArchivingService = new DataArchivingService();
 
 // Export types
-export {
+export type {
   ArchivingConfig,
   RetentionPolicy,
   ArchiveJob,

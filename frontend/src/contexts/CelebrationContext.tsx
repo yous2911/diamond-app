@@ -112,19 +112,6 @@ export const CelebrationProvider: React.FC<CelebrationProviderProps> = ({ childr
     return detector ? detector() : { type, enhanced: false };
   }, []);
 
-  // Queue celebrations to avoid overlapping
-  const queueCelebration = useCallback((type: CelebrationType, data: CelebrationData = {}) => {
-    setCelebrationState(prev => ({
-      ...prev,
-      queue: [...prev.queue, { type, data }]
-    }));
-    
-    // Process queue if not currently celebrating
-    if (!celebrationState.show) {
-      processQueue();
-    }
-  }, [celebrationState.show]);
-
   // Process celebration queue
   const processQueue = useCallback(() => {
     setCelebrationState(prev => {
@@ -146,9 +133,22 @@ export const CelebrationProvider: React.FC<CelebrationProviderProps> = ({ childr
     });
   }, [detectCelebrationContext]);
 
+  // Queue celebrations to avoid overlapping
+  const queueCelebration = useCallback((type: CelebrationType, data: CelebrationData = {}) => {
+    setCelebrationState(prev => ({
+      ...prev,
+      queue: [...prev.queue, { type, data }]
+    }));
+    
+    // Process queue if not currently celebrating
+    if (!celebrationState.show) {
+      processQueue();
+    }
+  }, [celebrationState.show, processQueue]);
+
   // Main celebration trigger
   const celebrate = useCallback((type: CelebrationType, data: CelebrationData = {}) => {
-    console.log(`🎉 Triggering celebration: ${type}`, data);
+    // Triggering celebration animation
     
     if (celebrationState.show) {
       // Queue if currently celebrating
@@ -230,7 +230,6 @@ export const CelebrationProvider: React.FC<CelebrationProviderProps> = ({ childr
     }
     
     // Daily goal detection (placeholder for future implementation)
-    const today = new Date().toDateString();
     const dailyExercises = 10; // This would come from user stats
     if (dailyExercises >= 10) {
       celebrate('daily_goal', {

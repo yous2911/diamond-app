@@ -1,5 +1,5 @@
-import React, { useRef, useCallback, useState, useEffect, memo } from 'react';
-import { motion, useAnimation, useSpring, useTransform, useMotionValue } from 'framer-motion';
+import React, { useCallback, useState, memo } from 'react';
+import { motion, useAnimation, useTransform, useMotionValue } from 'framer-motion';
 import { useGPUPerformance } from '../hooks/useGPUPerformance';
 
 // =============================================================================
@@ -84,12 +84,11 @@ const MicroInteraction = memo<MicroInteractionProps>(({
   } = useGPUPerformance();
   
   const [isHovered, setIsHovered] = useState(false);
-  const [isPressed, setIsPressed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isPressed, setIsPressed] = useState(false);
   
   // Motion values for smooth interactions
   const scale = useMotionValue(1);
-  const rotate = useMotionValue(0);
   const brightness = useMotionValue(1);
   const blur = useMotionValue(0);
   

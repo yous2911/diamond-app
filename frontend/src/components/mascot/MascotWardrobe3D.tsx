@@ -127,7 +127,6 @@ const MascotWardrobe3D: React.FC<MascotWardrobe3DProps> = ({
   const mascotRef = useRef<THREE.Group | null>(null);
   const wardrobeItemsRef = useRef<Map<string, THREE.Object3D>>(new Map());
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [previewItem, setPreviewItem] = useState<string | null>(null);
 
   // Available items based on student level
   const availableItems = useMemo(() => 
@@ -438,8 +437,9 @@ const MascotWardrobe3D: React.FC<MascotWardrobe3DProps> = ({
     animate();
 
     return () => {
-      if (mountRef.current && renderer.domElement) {
-        mountRef.current.removeChild(renderer.domElement);
+      const mountElement = mountRef.current;
+      if (mountElement && renderer.domElement) {
+        mountElement.removeChild(renderer.domElement);
       }
       renderer.dispose();
     };

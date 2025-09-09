@@ -89,7 +89,7 @@ export const useWardrobeAnalytics = (): WardrobeAnalytics => {
   const trackWardrobeClose = useCallback(() => {
     if (sessionStart) {
       const sessionTime = Date.now() - sessionStart.getTime();
-      console.log('Wardrobe session time:', sessionTime);
+      // Wardrobe session time tracked
     }
   }, [sessionStart]);
 

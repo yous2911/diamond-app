@@ -31,8 +31,8 @@ export async function authenticateMiddleware(
       });
     }
 
-    // Verify token
-    const decoded = AuthService.verifyToken(token);
+    // Verify token using Fastify JWT
+    const decoded = await (request.server as any).jwt.verify(token);
     
     if (decoded.type !== 'access') {
       return reply.status(401).send({
@@ -59,7 +59,7 @@ export async function authenticateMiddleware(
     
     if (refreshToken) {
       try {
-        const newAccessToken = AuthService.refreshAccessToken(refreshToken);
+        const newAccessToken = await (request.server as any).refreshJwt.verify(refreshToken);
         
         if (newAccessToken) {
           // Set new access token
@@ -72,7 +72,7 @@ export async function authenticateMiddleware(
           });
 
           // Verify new token
-          const newDecoded = AuthService.verifyToken(newAccessToken);
+          const newDecoded = await (request.server as any).jwt.verify(newAccessToken);
           request.user = {
             studentId: newDecoded.studentId,
             email: newDecoded.email,
@@ -107,7 +107,7 @@ export async function optionalAuthMiddleware(
     const token = request.cookies.auth_token;
 
     if (token) {
-      const decoded = AuthService.verifyToken(token);
+      const decoded = await (request.server as any).jwt.verify(token);
       
       if (decoded.type === 'access') {
         request.user = {

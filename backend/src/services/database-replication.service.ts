@@ -852,7 +852,7 @@ class DatabaseReplicationService extends EventEmitter {
 export const databaseReplicationService = new DatabaseReplicationService();
 
 // Export types
-export {
+export type {
   ReplicationConfig,
   ReplicationServer,
   ReplicationStatus,

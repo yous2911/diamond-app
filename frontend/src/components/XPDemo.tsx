@@ -50,7 +50,7 @@ const XPDemo: React.FC = () => {
   };
 
   const handleMilestone = (milestone: number) => {
-    console.log(`Milestone reached: ${milestone}%`);
+    // Milestone reached
     setRecentAchievements(prev => [...prev, `Progression: ${milestone}% !`]);
     
     // Remove old achievements after 5 seconds

@@ -53,7 +53,7 @@ const ParticleEngine: React.FC<ParticleEngineProps> = ({
       maxLife: Math.random() * 80 + 40,
       type: (['sparkle', 'crystal', 'star', 'heart'] as const)[Math.floor(Math.random() * 4)]
     };
-  }, [type]);
+  }, [type, colors]);
 
   const updateParticles = useCallback(() => {
     particlesRef.current = particlesRef.current.filter(particle => {

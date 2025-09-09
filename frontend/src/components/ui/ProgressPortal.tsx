@@ -168,7 +168,7 @@ export const ProgressPortal: React.FC<ProgressPortalProps> = ({
           level={progressData.level}
           crystalType="rainbow"
           size="large"
-          onLevelUp={() => console.log('Level up!')}
+          onLevelUp={() => {/* Level up handled */}}
         />
       </div>
 

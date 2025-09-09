@@ -164,7 +164,7 @@ export const useLazyLoadingPerformance = () => {
       setLoadingStates(prev => ({ ...prev, [componentName]: false }));
       
       // Log performance metrics
-      console.log(`🚀 ${componentName} loaded in ${loadTime.toFixed(2)}ms`);
+      // Component loaded successfully
     };
   }, []);
 

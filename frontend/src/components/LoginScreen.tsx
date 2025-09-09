@@ -127,17 +127,14 @@ const LoginScreen: React.FC = React.memo(() => {
 
       if (response.success) {
         // Login successful - the AuthProvider will handle state updates
-        console.log('🎉 Login successful!');
+        // Success handled by AuthProvider
       } else {
         setMagicalParticles(false);
-        // Show error to user
-        console.error('❌ Login failed:', response.error);
-        // The error will be displayed by the AuthContext error state
+        // Error will be displayed by the AuthContext error state
       }
     } catch (error) {
       setMagicalParticles(false);
-      console.error('Login error:', error);
-      // The error will be displayed by the AuthContext error state
+      // Error will be displayed by the AuthContext error state
     }
   };
 

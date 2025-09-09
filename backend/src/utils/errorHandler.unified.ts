@@ -269,7 +269,7 @@ class ErrorResponseFormatter {
             code: 'INTERNAL_ERROR',
             statusCode: 500
           },
-          timestamp: response.timestamp
+          timestamp: (response as any).timestamp
         };
       }
       
@@ -323,8 +323,8 @@ export async function unifiedErrorHandler(
     const response = ErrorResponseFormatter.formatResponse(error, context, config);
 
     // Add rate limit headers if applicable
-    if (error instanceof BaseError && error.errorCode === 'RATE_LIMIT_EXCEEDED' && error.metadata.details?.retryAfter) {
-      reply.header('Retry-After', error.metadata.details.retryAfter);
+    if (error instanceof BaseError && error.errorCode === 'RATE_LIMIT_EXCEEDED' && (error.metadata.details as any)?.retryAfter) {
+      reply.header('Retry-After', (error.metadata.details as any).retryAfter);
     }
 
     // Send response

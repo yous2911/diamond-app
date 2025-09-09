@@ -1064,7 +1064,7 @@ class CapacityPlanningService {
 export const capacityPlanningService = new CapacityPlanningService();
 
 // Export types
-export {
+export type {
   CapacityMetrics,
   GrowthProjection,
   CapacityThreshold,

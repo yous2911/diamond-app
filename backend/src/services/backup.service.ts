@@ -958,6 +958,6 @@ class BackupService {
 export const backupService = new BackupService();
 
 // Export types for external use
-export { BackupMetadata, RestoreOptions, BackupJob, BackupConfig };
+export type { BackupMetadata, RestoreOptions, BackupJob, BackupConfig };
 
 export default backupService;

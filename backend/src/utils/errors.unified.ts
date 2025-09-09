@@ -161,7 +161,7 @@ export class SchemaValidationError extends ValidationError {
       constraint, 
       value
     });
-    this.errorCode = 'SCHEMA_VALIDATION_ERROR';
+    (this as any).errorCode = 'SCHEMA_VALIDATION_ERROR';
   }
 }
 
@@ -204,14 +204,14 @@ export class AuthorizationError extends BaseError {
 export class TokenExpiredError extends AuthenticationError {
   constructor() {
     super('Token expiré');
-    this.errorCode = 'TOKEN_EXPIRED';
+    (this as any).errorCode = 'TOKEN_EXPIRED';
   }
 }
 
 export class InvalidTokenError extends AuthenticationError {
   constructor() {
     super('Token invalide');
-    this.errorCode = 'INVALID_TOKEN';
+    (this as any).errorCode = 'INVALID_TOKEN';
   }
 }
 
@@ -244,7 +244,7 @@ export class ConflictError extends BaseError {
 export class DuplicateResourceError extends ConflictError {
   constructor(resource: string, field?: string, value?: any) {
     super(`${resource} déjà existant${field ? ` (${field}: ${value})` : ''}`, 'duplicate');
-    this.errorCode = 'DUPLICATE_RESOURCE';
+    (this as any).errorCode = 'DUPLICATE_RESOURCE';
     this.metadata.details = { resource, field, value };
   }
 }

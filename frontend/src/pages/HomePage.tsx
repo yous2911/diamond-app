@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Star, Heart, Volume2, VolumeX, LogOut } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { usePremiumFeatures } from '../contexts/PremiumFeaturesContext';
 import {
@@ -16,7 +16,6 @@ import DiamondCP_CE2Interface from '../components/DiamondCP_CE2Interface';
 import XPCrystalsPremium from '../components/XPCrystalsPremium';
 import MascotWardrobe3D from '../components/mascot/MascotWardrobe3D';
 import MemorableEntrance from '../components/MemorableEntrance';
-import CelebrationSystem from '../components/CelebrationSystem';
 import MicroInteraction from '../components/MicroInteractions';
 import { useGPUPerformance } from '../hooks/useGPUPerformance';
 
@@ -24,51 +23,38 @@ const HomePage = () => {
   const navigate = useNavigate();
   const { student, logout } = useAuth();
   
-  // Debug logging
-  console.log('🏠 HomePage loaded for student:', student?.prenom);
-  console.log('🏠 Current URL:', window.location.pathname);
+  // HomePage loaded for student
   
   // Ensure we're on the correct route
   React.useEffect(() => {
     if (window.location.pathname !== '/') {
-      console.log('🏠 Redirecting from', window.location.pathname, 'to /');
       navigate('/', { replace: true });
     }
   }, [navigate]);
   const { 
     setMascotEmotion, 
     setMascotMessage, 
-    addXP, 
-    triggerParticles,
-    soundEnabled,
-    setSoundEnabled 
+    triggerParticles
   } = usePremiumFeatures();
 
   // Hooks API
-  const { data: competencesData } = useCompetences();
   const { data: exercisesData } = useExercisesByLevel(student?.niveau || 'CP');
   const { data: statsData } = useStudentStats();
   const { updateEmotion: updateMascotEmotion } = useMascot();
   const { startSession, endSession, data: activeSessionData } = useSessionManagement();
-  const { currentXp, currentLevel, addXp } = useXpTracking();
+  const { currentXp, currentLevel } = useXpTracking();
 
   // Local state for wardrobe and memorable moments
-  const [selectedMascot, setSelectedMascot] = useState<'dragon' | 'fairy' | 'robot'>('dragon');
-  const [showMascotSelector, setShowMascotSelector] = useState(false);
   const [equippedItems, setEquippedItems] = useState<string[]>(['golden_crown', 'magic_cape']);
   const [showWardrobe, setShowWardrobe] = useState(false);
+  const [selectedMascot, setSelectedMascot] = useState<'dragon' | 'fairy' | 'robot'>('dragon');
   const [showEntrance, setShowEntrance] = useState(() => {
     // Only show entrance for first visit
     return !localStorage.getItem('diamond-app-visited');
   });
-  const [celebrationData, setCelebrationData] = useState<{
-    show: boolean;
-    type: 'exercise_complete' | 'level_up' | 'streak' | 'first_time' | 'perfect_score' | 'comeback';
-    data?: any;
-  }>({ show: false, type: 'exercise_complete' });
   
   // GPU performance integration
-  const { performanceTier, shouldUseComplexAnimation } = useGPUPerformance();
+  const { } = useGPUPerformance();
 
   const studentData = useMemo(() => ({
     prenom: student?.prenom || 'Élève',
@@ -276,13 +262,9 @@ const HomePage = () => {
         totalExercises: 2
       }
     ];
-  }, []);
+  }, [exercisesData]);
 
   const handleSubjectClick = async (subject: any) => {
-    console.log('🎯 HomePage - Subject clicked:', subject.name);
-    console.log('🎯 HomePage - Exercises available:', subject.exercises.length);
-    console.log('🎯 HomePage - Full subject data:', subject);
-    
     setMascotEmotion('thinking');
     setMascotMessage('C\'est parti pour une nouvelle aventure !');
 
@@ -294,20 +276,14 @@ const HomePage = () => {
 
     if (subject.exercises.length > 0) {
       const randomExercise = subject.exercises[Math.floor(Math.random() * subject.exercises.length)];
-      console.log('🎯 HomePage - Navigating to exercise:', randomExercise);
-      console.log('🎯 HomePage - Exercise data structure:', JSON.stringify(randomExercise, null, 2));
-      console.log('🎯 HomePage - About to call navigate...');
       navigate('/exercise', { state: { exercise: randomExercise } });
-      console.log('🎯 HomePage - Navigate called successfully');
     } else {
-      console.log('🎯 HomePage - No exercises available');
       setMascotEmotion('sleepy');
       setMascotMessage('Cette matière arrive bientôt ! 🚧');
     }
   };
 
   const handleExerciseStart = (exercise: any) => {
-    console.log('🎯 Starting exercise:', exercise);
     navigate('/exercise', { state: { exercise } });
   };
 

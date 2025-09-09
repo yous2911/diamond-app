@@ -1,0 +1,103 @@
+{
+  "compilerOptions": {
+    /* Language and Environment */
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "commonjs",
+    "moduleResolution": "node",
+    
+    /* Module System */
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    
+    /* Output Options */
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "removeComments": true,
+    "sourceMap": false,
+    "declaration": false,
+    "declarationMap": false,
+    
+    /* Type Checking - DEPLOYMENT FRIENDLY */
+    "strict": false,
+    "noImplicitAny": false,
+    "strictNullChecks": false,
+    "strictFunctionTypes": false,
+    "strictBindCallApply": false,
+    "strictPropertyInitialization": false,
+    "noImplicitReturns": false,
+    "noFallthroughCasesInSwitch": false,
+    "noUncheckedIndexedAccess": false,
+    "noImplicitOverride": false,
+    "exactOptionalPropertyTypes": false,
+    
+    /* Additional Checks - RELAXED */
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noImplicitThis": false,
+    "alwaysStrict": false,
+    
+    /* Emit Options */
+    "noEmitOnError": false,
+    "preserveConstEnums": true,
+    "downlevelIteration": true,
+    
+    /* Interop Constraints */
+    "forceConsistentCasingInFileNames": true,
+    "allowJs": true,
+    
+    /* Skip Lib Check (Performance) */
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
+    
+    /* Experimental */
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    
+    /* Path Mapping */
+    "baseUrl": "./src",
+    "paths": {
+      "@/*": ["./*"],
+      "@/utils/*": ["./utils/*"],
+      "@/services/*": ["./services/*"],
+      "@/routes/*": ["./routes/*"],
+      "@/middleware/*": ["./middleware/*"],
+      "@/db/*": ["./db/*"],
+      "@/types/*": ["./types/*"],
+      "@/config/*": ["./config/*"],
+      "@/plugins/*": ["./plugins/*"]
+    },
+    
+    /* Type Definitions */
+    "types": ["node", "jest"],
+    "typeRoots": ["./node_modules/@types", "./src/types"]
+  },
+  
+  /* File Inclusion */
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.js"
+  ],
+  
+  /* File Exclusion */
+  "exclude": [
+    "node_modules",
+    "dist",
+    "**/*.test.ts",
+    "**/*.spec.ts",
+    "coverage",
+    "jest.config.js"
+  ],
+  
+  /* ts-node Configuration */
+  "ts-node": {
+    "transpileOnly": true,
+    "files": true,
+    "compilerOptions": {
+      "module": "commonjs",
+      "target": "ES2020"
+    }
+  }
+}

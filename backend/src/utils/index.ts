@@ -32,9 +32,13 @@ export {
   // Context Builder
   ErrorContextBuilder,
   
-  // Types and Enums
+  // Enums
   ErrorSeverity,
-  ErrorCategory,
+  ErrorCategory
+} from './errors.unified';
+
+export type {
+  // Types
   IErrorContext,
   IErrorDetails,
   IErrorMetadata
@@ -65,10 +69,10 @@ export {
  */
 export {
   AppError as LegacyAppError,
-  ApiError,
   createError,
   errorHandler as legacyErrorHandler
 } from './errorHandler';
+export type { ApiError } from './errorHandler';
 
 /**
  * @deprecated Use ErrorFactory methods instead

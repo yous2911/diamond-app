@@ -34,9 +34,6 @@ const ExercisePage = () => {
 
   // Local state for showing XP after exercise completion
   const [showXPAfterCompletion, setShowXPAfterCompletion] = useState(false);
-  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
-  const [confidenceLevel, setConfidenceLevel] = useState(50); // 0-100 scale for SuperMemo
-  const [showConfidenceSlider, setShowConfidenceSlider] = useState(false);
 
   const studentData = useMemo(() => ({
     stars: statsData?.stats?.totalCorrectAnswers || 0,
@@ -103,16 +100,8 @@ const ExercisePage = () => {
     }
   };
 
-  // Debug logging
-  console.log('🎯 ExercisePage - currentExercise:', currentExercise);
-  console.log('🎯 ExercisePage - location.state:', location.state);
-  console.log('🎯 ExercisePage - Exercise has options:', !!currentExercise?.options);
-  console.log('🎯 ExercisePage - Exercise options:', currentExercise?.options);
-  console.log('🎯 ExercisePage - Exercise answer:', currentExercise?.answer);
-
   if (!currentExercise) {
     // Automatically redirect to homepage if no exercise data
-    console.log('🎯 No exercise data, redirecting to homepage...');
     navigate('/', { replace: true });
     return null;
   }

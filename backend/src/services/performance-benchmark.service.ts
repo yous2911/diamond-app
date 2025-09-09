@@ -903,7 +903,7 @@ class PerformanceBenchmarkService {
 export const performanceBenchmarkService = new PerformanceBenchmarkService();
 
 // Export types
-export {
+export type {
   BenchmarkConfig,
   BenchmarkSuite,
   BenchmarkTest,

@@ -997,7 +997,7 @@ class DataIntegrityService extends EventEmitter {
 export const dataIntegrityService = new DataIntegrityService();
 
 // Export types
-export {
+export type {
   IntegrityRule,
   IntegrityCheckResult,
   IntegrityViolation,
