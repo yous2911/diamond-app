@@ -2,6 +2,7 @@
  * Unit tests demonstrating the improved ServiceFactory
  */
 
+import { vi } from 'vitest';
 import { 
   ServiceContainer,
   ServiceFactory,
@@ -74,8 +75,8 @@ describe('ServiceFactory Refactoring', () => {
 
     it('should allow mocking services in test mode', () => {
       const mockEncryption = {
-        encrypt: jest.fn().mockReturnValue('mocked-encrypted'),
-        decrypt: jest.fn().mockReturnValue('mocked-decrypted')
+        encrypt: vi.fn().mockReturnValue('mocked-encrypted'),
+        decrypt: vi.fn().mockReturnValue('mocked-decrypted')
       };
 
       // Mock the service
