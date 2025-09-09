@@ -64,7 +64,7 @@ const TestAccounts: React.FC<{
       
       <div className="mt-4 text-center">
         <p className="text-xs text-gray-500">
-          Mot de passe pour tous : <code className="bg-gray-100 px-2 py-1 rounded">password123456</code>
+          Utilise tes vrais identifiants pour te connecter
         </p>
       </div>
     </motion.div>
