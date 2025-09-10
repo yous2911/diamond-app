@@ -60,23 +60,24 @@ describe('AnimatedCard', () => {
   it('applies default classes', () => {
     render(<AnimatedCard>Content</AnimatedCard>);
     
-    const card = screen.getAllByTestId('motion-div-animated-card')[0];
+    // Find the main card container (not the glow or shimmer effects)
+    const card = screen.getByText('Content').closest('[data-testid="motion-div-animated-card"]');
     expect(card).toHaveClass('relative', 'overflow-hidden', 'rounded-xl', 'p-4');
   });
 
   it('applies custom className', () => {
     render(<AnimatedCard className="custom-class">Content</AnimatedCard>);
     
-    const card = screen.getAllByTestId('motion-div-animated-card')[0];
-    expect(card.className).toContain('custom-class');
+    const card = screen.getByText('Content').closest('[data-testid="motion-div-animated-card"]');
+    expect(card?.className).toContain('custom-class');
   });
 
   it('handles click events', () => {
     const handleClick = jest.fn();
     render(<AnimatedCard onClick={handleClick}>Clickable</AnimatedCard>);
     
-    const card = screen.getAllByTestId('motion-div-animated-card')[0];
-    fireEvent.click(card);
+    const card = screen.getByText('Clickable').closest('[data-testid="motion-div-animated-card"]');
+    fireEvent.click(card!);
     
     expect(handleClick).toHaveBeenCalledTimes(1);
   });
@@ -85,8 +86,8 @@ describe('AnimatedCard', () => {
     const handleClick = jest.fn();
     render(<AnimatedCard onClick={handleClick} disabled>Disabled</AnimatedCard>);
     
-    const card = screen.getAllByTestId('motion-div-animated-card')[0];
-    fireEvent.click(card);
+    const card = screen.getByText('Disabled').closest('[data-testid="motion-div-animated-card"]');
+    fireEvent.click(card!);
     
     expect(handleClick).not.toHaveBeenCalled();
     expect(card).toHaveClass('opacity-50', 'cursor-not-allowed');
@@ -95,21 +96,21 @@ describe('AnimatedCard', () => {
   it('applies shadow when enabled', () => {
     render(<AnimatedCard shadow>Shadowed</AnimatedCard>);
     
-    const card = screen.getAllByTestId('motion-div-animated-card')[0];
+    const card = screen.getByText('Shadowed').closest('[data-testid="motion-div-animated-card"]');
     expect(card).toHaveClass('shadow-lg', 'hover:shadow-xl');
   });
 
   it('applies border when enabled', () => {
     render(<AnimatedCard border>Bordered</AnimatedCard>);
     
-    const card = screen.getAllByTestId('motion-div-animated-card')[0];
+    const card = screen.getByText('Bordered').closest('[data-testid="motion-div-animated-card"]');
     expect(card).toHaveClass('border-2');
   });
 
   it('applies gradient when enabled', () => {
     render(<AnimatedCard gradient>Gradient</AnimatedCard>);
     
-    const card = screen.getAllByTestId('motion-div-animated-card')[0];
+    const card = screen.getByText('Gradient').closest('[data-testid="motion-div-animated-card"]');
     expect(card).toHaveClass('bg-gradient-to-br');
   });
 
@@ -117,35 +118,35 @@ describe('AnimatedCard', () => {
     it('applies sparkle variant classes', () => {
       render(<AnimatedCard variant="sparkle">Sparkle</AnimatedCard>);
       
-      const card = screen.getAllByTestId('motion-div-animated-card')[0];
+      const card = screen.getByText('Sparkle').closest('[data-testid="motion-div-animated-card"]');
       expect(card).toHaveClass('bg-gradient-to-br', 'from-yellow-50', 'to-orange-100', 'border-yellow-300');
     });
 
     it('applies reward variant classes', () => {
       render(<AnimatedCard variant="reward">Reward</AnimatedCard>);
       
-      const card = screen.getAllByTestId('motion-div-animated-card')[0];
+      const card = screen.getByText('Reward').closest('[data-testid="motion-div-animated-card"]');
       expect(card).toHaveClass('bg-gradient-to-br', 'from-green-50', 'to-emerald-100', 'border-green-300');
     });
 
     it('applies progress variant classes', () => {
       render(<AnimatedCard variant="progress">Progress</AnimatedCard>);
       
-      const card = screen.getAllByTestId('motion-div-animated-card')[0];
+      const card = screen.getByText('Progress').closest('[data-testid="motion-div-animated-card"]');
       expect(card).toHaveClass('bg-gradient-to-br', 'from-blue-50', 'to-indigo-100', 'border-blue-300');
     });
 
     it('applies exercise variant classes', () => {
       render(<AnimatedCard variant="exercise">Exercise</AnimatedCard>);
       
-      const card = screen.getAllByTestId('motion-div-animated-card')[0];
+      const card = screen.getByText('Exercise').closest('[data-testid="motion-div-animated-card"]');
       expect(card).toHaveClass('bg-gradient-to-br', 'from-purple-50', 'to-violet-100', 'border-purple-300');
     });
 
     it('applies default variant classes', () => {
       render(<AnimatedCard variant="default">Default</AnimatedCard>);
       
-      const card = screen.getAllByTestId('motion-div-animated-card')[0];
+      const card = screen.getByText('Default').closest('[data-testid="motion-div-animated-card"]');
       expect(card).toHaveClass('bg-white');
     });
   });
