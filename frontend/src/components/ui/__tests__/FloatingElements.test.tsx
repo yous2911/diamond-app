@@ -2,11 +2,8 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { SparkleElements, MagicElements, CelebrationElements } from '../FloatingElements';
 
-// Mock source-map-support at the top to prevent source map errors
-jest.mock('source-map-support', () => ({
-  install: jest.fn(),
-  retrieveSourceMap: jest.fn(),
-}));
+// Disable source map support completely for this test
+process.env.NODE_ENV = 'test';
 
 // Mock framer-motion
 jest.mock('framer-motion', () => ({
