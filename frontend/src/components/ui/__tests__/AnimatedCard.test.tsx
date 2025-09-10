@@ -170,32 +170,32 @@ describe('AnimatedCard', () => {
   it('does not show shimmer when disabled', () => {
     render(<AnimatedCard hover disabled>Disabled hover</AnimatedCard>);
     
-    const card = screen.getAllByTestId('motion-div-animated-card')[0];
+    const card = screen.getByText('Disabled hover').closest('[data-testid="motion-div-animated-card"]');
     expect(card).toHaveClass('cursor-not-allowed');
   });
 
   it('configures animation variants correctly', () => {
     render(<AnimatedCard delay={0.5} duration={0.8}>Animated</AnimatedCard>);
     
-    const card = screen.getAllByTestId('motion-div-animated-card')[0];
-    expect(card.getAttribute('data-initial')).toBe('initial');
-    expect(card.getAttribute('data-animate')).toBe('animate');
-    expect(card.getAttribute('data-exit')).toBe('exit');
+    const card = screen.getByText('Animated').closest('[data-testid="motion-div-animated-card"]');
+    expect(card?.getAttribute('data-initial')).toBe('initial');
+    expect(card?.getAttribute('data-animate')).toBe('animate');
+    expect(card?.getAttribute('data-exit')).toBe('exit');
   });
 
   it('sets hover and tap variants when hover is enabled', () => {
     render(<AnimatedCard hover>Hoverable</AnimatedCard>);
     
-    const card = screen.getAllByTestId('motion-div-animated-card')[0];
-    expect(card.getAttribute('data-while-hover')).toBe('hover');
-    expect(card.getAttribute('data-while-tap')).toBe('tap');
+    const card = screen.getByText('Hoverable').closest('[data-testid="motion-div-animated-card"]');
+    expect(card?.getAttribute('data-while-hover')).toBe('hover');
+    expect(card?.getAttribute('data-while-tap')).toBe('tap');
   });
 
   it('does not set hover variants when disabled', () => {
     render(<AnimatedCard hover disabled>Disabled</AnimatedCard>);
     
-    const card = screen.getAllByTestId('motion-div-animated-card')[0];
-    expect(card.getAttribute('data-while-hover')).toBe(null);
+    const card = screen.getByText('Disabled').closest('[data-testid="motion-div-animated-card"]');
+    expect(card?.getAttribute('data-while-hover')).toBe(null);
   });
 });
 
@@ -203,42 +203,42 @@ describe('Card Variants', () => {
   it('InteractiveCard has correct props', () => {
     render(<InteractiveCard>Interactive</InteractiveCard>);
     
-    const card = screen.getAllByTestId('motion-div-animated-card')[0];
+    const card = screen.getByText('Interactive').closest('[data-testid="motion-div-animated-card"]');
     expect(card).toHaveClass('shadow-lg', 'hover:shadow-xl');
   });
 
   it('StaticCard has correct props', () => {
     render(<StaticCard>Static</StaticCard>);
     
-    const card = screen.getAllByTestId('motion-div-animated-card')[0];
+    const card = screen.getByText('Static').closest('[data-testid="motion-div-animated-card"]');
     expect(card).toHaveClass('shadow-lg', 'hover:shadow-xl');
   });
 
   it('FloatingCard has correct props', () => {
     render(<FloatingCard>Floating</FloatingCard>);
     
-    const card = screen.getAllByTestId('motion-div-animated-card')[0];
+    const card = screen.getByText('Floating').closest('[data-testid="motion-div-animated-card"]');
     expect(card).toHaveClass('shadow-lg', 'hover:shadow-xl', 'hover:shadow-2xl');
   });
 
   it('GameCard has correct props and styling', () => {
     render(<GameCard>Game</GameCard>);
     
-    const card = screen.getAllByTestId('motion-div-animated-card')[0];
+    const card = screen.getByText('Game').closest('[data-testid="motion-div-animated-card"]');
     expect(card).toHaveClass('shadow-lg', 'border-2', 'from-yellow-50', 'to-orange-100', 'border-orange-300');
   });
 
   it('SuccessCard has correct props and styling', () => {
     render(<SuccessCard>Success</SuccessCard>);
     
-    const card = screen.getAllByTestId('motion-div-animated-card')[0];
+    const card = screen.getByText('Success').closest('[data-testid="motion-div-animated-card"]');
     expect(card).toHaveClass('from-green-50', 'to-emerald-100', 'border-green-300');
   });
 
   it('ErrorCard has correct props and styling', () => {
     render(<ErrorCard>Error</ErrorCard>);
     
-    const card = screen.getAllByTestId('motion-div-animated-card')[0];
+    const card = screen.getByText('Error').closest('[data-testid="motion-div-animated-card"]');
     expect(card).toHaveClass('from-red-50', 'to-pink-100', 'border-red-300');
   });
 
@@ -246,10 +246,10 @@ describe('Card Variants', () => {
     const handleClick = jest.fn();
     render(<GameCard onClick={handleClick} className="extra-class">Game with props</GameCard>);
     
-    const card = screen.getAllByTestId('motion-div-animated-card')[0];
-    expect(card.className).toContain('extra-class');
+    const card = screen.getByText('Game with props').closest('[data-testid="motion-div-animated-card"]');
+    expect(card?.className).toContain('extra-class');
     
-    fireEvent.click(card);
+    fireEvent.click(card!);
     expect(handleClick).toHaveBeenCalledTimes(1);
   });
 });

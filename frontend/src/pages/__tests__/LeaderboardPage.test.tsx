@@ -13,6 +13,13 @@ import { AuthProvider } from '../../contexts/AuthContext';
 // TEST SETUP & MOCKS
 // =============================================================================
 
+// Mock react-router-dom
+jest.mock('react-router-dom', () => ({
+  useNavigate: () => jest.fn(),
+  useLocation: () => ({ pathname: '/leaderboard' }),
+  useParams: () => ({}),
+}));
+
 // Mock the API service
 jest.mock('../../services/api', () => ({
   apiService: {

@@ -116,7 +116,7 @@ describe('AchievementBadges', () => {
     expect(screen.getByText('Voir tout →')).toBeInTheDocument();
     
     // Check stats summary - use getAllByText to handle multiple elements
-    expect(screen.getAllByText('2')).toHaveLength(3); // Completed achievements (there are 3 instances)
+    expect(screen.getAllByText('2')).toHaveLength(3); // Completed achievements (2), in-progress achievements (2), and academic category (2)
     expect(screen.getByText('Obtenues')).toBeInTheDocument();
     expect(screen.getByText('En cours')).toBeInTheDocument();
     expect(screen.getByText('300')).toBeInTheDocument(); // Total XP (100 + 200)

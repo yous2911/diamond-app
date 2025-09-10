@@ -3,41 +3,44 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MagicalButton } from '../MagicalButton';
 
 // Mock framer-motion
-jest.mock('framer-motion', () => ({
-  motion: {
-    button: React.forwardRef(({ children, className, onClick, onMouseEnter, onMouseLeave, onMouseDown, onMouseUp, disabled, whileHover, whileTap, title, ...props }: any, ref: any) => (
-      <button 
-        ref={ref}
-        className={className} 
-        onClick={onClick}
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
-        onMouseDown={onMouseDown}
-        onMouseUp={onMouseUp}
-        disabled={disabled}
-        title={title}
-        data-testid="motion-button"
-        {...props}
-      >
-        {children}
-      </button>
-    )),
-    div: ({ children, className, initial, animate, transition, style, ...props }: any) => (
-      <div 
-        className={className} 
-        style={style} 
-        data-testid="motion-div"
-        data-initial={JSON.stringify(initial)}
-        data-animate={JSON.stringify(animate)}
-        data-transition={JSON.stringify(transition)}
-        {...props}
-      >
-        {children}
-      </div>
-    )
-  },
-  AnimatePresence: ({ children }: any) => <div>{children}</div>
-}));
+jest.mock('framer-motion', () => {
+  const React = require('react');
+  return {
+    motion: {
+      button: React.forwardRef(({ children, className, onClick, onMouseEnter, onMouseLeave, onMouseDown, onMouseUp, disabled, whileHover, whileTap, title, ...props }: any, ref: any) => (
+        <button 
+          ref={ref}
+          className={className} 
+          onClick={onClick}
+          onMouseEnter={onMouseEnter}
+          onMouseLeave={onMouseLeave}
+          onMouseDown={onMouseDown}
+          onMouseUp={onMouseUp}
+          disabled={disabled}
+          title={title}
+          data-testid="motion-button"
+          {...props}
+        >
+          {children}
+        </button>
+      )),
+      div: ({ children, className, initial, animate, transition, style, ...props }: any) => (
+        <div 
+          className={className} 
+          style={style} 
+          data-testid="motion-div"
+          data-initial={JSON.stringify(initial)}
+          data-animate={JSON.stringify(animate)}
+          data-transition={JSON.stringify(transition)}
+          {...props}
+        >
+          {children}
+        </div>
+      )
+    },
+    AnimatePresence: ({ children }: any) => <div>{children}</div>
+  };
+});
 
 describe('MagicalButton', () => {
   beforeEach(() => {
@@ -52,7 +55,7 @@ describe('MagicalButton', () => {
   it('renders with default props', () => {
     render(<MagicalButton>Click me</MagicalButton>);
     
-    const button = screen.getByTestId('motion-button');
+    const button = screen.getByRole('button');
     expect(button).toBeInTheDocument();
     expect(button).toHaveTextContent('Click me');
   });
@@ -60,7 +63,7 @@ describe('MagicalButton', () => {
   it('applies primary variant classes by default', () => {
     render(<MagicalButton>Button</MagicalButton>);
     
-    const button = screen.getByTestId('motion-button');
+    const button = screen.getByRole('button');
     expect(button.className).toContain('from-purple-600');
     expect(button.className).toContain('to-blue-600');
   });
@@ -69,7 +72,7 @@ describe('MagicalButton', () => {
     const handleClick = jest.fn();
     render(<MagicalButton onClick={handleClick}>Click me</MagicalButton>);
     
-    const button = screen.getByTestId('motion-button');
+    const button = screen.getByRole('button');
     fireEvent.click(button);
     
     expect(handleClick).toHaveBeenCalledTimes(1);
@@ -79,7 +82,7 @@ describe('MagicalButton', () => {
     const handleClick = jest.fn();
     render(<MagicalButton onClick={handleClick} disabled>Disabled</MagicalButton>);
     
-    const button = screen.getByTestId('motion-button');
+    const button = screen.getByRole('button');
     fireEvent.click(button);
     
     expect(handleClick).not.toHaveBeenCalled();
@@ -91,7 +94,7 @@ describe('MagicalButton', () => {
     const handleClick = jest.fn();
     render(<MagicalButton onClick={handleClick} loading>Loading</MagicalButton>);
     
-    const button = screen.getByTestId('motion-button');
+    const button = screen.getByRole('button');
     fireEvent.click(button);
     
     expect(handleClick).not.toHaveBeenCalled();
@@ -102,7 +105,7 @@ describe('MagicalButton', () => {
   it('applies full width when specified', () => {
     render(<MagicalButton fullWidth>Full Width</MagicalButton>);
     
-    const button = screen.getByTestId('motion-button');
+    const button = screen.getByRole('button');
     expect(button.className).toContain('w-full');
   });
 
@@ -119,7 +122,7 @@ describe('MagicalButton', () => {
       </MagicalButton>
     );
     
-    const button = screen.getByTestId('motion-button');
+    const button = screen.getByRole('button');
     
     fireEvent.mouseEnter(button);
     expect(handleMouseEnter).toHaveBeenCalledTimes(1);
@@ -131,14 +134,14 @@ describe('MagicalButton', () => {
   it('applies custom className', () => {
     render(<MagicalButton className="custom-class">Custom</MagicalButton>);
     
-    const button = screen.getByTestId('motion-button');
+    const button = screen.getByRole('button');
     expect(button.className).toContain('custom-class');
   });
 
   it('sets tooltip when provided', () => {
     render(<MagicalButton tooltip="Click to continue">Tooltip</MagicalButton>);
     
-    const button = screen.getByTestId('motion-button');
+    const button = screen.getByRole('button');
     expect(button).toHaveAttribute('title', 'Click to continue');
   });
 

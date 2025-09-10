@@ -69,7 +69,7 @@ describe('SparkleElements', () => {
     render(<SparkleElements isVisible={false} />);
     
     // Should render AnimatePresence but no content inside
-    expect(screen.queryByTestId('motion-div')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('motion-div-floating')).not.toBeInTheDocument();
   });
 
   it('renders by default when isVisible not specified', () => {
@@ -89,7 +89,7 @@ describe('SparkleElements', () => {
   it('creates sparkle elements with correct styling', () => {
     render(<SparkleElements />);
     
-    const sparkles = screen.getAllByTestId('motion-div');
+    const sparkles = screen.getAllByTestId('motion-div-floating');
     sparkles.forEach(sparkle => {
       expect(sparkle).toHaveClass('absolute', 'w-2', 'h-2', 'bg-yellow-300', 'rounded-full');
     });
@@ -104,7 +104,7 @@ describe('SparkleElements', () => {
 
     render(<SparkleElements />);
     
-    const sparkles = screen.getAllByTestId('motion-div');
+    const sparkles = screen.getAllByTestId('motion-div-floating');
     
     expect(sparkles[0]).toHaveStyle({
       left: '30%',
@@ -120,7 +120,7 @@ describe('SparkleElements', () => {
   it('applies correct animation properties', () => {
     render(<SparkleElements />);
     
-    const sparkles = screen.getAllByTestId('motion-div');
+    const sparkles = screen.getAllByTestId('motion-div-floating');
     
     sparkles.forEach((sparkle, index) => {
       const initialData = JSON.parse(sparkle.getAttribute('data-initial') || '{}');
@@ -159,13 +159,13 @@ describe('MagicElements', () => {
   it('does not render when not visible', () => {
     render(<MagicElements isVisible={false} />);
     
-    expect(screen.queryByTestId('motion-div')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('motion-div-floating')).not.toBeInTheDocument();
   });
 
   it('creates magic elements with correct styling', () => {
     render(<MagicElements />);
     
-    const magicElements = screen.getAllByTestId('motion-div');
+    const magicElements = screen.getAllByTestId('motion-div-floating');
     magicElements.forEach(element => {
       expect(element).toHaveClass('absolute', 'w-3', 'h-3', 'bg-purple-400', 'rounded-full');
     });
@@ -174,7 +174,7 @@ describe('MagicElements', () => {
   it('applies correct animation properties', () => {
     render(<MagicElements />);
     
-    const magicElements = screen.getAllByTestId('motion-div');
+    const magicElements = screen.getAllByTestId('motion-div-floating');
     
     magicElements.forEach((element, index) => {
       const initialData = JSON.parse(element.getAttribute('data-initial') || '{}');
@@ -220,13 +220,13 @@ describe('CelebrationElements', () => {
   it('does not render when not visible', () => {
     render(<CelebrationElements isVisible={false} />);
     
-    expect(screen.queryByTestId('motion-div')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('motion-div-floating')).not.toBeInTheDocument();
   });
 
   it('creates celebration elements with correct styling', () => {
     render(<CelebrationElements />);
     
-    const celebrationElements = screen.getAllByTestId('motion-div');
+    const celebrationElements = screen.getAllByTestId('motion-div-floating');
     celebrationElements.forEach(element => {
       expect(element).toHaveClass(
         'absolute', 
@@ -243,7 +243,7 @@ describe('CelebrationElements', () => {
   it('applies correct animation properties', () => {
     render(<CelebrationElements />);
     
-    const celebrationElements = screen.getAllByTestId('motion-div');
+    const celebrationElements = screen.getAllByTestId('motion-div-floating');
     
     celebrationElements.forEach((element, index) => {
       const initialData = JSON.parse(element.getAttribute('data-initial') || '{}');
@@ -278,7 +278,7 @@ describe('CelebrationElements', () => {
 
     render(<CelebrationElements />);
     
-    const celebrationElements = screen.getAllByTestId('motion-div');
+    const celebrationElements = screen.getAllByTestId('motion-div-floating');
     
     expect(celebrationElements[0]).toHaveStyle({
       left: '20%',

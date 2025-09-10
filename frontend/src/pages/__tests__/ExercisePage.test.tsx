@@ -14,6 +14,13 @@ import { CelebrationProvider } from '../../contexts/CelebrationContext';
 // TEST SETUP & MOCKS
 // =============================================================================
 
+// Mock react-router-dom
+jest.mock('react-router-dom', () => ({
+  useNavigate: () => jest.fn(),
+  useLocation: () => ({ pathname: '/exercises' }),
+  useParams: () => ({ id: '1' }),
+}));
+
 // Mock the API service
 jest.mock('../../services/api', () => ({
   apiService: {

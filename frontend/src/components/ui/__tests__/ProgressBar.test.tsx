@@ -45,8 +45,8 @@ describe('ProgressBar', () => {
   it('renders with default props', () => {
     render(<ProgressBar progress={50} />);
     
-    const container = screen.getAllByRole('generic')[0];
-    expect(container).toBeInTheDocument();
+    // Check that the progress bar renders by looking for the percentage text
+    expect(screen.getByText('50%')).toBeInTheDocument();
   });
 
   it('clamps progress between 0 and 100', () => {
@@ -62,26 +62,30 @@ describe('ProgressBar', () => {
 
   it('applies correct size classes', () => {
     const { rerender } = render(<ProgressBar progress={50} size="sm" />);
-    expect(screen.getAllByRole('generic')[0]).toHaveClass('h-2');
+    // For small size, percentage is hidden, so check the container via the progress bar element
+    const progressContainer = screen.getAllByTestId('motion-div-progress')[0].closest('.relative');
+    expect(progressContainer).toHaveClass('h-2');
 
     rerender(<ProgressBar progress={50} size="md" />);
-    expect(screen.getAllByRole('generic')[0]).toHaveClass('h-4');
+    const progressContainerMd = screen.getAllByTestId('motion-div-progress')[0].closest('.relative');
+    expect(progressContainerMd).toHaveClass('h-4');
 
     rerender(<ProgressBar progress={50} size="lg" />);
-    expect(screen.getAllByRole('generic')[0]).toHaveClass('h-6');
+    const progressContainerLg = screen.getAllByTestId('motion-div-progress')[0].closest('.relative');
+    expect(progressContainerLg).toHaveClass('h-6');
   });
 
   it('applies correct color classes', () => {
     const { rerender } = render(<ProgressBar progress={50} color="blue" />);
-    let motionDiv = screen.getByTestId('motion-div-progress');
+    let motionDiv = screen.getAllByTestId('motion-div-progress')[0];
     expect(motionDiv).toHaveClass('bg-blue-500');
 
     rerender(<ProgressBar progress={50} color="green" />);
-    motionDiv = screen.getByTestId('motion-div-progress');
+    motionDiv = screen.getAllByTestId('motion-div-progress')[0];
     expect(motionDiv).toHaveClass('bg-green-500');
 
     rerender(<ProgressBar progress={50} color="red" />);
-    motionDiv = screen.getByTestId('motion-div-progress');
+    motionDiv = screen.getAllByTestId('motion-div-progress')[0];
     expect(motionDiv).toHaveClass('bg-red-500');
   });
 
@@ -107,7 +111,7 @@ describe('ProgressBar', () => {
     render(<ProgressBar progress={50} className="custom-class" />);
 
     // The custom className is applied to the progress bar container, not the motion div
-    const progressContainer = screen.getByText('50%').closest('.relative');
+    const progressContainer = screen.getAllByTestId('motion-div-progress')[0].closest('.relative');
     expect(progressContainer).toHaveClass('custom-class');
   });
 
@@ -158,7 +162,9 @@ describe('ProgressBar Presets', () => {
     
     const motionDiv = screen.getAllByTestId('motion-div-progress')[0];
     expect(motionDiv).toHaveClass('bg-yellow-500', 'shadow-lg');
-    expect(screen.getAllByRole('generic')[0]).toHaveClass('h-6'); // lg size
+    // Check size via the progress bar container
+    const progressContainer = screen.getAllByTestId('motion-div-progress')[0].closest('.relative');
+    expect(progressContainer).toHaveClass('h-6'); // lg size
   });
 
   it('AchievementProgressBar has correct props', () => {

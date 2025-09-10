@@ -15,6 +15,13 @@ import { PremiumFeaturesProvider } from '../../contexts/PremiumFeaturesContext';
 // TEST SETUP & MOCKS
 // =============================================================================
 
+// Mock react-router-dom
+jest.mock('react-router-dom', () => ({
+  useNavigate: () => jest.fn(),
+  useLocation: () => ({ pathname: '/' }),
+  useParams: () => ({}),
+}));
+
 // Mock the API service
 jest.mock('../../services/api', () => ({
   apiService: {
