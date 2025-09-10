@@ -50,7 +50,7 @@ describe('File Upload System Tests', () => {
     app = await build();
     await app.ready();
     
-    // Initialize services
+    // Initialize services (these will use the mocked versions from setup.ts)
     uploadService = new FileUploadService();
     imageProcessor = new ImageProcessingService();
     storageService = new StorageService();

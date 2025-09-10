@@ -4,6 +4,9 @@
  * Comprehensive tests for the new error management system
  */
 
+import { vi, beforeEach, describe, it, expect } from 'vitest';
+
+// Import error classes first for use in mocks
 import {
   BaseError,
   ValidationError,
@@ -15,6 +18,79 @@ import {
   ErrorCategory,
   ErrorContextBuilder
 } from '../errors.unified';
+
+// Mock dependencies
+vi.mock('../errorLogger', () => ({
+  ErrorLogger: {
+    logError: vi.fn()
+  }
+}));
+
+vi.mock('../errorMonitoring', () => ({
+  ErrorMonitoringService: {
+    captureError: vi.fn()
+  }
+}));
+
+vi.mock('../requestContextExtractor', () => ({
+  RequestContextExtractor: {
+    extract: vi.fn(() => ({
+      userId: 'test-user',
+      sessionId: 'test-session',
+      requestId: 'test-request'
+    }))
+  }
+}));
+
+// Create comprehensive mock for error handler dependencies  
+const mockErrorHandlerConfig = {
+  environment: 'test',
+  includeStackTrace: false,
+  includeErrorDetails: true,
+  logAllErrors: true,
+  monitoringEnabled: false,
+  sanitizeHeaders: true,
+  maxErrorMessageLength: 100
+};
+
+const mockFormatResponse = vi.fn((error, context, config) => {
+  if (error instanceof BaseError) {
+    return {
+      success: false,
+      error: {
+        message: error.message,
+        code: error.errorCode,
+        statusCode: error.statusCode,
+        category: error.metadata.category
+      },
+      timestamp: new Date().toISOString()
+    };
+  }
+  return {
+    success: false,
+    error: {
+      message: error.message,
+      code: 'INTERNAL_ERROR', 
+      statusCode: 500
+    },
+    timestamp: new Date().toISOString()
+  };
+});
+
+vi.mock('../errorHandler.config', () => ({
+  getErrorHandlerConfig: vi.fn(() => mockErrorHandlerConfig)
+}));
+
+vi.mock('../logger', () => ({
+  logger: {
+    info: vi.fn(),
+    error: vi.fn(),
+    warn: vi.fn(),
+    debug: vi.fn()
+  }
+}));
+
+// Note: ErrorResponseFormatter is internal to the handler module
 
 import {
   unifiedErrorHandler,
@@ -37,14 +113,14 @@ const mockRequest = {
 } as any;
 
 const mockReply = {
-  status: jest.fn().mockReturnThis(),
-  send: jest.fn().mockReturnThis(),
-  header: jest.fn().mockReturnThis()
+  status: vi.fn().mockReturnThis(),
+  send: vi.fn().mockReturnThis(),
+  header: vi.fn().mockReturnThis()
 } as any;
 
 describe('Unified Error System', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('BaseError Class', () => {
@@ -307,7 +383,7 @@ describe('Unified Error System', () => {
 
   describe('ErrorHandlerFactory', () => {
     it('should wrap async functions and handle errors', async () => {
-      const originalFn = jest.fn().mockRejectedValue(new ValidationError('Test'));
+      const originalFn = vi.fn().mockRejectedValue(new ValidationError('Test'));
       const wrappedFn = ErrorHandlerFactory.createAsyncWrapper(originalFn);
 
       await expect(wrappedFn('arg1', 'arg2')).rejects.toThrow('Test');
@@ -315,7 +391,7 @@ describe('Unified Error System', () => {
     });
 
     it('should wrap sync functions and handle errors', () => {
-      const originalFn = jest.fn().mockImplementation(() => {
+      const originalFn = vi.fn().mockImplementation(() => {
         throw new Error('Sync error');
       });
       const wrappedFn = ErrorHandlerFactory.createSyncWrapper(originalFn);
@@ -325,7 +401,7 @@ describe('Unified Error System', () => {
     });
 
     it('should convert non-BaseError to TechnicalError', async () => {
-      const originalFn = jest.fn().mockRejectedValue(new Error('Regular error'));
+      const originalFn = vi.fn().mockRejectedValue(new Error('Regular error'));
       const wrappedFn = ErrorHandlerFactory.createAsyncWrapper(originalFn);
 
       try {

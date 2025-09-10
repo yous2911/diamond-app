@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { EmailService } from '../services/email.service';
+import { emailService } from '../services/email.service';
 
 // Mock nodemailer
 vi.mock('nodemailer', () => ({
@@ -15,69 +15,10 @@ vi.mock('nodemailer', () => ({
   }
 }));
 
-// Mock the audit service
-vi.mock('../services/audit-trail.service', () => ({
-  AuditTrailService: vi.fn().mockImplementation(() => ({
-    logAction: vi.fn().mockResolvedValue(undefined)
-  }))
-}));
-
-// Mock EmailService with all required methods
-vi.mock('../services/email.service', () => ({
-  EmailService: vi.fn().mockImplementation(() => ({
-    sendEmail: vi.fn(() => Promise.resolve()),
-    sendBulkEmail: vi.fn(() => Promise.resolve()),
-    sendTemplateEmail: vi.fn(() => Promise.resolve()),
-    validateEmail: vi.fn(() => Promise.resolve(true)),
-    getEmailTemplates: vi.fn(() => Promise.resolve([])),
-    createEmailTemplate: vi.fn(() => Promise.resolve()),
-    updateEmailTemplate: vi.fn(() => Promise.resolve()),
-    deleteEmailTemplate: vi.fn(() => Promise.resolve()),
-    // Template management methods
-    getAvailableTemplates: vi.fn(() => [
-      'user-registration-welcome',
-      'user-registration-verification', 
-      'password-reset-request',
-      'password-reset-confirmation',
-      'student-progress-report',
-      'achievement-notification',
-      'maintenance-notification',
-      'security-alert'
-    ]),
-    validateTemplateVariables: vi.fn((template, variables) => ({
-      valid: Object.keys(variables || {}).length > 0,
-      missing: ['username', 'email', 'createdAt', 'loginUrl'].filter(field => !variables || !variables[field]),
-      extra: []
-    })),
-    // User registration methods
-    sendUserRegistrationWelcome: vi.fn(() => Promise.resolve()),
-    sendUserRegistrationVerification: vi.fn(() => Promise.resolve()),
-    // Password reset methods
-    sendPasswordResetRequest: vi.fn(() => Promise.resolve()),
-    sendPasswordResetConfirmation: vi.fn(() => Promise.resolve()),
-    // Notification methods
-    sendStudentProgressReport: vi.fn(() => Promise.resolve()),
-    sendAchievementNotification: vi.fn(() => Promise.resolve()),
-    sendMaintenanceNotification: vi.fn(() => Promise.resolve()),
-    sendSecurityAlert: vi.fn(() => Promise.resolve()),
-    // Bulk operations
-    sendBulkEmails: vi.fn(() => Promise.resolve()),
-    // Service health
-    getEmailServiceStatus: vi.fn(() => ({
-      status: 'healthy',
-      smtpConnected: true,
-      templatesLoaded: true,
-      lastSent: new Date()
-    })),
-    sendTestEmail: vi.fn(() => Promise.resolve())
-  }))
-}));
-
 describe('EmailService', () => {
-  let emailService: EmailService;
-
   beforeEach(() => {
-    emailService = new EmailService();
+    // Clear mocks before each test
+    vi.clearAllMocks();
   });
 
   describe('Template Management', () => {
@@ -100,8 +41,8 @@ describe('EmailService', () => {
         loginUrl: 'http://localhost:3000/login'
       });
 
-      expect(validation.isValid).toBe(true);
-      expect(validation.missingVars).toHaveLength(0);
+      expect(validation.valid).toBe(true);
+      expect(validation.missing).toHaveLength(0);
     });
 
     it('should detect missing template variables', () => {
@@ -110,11 +51,11 @@ describe('EmailService', () => {
         // Missing: username, email, createdAt, loginUrl
       });
 
-      expect(validation.isValid).toBe(false);
-      expect(validation.missingVars).toContain('username');
-      expect(validation.missingVars).toContain('email');
-      expect(validation.missingVars).toContain('createdAt');
-      expect(validation.missingVars).toContain('loginUrl');
+      expect(validation.valid).toBe(false);
+      expect(validation.missing).toContain('username');
+      expect(validation.missing).toContain('email');
+      expect(validation.missing).toContain('createdAt');
+      expect(validation.missing).toContain('loginUrl');
     });
   });
 
@@ -261,8 +202,9 @@ describe('EmailService', () => {
       const status = await emailService.getEmailServiceStatus();
       
       expect(status).toHaveProperty('status');
-      expect(status).toHaveProperty('config');
-      expect(status).toHaveProperty('validation');
+      expect(status).toHaveProperty('smtpConnected');
+      expect(status).toHaveProperty('templatesLoaded');
+      expect(status).toHaveProperty('lastSent');
       expect(['healthy', 'degraded', 'unhealthy']).toContain(status.status);
     });
 

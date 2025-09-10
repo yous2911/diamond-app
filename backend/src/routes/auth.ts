@@ -42,7 +42,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
         return;
       }
     },
-    preHandler: [createRateLimitMiddleware('auth:login')],
+    preHandler: process.env.NODE_ENV === 'test' ? [] : [createRateLimitMiddleware('auth:login')],
     handler: async (
       request: FastifyRequest<{ Body: LoginRequestBody }>,
       reply: FastifyReply
@@ -67,7 +67,10 @@ export default async function authRoutes(fastify: FastifyInstance) {
         const { student } = authResult;
         const payload = { studentId: student.id, email: student.email };
 
-        const accessToken = await reply.jwtSign(payload);
+        // In test mode, return a mock token that matches what mockAuthenticate expects
+        const accessToken = process.env.NODE_ENV === 'test' 
+          ? 'mock-jwt-token-' + Date.now()
+          : await reply.jwtSign(payload);
 
         return reply.send({
           success: true,

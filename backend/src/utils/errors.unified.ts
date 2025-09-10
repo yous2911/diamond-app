@@ -386,6 +386,7 @@ export class ErrorContextBuilder {
       .withUrl(request.url)
       .withUserAgent(request.headers['user-agent'])
       .withIp(request.ip)
+      .withCorrelationId(request.headers['x-correlation-id'])
       .withTimestamp();
   }
 

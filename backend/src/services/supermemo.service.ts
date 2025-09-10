@@ -271,7 +271,7 @@ export class SuperMemoService {
       }).slice(0, maxCardsPerDay); // Limit cards per day
       
       schedule.push({
-        date: date.toISOString().split('T')[0],
+        date: date.toISOString().split('T')[0]!,
         cards: cardsForDate
       });
     }
@@ -354,7 +354,6 @@ export class SuperMemoService {
     competences?: number[];
   }[] {
     const recommendations = [];
-    const analysis = this.analyzeLearningProgress(cards);
 
     // Check for difficult competences
     const difficultCards = cards.filter(card => card.easinessFactor <= 1.6);

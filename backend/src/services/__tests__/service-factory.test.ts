@@ -91,12 +91,18 @@ describe('ServiceFactory Refactoring', () => {
     });
 
     it('should prevent mocking outside test mode', () => {
+      const originalNodeEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'production'; // Temporarily set to production
+      
       const prodContainer = createServiceContainer();
-      // Don't enable test mode
+      // Don't enable test mode - container should be in production mode by default
 
       expect(() => {
         prodContainer.mock(SERVICE_TOKENS.ENCRYPTION, {});
       }).toThrow('Mocking is only allowed in test mode');
+      
+      // Restore original NODE_ENV
+      process.env.NODE_ENV = originalNodeEnv;
     });
 
     it('should throw error for unregistered services', () => {
@@ -142,30 +148,37 @@ describe('ServiceFactory Refactoring', () => {
 
   describe('Service Statistics', () => {
     it('should provide service statistics', () => {
-      container.register(SERVICE_TOKENS.ENCRYPTION, () => new MockEncryptionService());
-      container.register(SERVICE_TOKENS.EMAIL, () => new MockEmailService());
+      // Get initial stats (container has default services registered)
+      let initialStats = container.getServiceStats();
+      const initialRegistered = initialStats.registered;
+      
+      container.register('TEST_ENCRYPTION' as any, () => new MockEncryptionService());
+      container.register('TEST_EMAIL' as any, () => new MockEmailService());
 
-      // Before resolving
+      // After registering additional services
       let stats = container.getServiceStats();
-      expect(stats.registered).toBe(2);
+      expect(stats.registered).toBe(initialRegistered + 2); // 2 additional services
       expect(stats.instantiated).toBe(0);
 
       // After resolving one service
-      container.resolve(SERVICE_TOKENS.ENCRYPTION);
+      container.resolve('TEST_ENCRYPTION' as any);
       stats = container.getServiceStats();
-      expect(stats.registered).toBe(2);
+      expect(stats.registered).toBe(initialRegistered + 2);
       expect(stats.instantiated).toBe(1);
-      expect(stats.services).toContain(SERVICE_TOKENS.ENCRYPTION);
+      expect(stats.services).toContain('TEST_ENCRYPTION');
     });
   });
 
   describe('Service Registration', () => {
     it('should check if services are registered', () => {
-      expect(container.isRegistered(SERVICE_TOKENS.ENCRYPTION)).toBe(false);
+      expect(container.isRegistered(SERVICE_TOKENS.ENCRYPTION)).toBe(true); // Already registered by default
       
-      container.register(SERVICE_TOKENS.ENCRYPTION, () => new MockEncryptionService());
+      // Test with a non-registered service
+      expect(container.isRegistered('NON_EXISTENT_SERVICE' as any)).toBe(false);
       
-      expect(container.isRegistered(SERVICE_TOKENS.ENCRYPTION)).toBe(true);
+      container.register('NON_EXISTENT_SERVICE' as any, () => new MockEncryptionService());
+      
+      expect(container.isRegistered('NON_EXISTENT_SERVICE' as any)).toBe(true);
     });
 
     it('should allow overriding service registrations', () => {

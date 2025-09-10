@@ -38,9 +38,7 @@ describe('InputSanitizationService', () => {
 
       const sanitizedReq = mockRequest as any;
       expect(sanitizedReq.sanitizedBody.message).not.toContain('<script>');
-      expect(sanitizedReq.sanitizationWarnings).toContain(
-        expect.stringContaining('HTML/Script content sanitized')
-      );
+      expect(sanitizedReq.sanitizationWarnings).toContain('HTML/Script content sanitized');
     });
 
     it('should remove javascript: URLs', async () => {
@@ -85,9 +83,7 @@ describe('InputSanitizationService', () => {
 
       const sanitizedReq = mockRequest as any;
       expect(sanitizedReq.sanitizedBody.search).not.toContain('DROP TABLE');
-      expect(sanitizedReq.sanitizationWarnings).toContain(
-        expect.stringContaining('SQL injection patterns removed')
-      );
+      expect(sanitizedReq.sanitizationWarnings).toContain('SQL injection patterns removed');
     });
 
     it('should sanitize UNION-based injection', async () => {
@@ -132,9 +128,7 @@ describe('InputSanitizationService', () => {
 
       const sanitizedReq = mockRequest as any;
       expect(sanitizedReq.sanitizedBody.query).not.toContain('$where');
-      expect(sanitizedReq.sanitizationWarnings).toContain(
-        expect.stringContaining('NoSQL injection patterns removed')
-      );
+      expect(sanitizedReq.sanitizationWarnings).toContain('NoSQL injection patterns removed');
     });
 
     it('should sanitize MongoDB operators', async () => {
@@ -165,9 +159,7 @@ describe('InputSanitizationService', () => {
 
       const sanitizedReq = mockRequest as any;
       expect(sanitizedReq.sanitizedBody.filename).not.toContain('rm -rf');
-      expect(sanitizedReq.sanitizationWarnings).toContain(
-        expect.stringContaining('command injection patterns removed')
-      );
+      expect(sanitizedReq.sanitizationWarnings).toContain('command injection patterns removed');
     });
 
     it('should sanitize pipe operators', async () => {
@@ -198,9 +190,7 @@ describe('InputSanitizationService', () => {
 
       const sanitizedReq = mockRequest as any;
       expect(sanitizedReq.sanitizedBody.path).not.toContain('../');
-      expect(sanitizedReq.sanitizationWarnings).toContain(
-        expect.stringContaining('Path traversal patterns removed')
-      );
+      expect(sanitizedReq.sanitizationWarnings).toContain('Path traversal patterns removed');
     });
 
     it('should sanitize encoded path traversal', async () => {
@@ -230,9 +220,7 @@ describe('InputSanitizationService', () => {
       );
 
       const sanitizedReq = mockRequest as any;
-      expect(sanitizedReq.sanitizationWarnings).toContain(
-        expect.stringContaining('Invalid email format')
-      );
+      expect(sanitizedReq.sanitizationWarnings).toContain('Invalid email format');
     });
 
     it('should validate and normalize valid email', async () => {
@@ -260,9 +248,7 @@ describe('InputSanitizationService', () => {
       );
 
       const sanitizedReq = mockRequest as any;
-      expect(sanitizedReq.sanitizationWarnings).toContain(
-        expect.stringContaining('Invalid URL format')
-      );
+      expect(sanitizedReq.sanitizationWarnings).toContain('Invalid URL format');
     });
 
     it('should clean phone numbers', async () => {
@@ -308,9 +294,7 @@ describe('InputSanitizationService', () => {
 
       const sanitizedReq = mockRequest as any;
       expect(sanitizedReq.sanitizedBody.message.length).toBeLessThanOrEqual(1000);
-      expect(sanitizedReq.sanitizationWarnings).toContain(
-        expect.stringContaining('Truncated to 1000 characters')
-      );
+      expect(sanitizedReq.sanitizationWarnings).toContain('Truncated to 1000 characters');
     });
 
     it('should apply different length limits for different contexts', async () => {

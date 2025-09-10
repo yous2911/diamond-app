@@ -14,6 +14,7 @@ import { z } from 'zod';
 import { db } from '../db/connection';
 import { eq, and, desc, asc, sql, gte, lte, inArray } from 'drizzle-orm';
 import { students } from '../db/schema';
+import { realTimeProgressService } from '../services/real-time-progress.service.js';
 
 // Request schemas
 const XpProgressSchema = z.object({
@@ -248,6 +249,9 @@ export default async function gamificationRoutes(fastify: FastifyInstance): Prom
       if (leveledUp) {
         // Trigger achievement check (could be async job)
         fastify.log.info(`🎉 User ${userId} leveled up to ${newLevel}!`);
+        
+        // Real-time level up celebration
+        await realTimeProgressService.trackLevelUp(userId, newLevel, delta);
       }
 
       reply.send({ success: true, data: result });

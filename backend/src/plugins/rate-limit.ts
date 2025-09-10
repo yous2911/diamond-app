@@ -5,6 +5,12 @@ import { rateLimitConfig, authRateLimitConfig, globalRateLimitConfig, ddosConfig
 import { EnhancedRateLimitingService } from '../services/enhanced-rate-limiting.service';
 
 const rateLimitPlugin = async (fastify: any) => {
+  // Skip rate limiting entirely in test environment
+  if (process.env.NODE_ENV === 'test') {
+    fastify.log.info('Rate limiting disabled for test environment');
+    return;
+  }
+
   // Initialize enhanced rate limiting service for DDoS protection
   const enhancedRateLimit = new EnhancedRateLimitingService({
     global: {

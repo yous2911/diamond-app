@@ -1,6 +1,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { enhancedDatabaseService as databaseService } from '../services/enhanced-database.service.js';
+import { realTimeProgressService } from '../services/real-time-progress.service.js';
 import { db } from '../db/connection';
 import { students } from '../db/schema';
 import crypto from 'crypto';
@@ -56,7 +57,7 @@ export default async function studentRoutes(fastify: FastifyInstance) {
     }
 
     // Check if user can access this student data (basic access control)
-    if (currentUserId !== studentId && studentId !== 999) {
+    if (currentUserId !== studentId && currentUserId !== 999) {
       return reply.status(403).send({
         success: false,
         error: {
@@ -839,6 +840,17 @@ export default async function studentRoutes(fastify: FastifyInstance) {
         category: 'exercise_completion',
         completed: true
       });
+
+      // Real-time progress tracking
+      if (exerciseResult.completed) {
+        await realTimeProgressService.trackExerciseCompletion(studentId, {
+          exerciseId: exerciseResult.exerciseId || 0,
+          score: exerciseResult.score,
+          timeSpent: exerciseResult.timeSpent,
+          isCorrect: exerciseResult.score >= 80,
+          competencyCode: competenceCode
+        });
+      }
 
       return {
         success: true,

@@ -26,6 +26,7 @@ export async function build() {
     await fastify.register(import('./plugins/redis'));
     await fastify.register(import('./plugins/auth'));
     await fastify.register(import('./plugins/validation'));
+    await fastify.register(import('./plugins/gdpr')); // Add GDPR plugin
     
     // Add database decoration for tests (only if not already decorated)
     if (!fastify.hasDecorator('db')) {
@@ -43,6 +44,7 @@ export async function build() {
     await fastify.register(import('./routes/students'), { prefix: '/api/students' });
     await fastify.register(import('./routes/exercises'), { prefix: '/api/exercises' });
     await fastify.register(import('./routes/gdpr'), { prefix: '/api/gdpr' });
+    await fastify.register(import('./routes/upload'), { prefix: '/api' });
   } catch (error) {
     console.warn('Route registration warning:', error);
     // Continue with reduced functionality for testing
@@ -65,6 +67,7 @@ export async function build() {
       },
     };
   });
+
 
   // Root endpoint
   fastify.get('/', async () => {

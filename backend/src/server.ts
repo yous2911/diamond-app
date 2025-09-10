@@ -104,6 +104,12 @@ async function registerPlugins() {
     console.log('🛣️ Registering leaderboard routes...');
     await fastify.register(import('./routes/leaderboard'));
     
+    console.log('🛣️ Registering parent authentication routes...');
+    await fastify.register(import('./routes/parent-auth'), { prefix: '/api/parent-auth' });
+    
+    console.log('🛣️ Registering parent dashboard routes...');
+    await fastify.register(import('./routes/parents'), { prefix: '/api/parents' });
+    
     console.log('🛣️ Registering gamification routes...');
     await fastify.register(import('./routes/gamification'));
     
@@ -160,6 +166,7 @@ async function registerPlugins() {
           leaderboards: '/api/leaderboards',
           badges: '/api/badges',
           competitions: '/api/competitions',
+          parents: '/api/parents',
           gdpr: '/api/gdpr',
           docs: '/docs',
           enhanced: {

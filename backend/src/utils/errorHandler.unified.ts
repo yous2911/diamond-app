@@ -9,7 +9,7 @@
  */
 
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { BaseError, ErrorCategory, ErrorSeverity, ErrorContextBuilder } from './errors.unified';
+import { BaseError, ErrorCategory, ErrorSeverity, ErrorContextBuilder, TechnicalError } from './errors.unified';
 import { logger } from './logger';
 
 // =============================================================================
@@ -273,6 +273,14 @@ class ErrorResponseFormatter {
         };
       }
       
+      // Truncate message if needed
+      if ((response as any).error.message) {
+        (response as any).error.message = this.truncateMessage(
+          (response as any).error.message, 
+          config.maxErrorMessageLength
+        );
+      }
+      
       return response;
     }
 
@@ -360,7 +368,7 @@ export class ErrorHandlerFactory {
       } catch (error) {
         // Re-throw as BaseError if not already
         if (!(error instanceof BaseError)) {
-          throw new (require('./errors.unified').TechnicalError)(
+          throw new TechnicalError(
             error instanceof Error ? error.message : 'Unknown error',
             500,
             'WRAPPED_ERROR',
@@ -381,7 +389,7 @@ export class ErrorHandlerFactory {
       } catch (error) {
         // Re-throw as BaseError if not already
         if (!(error instanceof BaseError)) {
-          throw new (require('./errors.unified').TechnicalError)(
+          throw new TechnicalError(
             error instanceof Error ? error.message : 'Unknown error',
             500,
             'WRAPPED_ERROR',

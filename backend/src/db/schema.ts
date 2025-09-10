@@ -543,13 +543,67 @@ export const consentPreferences = mysqlTable('consent_preferences', {
   createdAt: timestamp('created_at').notNull().defaultNow()
 });
 
+// Parents table
+export const parents = mysqlTable('parents', {
+  id: int('id').primaryKey().autoincrement(),
+  nom: varchar('nom', { length: 100 }).notNull(),
+  prenom: varchar('prenom', { length: 100 }).notNull(),
+  email: varchar('email', { length: 255 }).unique().notNull(),
+  passwordHash: varchar('password_hash', { length: 255 }).notNull(),
+  telephone: varchar('telephone', { length: 20 }),
+  dateNaissance: date('date_naissance'),
+  profession: varchar('profession', { length: 100 }),
+  
+  // Account settings
+  emailVerified: boolean('email_verified').default(false),
+  emailVerificationToken: varchar('email_verification_token', { length: 255 }),
+  passwordResetToken: varchar('password_reset_token', { length: 255 }),
+  passwordResetExpires: timestamp('password_reset_expires'),
+  
+  // Security
+  failedLoginAttempts: int('failed_login_attempts').default(0),
+  lockedUntil: timestamp('locked_until'),
+  lastLogin: timestamp('last_login'),
+  
+  // Notifications preferences
+  dailyReportEnabled: boolean('daily_report_enabled').default(true),
+  weeklyReportEnabled: boolean('weekly_report_enabled').default(true),
+  achievementNotificationsEnabled: boolean('achievement_notifications_enabled').default(true),
+  progressAlertsEnabled: boolean('progress_alerts_enabled').default(true),
+  
+  // Communication preferences  
+  preferredLanguage: varchar('preferred_language', { length: 10 }).default('fr'),
+  timeZone: varchar('time_zone', { length: 50 }).default('Europe/Paris'),
+  
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow().onUpdateNow()
+});
+
+// Parent-Student relationships
+export const parentStudentRelations = mysqlTable('parent_student_relations', {
+  id: int('id').primaryKey().autoincrement(),
+  parentId: int('parent_id').notNull().references(() => parents.id),
+  studentId: int('student_id').notNull().references(() => students.id),
+  relationshipType: varchar('relationship_type', { length: 50 }).notNull().default('parent'), // parent, guardian, tutor
+  isPrimaryContact: boolean('is_primary_contact').default(false),
+  canViewProgress: boolean('can_view_progress').default(true),
+  canManageAccount: boolean('can_manage_account').default(true),
+  canReceiveReports: boolean('can_receive_reports').default(true),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow().onUpdateNow()
+});
+
 export const parentalConsent = mysqlTable('parental_consent', {
   id: int('id').primaryKey().autoincrement(),
   studentId: int('student_id').references(() => students.id),
+  parentId: int('parent_id').references(() => parents.id),
   parentName: varchar('parent_name', { length: 200 }).notNull(),
   parentEmail: varchar('parent_email', { length: 255 }).notNull(),
   consentGiven: boolean('consent_given').default(false),
   consentDate: timestamp('consent_date'),
+  consentType: varchar('consent_type', { length: 50 }).notNull().default('general'),
+  ipAddress: varchar('ip_address', { length: 45 }),
+  userAgent: text('user_agent'),
   createdAt: timestamp('created_at').notNull().defaultNow()
 });
 
@@ -676,6 +730,14 @@ export type Competition = InferSelectModel<typeof competitions>;
 export type NewCompetition = InferInsertModel<typeof competitions>;
 export type CompetitionParticipant = InferSelectModel<typeof competitionParticipants>;
 export type NewCompetitionParticipant = InferInsertModel<typeof competitionParticipants>;
+
+// Parent system type exports
+export type Parent = InferSelectModel<typeof parents>;
+export type NewParent = InferInsertModel<typeof parents>;
+export type ParentStudentRelation = InferSelectModel<typeof parentStudentRelations>;
+export type NewParentStudentRelation = InferInsertModel<typeof parentStudentRelations>;
+export type ParentalConsent = InferSelectModel<typeof parentalConsent>;
+export type NewParentalConsent = InferInsertModel<typeof parentalConsent>;
 
 // GDPR type exports  
 export type GdprConsentRequest = InferSelectModel<typeof gdprConsentRequests>;

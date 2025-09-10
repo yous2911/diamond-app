@@ -4,8 +4,8 @@ import { exerciseGeneratorService } from '../services/exercise-generator.service
 describe('🚀 Quick Integration Tests', () => {
   
   describe('Exercise Generator Service', () => {
-    it('should generate CP mathematics exercises', () => {
-      const exercises = exerciseGeneratorService.generateExercisesBatchForTests(
+    it('should generate CP mathematics exercises', async () => {
+      const exercises = await exerciseGeneratorService.generateExercisesBatchForTests(
         'cp',
         'mathematiques',
         'decouverte',
@@ -15,14 +15,14 @@ describe('🚀 Quick Integration Tests', () => {
       expect(exercises).toBeDefined();
       expect(exercises.length).toBe(3);
       expect(exercises[0]).toHaveProperty('titre');
-      expect(exercises[0]).toHaveProperty('contenu');
+      expect(exercises[0]).toHaveProperty('configuration');
       expect(exercises[0].niveau).toBe('cp');
       expect(exercises[0].matiere).toBe('mathematiques');
       expect(exercises[0].difficulte).toBe('decouverte');
     });
 
-    it('should generate CE1 French exercises', () => {
-      const exercises = exerciseGeneratorService.generateExercisesBatchForTests(
+    it('should generate CE1 French exercises', async () => {
+      const exercises = await exerciseGeneratorService.generateExercisesBatchForTests(
         'ce1',
         'francais',
         'entrainement',
@@ -36,8 +36,8 @@ describe('🚀 Quick Integration Tests', () => {
       expect(exercises[0].difficulte).toBe('entrainement');
     });
 
-    it('should generate personalized exercises', () => {
-      const exercises = exerciseGeneratorService.generatePersonalizedExercises(
+    it('should generate personalized exercises', async () => {
+      const exercises = await exerciseGeneratorService.generatePersonalizedExercises(
         1,
         'ce2',
         'mathematiques',
@@ -51,8 +51,8 @@ describe('🚀 Quick Integration Tests', () => {
       expect(exercises[0].matiere).toBe('mathematiques');
     });
 
-    it('should have valid exercise configurations', () => {
-      const exercises = exerciseGeneratorService.generateExercisesBatchForTests(
+    it('should have valid exercise configurations', async () => {
+      const exercises = await exerciseGeneratorService.generateExercisesBatchForTests(
         'cp',
         'mathematiques',
         'decouverte',
@@ -67,23 +67,23 @@ describe('🚀 Quick Integration Tests', () => {
       expect(exercise.tempsEstime).toBeGreaterThan(0);
     });
 
-    it('should provide available templates', () => {
-      const templates = exerciseGeneratorService.getAvailableTemplates();
+    it('should provide available templates', async () => {
+      const templates = await exerciseGeneratorService.getAvailableTemplates();
       expect(templates.length).toBeGreaterThan(0);
       
-      const cpTemplates = exerciseGeneratorService.getAvailableTemplates('cp');
+      const cpTemplates = await exerciseGeneratorService.getAvailableTemplates('cp');
       expect(cpTemplates.length).toBeGreaterThan(0);
       expect(cpTemplates.every(t => t.niveau === 'cp')).toBe(true);
       
-      const mathTemplates = exerciseGeneratorService.getAvailableTemplates(undefined, 'mathematiques');
+      const mathTemplates = await exerciseGeneratorService.getAvailableTemplates(undefined, 'mathematiques');
       expect(mathTemplates.length).toBeGreaterThan(0);
       expect(mathTemplates.every(t => t.matiere === 'mathematiques')).toBe(true);
     });
   });
 
   describe('Exercise Types Validation', () => {
-    it('should generate QCM exercises correctly', () => {
-      const exercises = exerciseGeneratorService.generateExercisesBatchForTests(
+    it('should generate QCM exercises correctly', async () => {
+      const exercises = await exerciseGeneratorService.generateExercisesBatchForTests(
         'ce1',
         'mathematiques',
         'maitrise',
@@ -98,8 +98,8 @@ describe('🚀 Quick Integration Tests', () => {
       }
     });
 
-    it('should generate calculation exercises correctly', () => {
-      const exercises = exerciseGeneratorService.generateExercisesBatchForTests(
+    it('should generate calculation exercises correctly', async () => {
+      const exercises = await exerciseGeneratorService.generateExercisesBatchForTests(
         'cp',
         'mathematiques',
         'decouverte',
@@ -136,30 +136,30 @@ describe('🚀 Quick Integration Tests', () => {
   });
 
   describe('Subject Coverage', () => {
-    it('should support all required subjects', () => {
+    it('should support all required subjects', async () => {
       const subjects = ['mathematiques', 'francais', 'sciences', 'histoire_geographie'];
       
-      subjects.forEach(subject => {
-        const exercises = exerciseGeneratorService.generateExercisesBatchForTests('cp', subject as any, 'decouverte', 1);
+      for (const subject of subjects) {
+        const exercises = await exerciseGeneratorService.generateExercisesBatchForTests('cp', subject as any, 'decouverte', 1);
         expect(exercises.length).toBeGreaterThan(0);
         expect(exercises[0].matiere).toBe(subject);
-      });
+      }
     });
 
-    it('should support all grade levels', () => {
+    it('should support all grade levels', async () => {
       const levels = ['cp', 'ce1', 'ce2', 'cm1', 'cm2'];
       
-      levels.forEach(level => {
-        const exercises = exerciseGeneratorService.generateExercisesBatchForTests(level as any, 'mathematiques', 'decouverte', 1);
+      for (const level of levels) {
+        const exercises = await exerciseGeneratorService.generateExercisesBatchForTests(level as any, 'mathematiques', 'decouverte', 1);
         expect(exercises.length).toBeGreaterThan(0);
         expect(exercises[0].niveau).toBe(level);
-      });
+      }
     });
   });
 
   describe('Exercise Content Quality', () => {
-    it('should have meaningful questions', () => {
-      const exercises = exerciseGeneratorService.generateExercisesBatchForTests('ce1', 'mathematiques', 'entrainement', 3);
+    it('should have meaningful questions', async () => {
+      const exercises = await exerciseGeneratorService.generateExercisesBatchForTests('ce1', 'mathematiques', 'entrainement', 3);
       
       exercises.forEach(exercise => {
         expect(exercise.contenu.question).toBeDefined();
@@ -168,8 +168,8 @@ describe('🚀 Quick Integration Tests', () => {
       });
     });
 
-    it('should have helpful feedback', () => {
-      const exercises = exerciseGeneratorService.generateExercisesBatchForTests('cp', 'mathematiques', 'decouverte', 2);
+    it('should have helpful feedback', async () => {
+      const exercises = await exerciseGeneratorService.generateExercisesBatchForTests('cp', 'mathematiques', 'decouverte', 2);
       
       exercises.forEach(exercise => {
         if ((exercise.contenu as any).feedback_succes) {
@@ -181,8 +181,8 @@ describe('🚀 Quick Integration Tests', () => {
       });
     });
 
-    it('should have appropriate help text', () => {
-      const exercises = exerciseGeneratorService.generateExercisesBatchForTests('cp', 'mathematiques', 'decouverte', 2);
+    it('should have appropriate help text', async () => {
+      const exercises = await exerciseGeneratorService.generateExercisesBatchForTests('cp', 'mathematiques', 'decouverte', 2);
       
       exercises.forEach(exercise => {
         if ((exercise.contenu as any).aide) {

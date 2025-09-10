@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { PremiumFeaturesProvider } from './contexts/PremiumFeaturesContext';
 import { CelebrationProvider } from './contexts/CelebrationContext';
 import GlobalPremiumLayout from './components/GlobalPremiumLayout';
+import RealTimeNotifications from './components/RealTimeNotifications';
 
 // Import newly extracted components
 import SkeletonLoader from './components/ui/SkeletonLoader';
@@ -13,17 +14,28 @@ import SkeletonLoader from './components/ui/SkeletonLoader';
 const HomePage = lazy(() => import('./pages/HomePage'));
 const ExercisePage = lazy(() => import('./pages/ExercisePage'));
 const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage'));
+const ParentDashboard = lazy(() => import('./pages/ParentDashboard'));
 const LoginScreen = lazy(() => import('./components/LoginScreen'));
 
 // =============================================================================
 //  LAYOUT PRINCIPAL AVEC ÉLÉMENTS PARTAGÉS
 // =============================================================================
 const MainLayout = () => {
+  const { student } = useAuth();
+  
   // This layout will wrap all authenticated pages with premium features
   return (
     <PremiumFeaturesProvider initialXP={75} initialLevel={3}>
       <CelebrationProvider>
         <GlobalPremiumLayout showXPBar={false} xpPosition="floating">
+          {/* Real-time notifications for students */}
+          {student && (
+            <RealTimeNotifications 
+              userId={student.id} 
+              userType="student" 
+            />
+          )}
+          
           {/* Outlet renders the current page component from the router */}
           <Outlet />
         </GlobalPremiumLayout>
@@ -44,6 +56,7 @@ const AppRouter = () => {
           <Route path="/" element={<HomePage />} />
           <Route path="/exercise" element={<ExercisePage />} />
           <Route path="/leaderboard" element={<LeaderboardPage />} />
+          <Route path="/parent-dashboard" element={<ParentDashboard />} />
           {/* Add other routes here, e.g., /wardrobe */}
         </Route>
       </Routes>

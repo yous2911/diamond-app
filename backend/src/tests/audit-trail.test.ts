@@ -10,8 +10,7 @@ import { auditLogs, securityAlerts, complianceReports } from '../db/schema';
 import { eq } from 'drizzle-orm';
 import crypto from 'crypto';
 
-// Mock the service at the top level
-vi.mock('../services/audit-trail.service');
+// Mock is handled in setup.ts
 
 describe('AuditTrailService', () => {
   let auditService: AuditTrailService;
@@ -26,7 +25,6 @@ describe('AuditTrailService', () => {
 
   beforeEach(() => {
     auditService = new AuditTrailService();
-    vi.clearAllMocks();
   });
 
   afterEach(async () => {
