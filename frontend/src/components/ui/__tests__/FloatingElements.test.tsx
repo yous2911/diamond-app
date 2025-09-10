@@ -9,7 +9,7 @@ jest.mock('framer-motion', () => ({
       <div 
         className={className}
         style={style}
-        data-testid="motion-div"
+        data-testid="motion-div-floating"
         data-initial={JSON.stringify(initial)}
         data-animate={JSON.stringify(animate)}
         data-transition={JSON.stringify(transition)}
@@ -40,7 +40,7 @@ describe('SparkleElements', () => {
     
     expect(screen.getByTestId('animate-presence')).toBeInTheDocument();
     
-    const motionElements = screen.getAllByTestId('motion-div');
+    const motionElements = screen.getAllByTestId('motion-div-floating');
     expect(motionElements).toHaveLength(8); // 8 sparkle elements
   });
 
@@ -54,7 +54,7 @@ describe('SparkleElements', () => {
   it('renders by default when isVisible not specified', () => {
     render(<SparkleElements />);
     
-    const motionElements = screen.getAllByTestId('motion-div');
+    const motionElements = screen.getAllByTestId('motion-div-floating');
     expect(motionElements).toHaveLength(8);
   });
 
@@ -131,7 +131,7 @@ describe('MagicElements', () => {
   it('renders 6 magic elements when visible', () => {
     render(<MagicElements isVisible={true} />);
     
-    const motionElements = screen.getAllByTestId('motion-div');
+    const motionElements = screen.getAllByTestId('motion-div-floating');
     expect(motionElements).toHaveLength(6);
   });
 
@@ -192,7 +192,7 @@ describe('CelebrationElements', () => {
   it('renders 12 celebration elements when visible', () => {
     render(<CelebrationElements isVisible={true} />);
     
-    const motionElements = screen.getAllByTestId('motion-div');
+    const motionElements = screen.getAllByTestId('motion-div-floating');
     expect(motionElements).toHaveLength(12);
   });
 

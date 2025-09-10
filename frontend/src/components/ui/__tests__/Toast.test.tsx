@@ -9,7 +9,7 @@ jest.mock('framer-motion', () => ({
     div: ({ children, className, initial, animate, exit, transition, ...props }: any) => (
       <div 
         className={className}
-        data-testid="motion-div"
+        data-testid="motion-div-toast"
         data-initial={JSON.stringify(initial)}
         data-animate={JSON.stringify(animate)}
         data-exit={JSON.stringify(exit)}
@@ -89,19 +89,19 @@ describe('Toast', () => {
     const { rerender } = render(
       <Toast id="test-1" type="info" message="Top Right" position="top-right" onClose={mockOnClose} />
     );
-    let motionDiv = screen.getByTestId('motion-div');
+    let motionDiv = screen.getByTestId('motion-div-toast');
     expect(motionDiv).toHaveClass('top-4', 'right-4');
 
     rerender(<Toast id="test-2" type="info" message="Top Left" position="top-left" onClose={mockOnClose} />);
-    motionDiv = screen.getByTestId('motion-div');
+    motionDiv = screen.getByTestId('motion-div-toast');
     expect(motionDiv).toHaveClass('top-4', 'left-4');
 
     rerender(<Toast id="test-3" type="info" message="Bottom Right" position="bottom-right" onClose={mockOnClose} />);
-    motionDiv = screen.getByTestId('motion-div');
+    motionDiv = screen.getByTestId('motion-div-toast');
     expect(motionDiv).toHaveClass('bottom-4', 'right-4');
 
     rerender(<Toast id="test-4" type="info" message="Bottom Left" position="bottom-left" onClose={mockOnClose} />);
-    motionDiv = screen.getByTestId('motion-div');
+    motionDiv = screen.getByTestId('motion-div-toast');
     expect(motionDiv).toHaveClass('bottom-4', 'left-4');
   });
 

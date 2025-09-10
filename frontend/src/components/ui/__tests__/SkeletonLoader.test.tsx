@@ -6,7 +6,7 @@ import SkeletonLoader from '../SkeletonLoader';
 jest.mock('framer-motion', () => ({
   motion: {
     div: ({ children, className, ...props }: any) => (
-      <div className={className} data-testid="motion-div" {...props}>
+      <div className={className} data-testid="motion-div-skeleton" {...props}>
         {children}
       </div>
     )
@@ -17,7 +17,7 @@ describe('SkeletonLoader', () => {
   it('renders mascot skeleton correctly', () => {
     render(<SkeletonLoader type="mascot" />);
     
-    const motionDiv = screen.getByTestId('motion-div');
+    const motionDiv = screen.getByTestId('motion-div-skeleton');
     expect(motionDiv).toBeInTheDocument();
     expect(motionDiv).toHaveClass('w-64', 'h-64', 'rounded-full');
   });
@@ -25,7 +25,7 @@ describe('SkeletonLoader', () => {
   it('renders xp-bar skeleton correctly', () => {
     render(<SkeletonLoader type="xp-bar" />);
     
-    const motionDiv = screen.getByTestId('motion-div');
+    const motionDiv = screen.getByTestId('motion-div-skeleton');
     expect(motionDiv).toBeInTheDocument();
     expect(motionDiv).toHaveClass('h-8', 'rounded-full');
   });
@@ -54,14 +54,14 @@ describe('SkeletonLoader', () => {
   it('applies custom className', () => {
     render(<SkeletonLoader type="mascot" className="custom-class" />);
     
-    const motionDiv = screen.getByTestId('motion-div');
+    const motionDiv = screen.getByTestId('motion-div-skeleton');
     expect(motionDiv).toHaveClass('custom-class');
   });
 
   it('has default empty className', () => {
     render(<SkeletonLoader type="xp-bar" />);
     
-    const motionDiv = screen.getByTestId('motion-div');
+    const motionDiv = screen.getByTestId('motion-div-skeleton');
     expect(motionDiv.className).toContain('h-8');
   });
 });

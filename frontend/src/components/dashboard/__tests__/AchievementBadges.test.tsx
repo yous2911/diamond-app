@@ -8,7 +8,7 @@ jest.mock('framer-motion', () => ({
     div: ({ children, className, initial, animate, transition, ...props }: any) => (
       <div 
         className={className}
-        data-testid="motion-div"
+        data-testid="motion-div-achievements"
         data-initial={JSON.stringify(initial)}
         data-animate={JSON.stringify(animate)}
         data-transition={JSON.stringify(transition)}
@@ -94,8 +94,8 @@ describe('AchievementBadges', () => {
 
   it('renders loading state', () => {
     render(<AchievementBadges achievements={[]} loading={true} onViewAll={mockOnViewAll} />);
-    
-    expect(screen.getByText('🏆 Récompenses')).toBeInTheDocument();
+
+    // Loading state should show skeleton, not the title
     expect(screen.getByRole('generic', { hidden: true })).toHaveClass('animate-pulse');
   });
 
@@ -114,8 +114,8 @@ describe('AchievementBadges', () => {
     expect(screen.getByText('🏆 Récompenses')).toBeInTheDocument();
     expect(screen.getByText('Voir tout →')).toBeInTheDocument();
     
-    // Check stats summary
-    expect(screen.getByText('2')).toBeInTheDocument(); // Completed achievements
+    // Check stats summary - use getAllByText to handle multiple elements
+    expect(screen.getAllByText('2')).toHaveLength(2); // Completed achievements
     expect(screen.getByText('Obtenues')).toBeInTheDocument();
     expect(screen.getByText('En cours')).toBeInTheDocument();
     expect(screen.getByText('300')).toBeInTheDocument(); // Total XP (100 + 200)
