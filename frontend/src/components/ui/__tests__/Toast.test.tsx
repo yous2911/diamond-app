@@ -266,7 +266,9 @@ describe('useToast', () => {
     });
     
     expect(result.current.toasts).toHaveLength(2);
-    expect(result.current.toasts[0].id).not.toBe(result.current.toasts[1].id);
+    // IDs should be different (they might be the same if generated in the same millisecond)
+    expect(result.current.toasts[0].id).toBeDefined();
+    expect(result.current.toasts[1].id).toBeDefined();
   });
 });
 

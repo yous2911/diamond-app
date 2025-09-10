@@ -26,6 +26,26 @@ jest.mock('framer-motion', () => ({
 const mockRandom = jest.fn();
 jest.spyOn(Math, 'random').mockImplementation(mockRandom);
 
+// Mock console.error to avoid source map warnings
+const originalConsoleError = console.error;
+const originalConsoleWarn = console.warn;
+
+beforeAll(() => {
+  console.error = jest.fn();
+  console.warn = jest.fn();
+});
+
+afterAll(() => {
+  console.error = originalConsoleError;
+  console.warn = originalConsoleWarn;
+});
+
+// Mock source-map-support to prevent source map errors
+jest.mock('source-map-support', () => ({
+  install: jest.fn(),
+  retrieveSourceMap: jest.fn(),
+}));
+
 describe('SparkleElements', () => {
   beforeEach(() => {
     mockRandom.mockReturnValue(0.5); // Always return 0.5 for consistent positioning

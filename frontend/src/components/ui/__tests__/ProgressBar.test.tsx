@@ -11,16 +11,32 @@ import {
 // Mock framer-motion
 jest.mock('framer-motion', () => ({
   motion: {
-    div: ({ children, className, initial, animate, transition, ...props }: any) => (
-      <div 
-        className={className} 
-        data-testid="motion-div-progress"
-        data-animate={JSON.stringify(animate)}
-        {...props}
-      >
-        {children}
-      </div>
-    )
+    div: ({ children, className, initial, animate, transition, ...props }: any) => {
+      // Determine test ID based on className or props
+      let testId = "motion-div-progress";
+      if (className?.includes('absolute inset-0') && className?.includes('bg-gradient-to-r')) {
+        testId = "motion-div-shimmer";
+      } else if (className?.includes('absolute right-0 top-0')) {
+        testId = "motion-div-percentage";
+      } else if (className?.includes('absolute inset-0 flex items-center')) {
+        testId = "motion-div-completion";
+      } else if (className?.includes('absolute inset-0 rounded-full') && className?.includes('blur-sm')) {
+        testId = "motion-div-glow";
+      } else if (className?.includes('w-8 h-8') && className?.includes('bg-green-500')) {
+        testId = "motion-div-checkmark";
+      }
+      
+      return (
+        <div 
+          className={className} 
+          data-testid={testId}
+          data-animate={JSON.stringify(animate)}
+          {...props}
+        >
+          {children}
+        </div>
+      );
+    }
   },
   AnimatePresence: ({ children }: any) => <div>{children}</div>
 }));
@@ -29,43 +45,43 @@ describe('ProgressBar', () => {
   it('renders with default props', () => {
     render(<ProgressBar progress={50} />);
     
-    const container = screen.getByRole('generic');
+    const container = screen.getAllByRole('generic')[0];
     expect(container).toBeInTheDocument();
   });
 
   it('clamps progress between 0 and 100', () => {
     const { rerender } = render(<ProgressBar progress={150} />);
     
-    let progressBar = screen.getByTestId('motion-div');
+    let progressBar = screen.getAllByTestId('motion-div-progress')[0];
     expect(JSON.parse(progressBar.getAttribute('data-animate') || '{}')).toEqual({ width: '100%' });
 
     rerender(<ProgressBar progress={-10} />);
-    progressBar = screen.getByTestId('motion-div');
+    progressBar = screen.getAllByTestId('motion-div-progress')[0];
     expect(JSON.parse(progressBar.getAttribute('data-animate') || '{}')).toEqual({ width: '0%' });
   });
 
   it('applies correct size classes', () => {
     const { rerender } = render(<ProgressBar progress={50} size="sm" />);
-    expect(screen.getByRole('generic')).toHaveClass('h-2');
+    expect(screen.getAllByRole('generic')[0]).toHaveClass('h-2');
 
     rerender(<ProgressBar progress={50} size="md" />);
-    expect(screen.getByRole('generic')).toHaveClass('h-4');
+    expect(screen.getAllByRole('generic')[0]).toHaveClass('h-4');
 
     rerender(<ProgressBar progress={50} size="lg" />);
-    expect(screen.getByRole('generic')).toHaveClass('h-6');
+    expect(screen.getAllByRole('generic')[0]).toHaveClass('h-6');
   });
 
   it('applies correct color classes', () => {
     const { rerender } = render(<ProgressBar progress={50} color="blue" />);
-    let motionDiv = screen.getByTestId('motion-div');
+    let motionDiv = screen.getByTestId('motion-div-progress');
     expect(motionDiv).toHaveClass('bg-blue-500');
 
     rerender(<ProgressBar progress={50} color="green" />);
-    motionDiv = screen.getByTestId('motion-div');
+    motionDiv = screen.getByTestId('motion-div-progress');
     expect(motionDiv).toHaveClass('bg-green-500');
 
     rerender(<ProgressBar progress={50} color="red" />);
-    motionDiv = screen.getByTestId('motion-div');
+    motionDiv = screen.getByTestId('motion-div-progress');
     expect(motionDiv).toHaveClass('bg-red-500');
   });
 
@@ -89,22 +105,23 @@ describe('ProgressBar', () => {
 
   it('applies custom className', () => {
     render(<ProgressBar progress={50} className="custom-class" />);
-    
-    const container = screen.getByRole('generic');
-    expect(container).toHaveClass('custom-class');
+
+    // The custom className is applied to the progress bar container, not the motion div
+    const progressContainer = screen.getByText('50%').closest('.relative');
+    expect(progressContainer).toHaveClass('custom-class');
   });
 
   it('applies glow effect when enabled', () => {
     render(<ProgressBar progress={50} glow={true} color="purple" />);
     
-    const motionDiv = screen.getByTestId('motion-div-progress');
+    const motionDiv = screen.getAllByTestId('motion-div-progress')[0];
     expect(motionDiv).toHaveClass('shadow-lg', 'shadow-purple-500/50');
   });
 
   it('applies striped pattern when enabled', () => {
     render(<ProgressBar progress={50} striped={true} />);
     
-    const motionDiv = screen.getByTestId('motion-div-progress');
+    const motionDiv = screen.getAllByTestId('motion-div-progress')[0];
     expect(motionDiv).toHaveClass('bg-striped');
   });
 
@@ -125,29 +142,29 @@ describe('ProgressBar Presets', () => {
   it('LevelProgressBar has correct props', () => {
     render(<LevelProgressBar progress={60} />);
     
-    const motionDiv = screen.getByTestId('motion-div-progress');
+    const motionDiv = screen.getAllByTestId('motion-div-progress')[0];
     expect(motionDiv).toHaveClass('bg-blue-500', 'shadow-lg');
   });
 
   it('SkillProgressBar has correct props', () => {
     render(<SkillProgressBar progress={70} />);
     
-    const motionDiv = screen.getByTestId('motion-div-progress');
+    const motionDiv = screen.getAllByTestId('motion-div-progress')[0];
     expect(motionDiv).toHaveClass('bg-green-500', 'bg-striped');
   });
 
   it('GameProgressBar has correct props', () => {
     render(<GameProgressBar progress={80} />);
     
-    const motionDiv = screen.getByTestId('motion-div-progress');
+    const motionDiv = screen.getAllByTestId('motion-div-progress')[0];
     expect(motionDiv).toHaveClass('bg-yellow-500', 'shadow-lg');
-    expect(screen.getByRole('generic')).toHaveClass('h-6'); // lg size
+    expect(screen.getAllByRole('generic')[0]).toHaveClass('h-6'); // lg size
   });
 
   it('AchievementProgressBar has correct props', () => {
     render(<AchievementProgressBar progress={90} />);
     
-    const motionDiv = screen.getByTestId('motion-div-progress');
+    const motionDiv = screen.getAllByTestId('motion-div-progress')[0];
     expect(motionDiv).toHaveClass('bg-purple-500', 'shadow-lg', 'bg-striped');
   });
 });
