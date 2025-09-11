@@ -1,9 +1,9 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react-native';
-import AppNavigator from '@/navigation/AppNavigator';
-import useAuthStore from '@/store/authStore';
+import AppNavigator from '../../src/navigation/AppNavigator';
+import useAuthStore from '../../src/store/authStore';
 
-jest.mock('@/store/authStore');
+jest.mock('../../src/store/authStore');
 
 describe('AppNavigator', () => {
   it('renders AuthNavigator when not authenticated', () => {

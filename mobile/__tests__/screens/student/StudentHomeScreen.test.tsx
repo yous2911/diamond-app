@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react-native';
 import { NavigationContainer } from '@react-navigation/native';
-import StudentHomeScreen from '../../../src/screens/student/HomeScreen';
+import StudentHomeScreen from '../../../src/screens/student/StudentHomeScreen';
 
 const AllTheProviders = ({ children }: { children: React.ReactNode }) => {
   return (
