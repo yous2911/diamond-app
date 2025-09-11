@@ -1,12 +1,6 @@
-export interface User {
-  id: string;
-  name: string;
-  email?: string;
-  age?: number;
-  avatar?: string;
-  type: 'student' | 'parent';
-  token?: string;
-}
+import { Student } from './index';
+
+export type User = Student;
 
 export interface AuthState {
   user: User | null;

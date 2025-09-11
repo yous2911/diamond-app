@@ -2,7 +2,7 @@ import axios from 'axios';
 import useAuthStore from '../store/authStore';
 
 const apiClient = axios.create({
-  baseURL: 'https://api.fastreved.kids/v1', // Placeholder URL
+  baseURL: 'http://localhost:3003/v1', // Correct local development URL
   headers: {
     'Content-Type': 'application/json',
   },

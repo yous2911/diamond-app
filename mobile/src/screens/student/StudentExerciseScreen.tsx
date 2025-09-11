@@ -11,12 +11,14 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import Slider from '@react-native-community/slider';
+import * as Haptics from 'expo-haptics';
 
 // Mobile versions of hooks
-import { useAuth } from '../../contexts/AuthContext';
-import { usePremiumFeatures } from '../../contexts/PremiumFeaturesContext';
-import { useStudentStats, useExerciseSubmission, useXpTracking, useMascot } from '../../hooks/useApiData';
+import { useAuth } from '../../hooks/useAuth';
+import { useStudentStats, useExerciseSubmission, useXpTracking, useMascot } from '../../hooks/useApi';
 import XPCrystalsMobile from '../../components/premium/XPCrystalsMobile';
+import ExerciseRenderer from '../../components/exercises/ExerciseRenderer';
+import { checkAchievements } from '../../services/achievements';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -33,22 +35,11 @@ const StudentExerciseScreen = () => {
   const route = useRoute();
   const currentExercise = route.params?.exercise;
 
-  const { student } = useAuth();
+  const { user } = useAuth();
   const { data: statsData } = useStudentStats();
   const { submitExercise } = useExerciseSubmission();
-  const { addXp } = useXpTracking();
-  const { updateEmotion: updateMascotEmotion } = useMascot();
-
-  // Global premium features
-  const {
-    setMascotEmotion,
-    setMascotMessage,
-    triggerParticles,
-    addXP: addGlobalXP,
-    currentXP,
-    maxXP,
-    level
-  } = usePremiumFeatures();
+  const { addXp, currentXP, maxXP, level } = useXpTracking();
+  const { updateEmotion: updateMascotEmotion, mascot } = useMascot();
 
   // Local state
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -138,8 +129,8 @@ const StudentExerciseScreen = () => {
 
         if (submission.success) {
           await addXp(totalXP);
-          addGlobalXP(totalXP, 'exercise');
           setShowXPAfterCompletion(true);
+          await checkAchievements(user, currentExercise, user.pushToken);
         }
 
         await updateMascotEmotion('excellent', 'exercise_complete');
@@ -247,46 +238,14 @@ const StudentExerciseScreen = () => {
           }
         ]}
       >
-        {/* Question */}
-        <View style={styles.questionContainer}>
-          <Text style={styles.questionText}>{currentExercise.question}</Text>
-        </View>
-
-        {/* Answer Options */}
-        {currentExercise.options && (
-          <View style={styles.optionsContainer}>
-            {currentExercise.options.map((option: string, index: number) => (
-              <TouchableOpacity
-                key={index}
-                style={[
-                  styles.optionButton,
-                  selectedAnswer === option && styles.selectedOption,
-                  showResults && option === (currentExercise.correctAnswer || currentExercise.answer) && styles.correctOption,
-                  showResults && selectedAnswer === option && selectedAnswer !== (currentExercise.correctAnswer || currentExercise.answer) && styles.incorrectOption
-                ]}
-                onPress={() => !exerciseCompleted && handleAnswerSelect(option)}
-                disabled={exerciseCompleted}
-                activeOpacity={0.8}
-              >
-                <LinearGradient
-                  colors={
-                    selectedAnswer === option
-                      ? ['#8B5CF6', '#EC4899']
-                      : ['#F3F4F6', '#E5E7EB']
-                  }
-                  style={styles.optionGradient}
-                >
-                  <Text style={[
-                    styles.optionText,
-                    selectedAnswer === option && styles.selectedOptionText
-                  ]}>
-                    {String.fromCharCode(65 + index)}. {option}
-                  </Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
+        <ExerciseRenderer
+            exercise={currentExercise}
+            onAnswerChange={handleAnswerSelect}
+            disabled={exerciseCompleted}
+            currentAnswer={selectedAnswer}
+            showValidation={showResults}
+            onComplete={handleSubmit}
+        />
 
         {/* Confidence Slider */}
         {selectedAnswer && !showResults && (
@@ -306,7 +265,10 @@ const StudentExerciseScreen = () => {
               minimumValue={0}
               maximumValue={100}
               value={confidenceLevel}
-              onValueChange={setConfidenceLevel}
+              onValueChange={(value) => {
+                setConfidenceLevel(value);
+                Haptics.selectionAsync();
+              }}
               minimumTrackTintColor={getConfidenceColor(confidenceLevel)}
               maximumTrackTintColor="#E5E7EB"
               thumbStyle={{ backgroundColor: getConfidenceColor(confidenceLevel) }}

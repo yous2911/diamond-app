@@ -4,6 +4,7 @@ import StudentHomeScreen from '../screens/student/StudentHomeScreen';
 import StudentExerciseScreen from '../screens/student/StudentExerciseScreen';
 import ProfileScreen from '../screens/student/ProfileScreen';
 import LeaderboardScreen from '../screens/student/LeaderboardScreen';
+import PremiumStoreScreen from '../screens/student/PremiumStoreScreen';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const Tab = createBottomTabNavigator();
@@ -23,6 +24,8 @@ const StudentNavigator = () => {
             iconName = focused ? 'person' : 'person-outline';
           } else if (route.name === 'Leaderboard') {
             iconName = focused ? 'trophy' : 'trophy-outline';
+          } else if (route.name === 'Store') {
+            iconName = focused ? 'diamond' : 'diamond-outline';
           }
 
           return <Ionicons name={iconName as string} size={size} color={color} />;
@@ -33,6 +36,7 @@ const StudentNavigator = () => {
     >
       <Tab.Screen name="Home" component={StudentHomeScreen} options={{ headerShown: false }}/>
       <Tab.Screen name="Exercises" component={StudentExerciseScreen} />
+      <Tab.Screen name="Store" component={PremiumStoreScreen} />
       <Tab.Screen name="Leaderboard" component={LeaderboardScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
