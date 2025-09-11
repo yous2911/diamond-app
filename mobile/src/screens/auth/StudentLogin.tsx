@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import Button from '../../components/common/Button';
+import Input from '../../components/common/Input';
 
 const StudentLogin = () => {
   const [name, setName] = useState('');
@@ -16,16 +18,13 @@ const StudentLogin = () => {
         <Text style={styles.avatarText}>Choose your Avatar</Text>
       </TouchableOpacity>
 
-      <TextInput
-        style={styles.input}
+      <Input
         placeholder="Enter your name"
         value={name}
         onChangeText={setName}
       />
 
-      <TouchableOpacity style={styles.button}>
-        <Text style={styles.buttonText}>Let's Go!</Text>
-      </TouchableOpacity>
+      <Button title="Let's Go!" onPress={() => {}} />
     </View>
   );
 };
@@ -56,30 +55,6 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     color: '#6366f1',
-    fontWeight: 'bold',
-  },
-  input: {
-    width: '100%',
-    height: 50,
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    fontSize: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
-  button: {
-    width: '100%',
-    height: 50,
-    backgroundColor: '#6366f1',
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 18,
     fontWeight: 'bold',
   },
 });
