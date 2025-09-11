@@ -1,7 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import StudentHomeScreen from '../screens/student/HomeScreen';
-import ExerciseScreen from '../screens/student/ExerciseScreen';
+import StudentHomeScreen from '../screens/student/StudentHomeScreen';
+import StudentExerciseScreen from '../screens/student/StudentExerciseScreen';
 import ProfileScreen from '../screens/student/ProfileScreen';
 import LeaderboardScreen from '../screens/student/LeaderboardScreen';
 import Ionicons from 'react-native-vector-icons/Ionicons';
@@ -32,7 +32,7 @@ const StudentNavigator = () => {
       })}
     >
       <Tab.Screen name="Home" component={StudentHomeScreen} options={{ headerShown: false }}/>
-      <Tab.Screen name="Exercises" component={ExerciseScreen} />
+      <Tab.Screen name="Exercises" component={StudentExerciseScreen} />
       <Tab.Screen name="Leaderboard" component={LeaderboardScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
