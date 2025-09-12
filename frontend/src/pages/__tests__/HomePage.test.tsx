@@ -38,6 +38,47 @@ jest.mock('../../services/api', () => ({
   }
 }));
 
+// Mock the API hooks
+jest.mock('../../hooks/useApiData', () => ({
+  useStudentStats: () => ({
+    data: {
+      stats: {
+        totalCorrectAnswers: 0,
+        totalExercises: 1
+      }
+    },
+    isLoading: false,
+    error: null
+  }),
+  useExerciseSubmission: () => ({
+    submitExercise: jest.fn().mockResolvedValue({
+      success: true,
+      xpEarned: 15,
+      masteryLevelChanged: false
+    })
+  }),
+  useXpTracking: () => ({
+    addXp: jest.fn().mockResolvedValue(undefined)
+  }),
+  useMascot: () => ({
+    updateEmotion: jest.fn().mockResolvedValue(undefined)
+  }),
+  useCompetences: () => ({
+    data: [],
+    isLoading: false,
+    error: null
+  }),
+  useExercisesByLevel: () => ({
+    data: [],
+    isLoading: false,
+    error: null
+  }),
+  useSessionManagement: () => ({
+    startSession: jest.fn().mockResolvedValue(undefined),
+    endSession: jest.fn().mockResolvedValue(undefined)
+  })
+}));
+
 // Mock framer-motion to avoid animation issues in tests
 jest.mock('framer-motion', () => ({
   motion: {
@@ -69,7 +110,39 @@ jest.mock('lucide-react', () => ({
   Play: () => <div data-testid="play-icon" />,
   Settings: () => <div data-testid="settings-icon" />,
   LogOut: () => <div data-testid="logout-icon" />,
+  Volume2: () => <div data-testid="volume-on-icon" />,
+  VolumeX: () => <div data-testid="volume-off-icon" />,
 }));
+
+// Mock components used by HomePage
+jest.mock('../../components/MemorableEntrance', () => {
+  return function MockMemorableEntrance({ children }: any) {
+    return <div data-testid="memorable-entrance">{children}</div>;
+  };
+});
+
+jest.mock('../../components/XPCrystalsPremium', () => {
+  return function MockXPCrystalsPremium({ currentXP, maxXP, level, onLevelUp, studentName, achievements }: any) {
+    return (
+      <div data-testid="xp-crystals-premium">
+        <div>XP: {currentXP}/{maxXP}</div>
+        <div>Level: {level}</div>
+        <div>Student: {studentName}</div>
+        <div>Achievements: {achievements?.length || 0}</div>
+      </div>
+    );
+  };
+});
+
+jest.mock('../../components/MicroInteractions', () => {
+  return function MockMicroInteraction({ children, onClick, className, ...props }: any) {
+    return (
+      <div className={className} onClick={onClick} {...props}>
+        {children}
+      </div>
+    );
+  };
+});
 
 // Mock window dimensions
 Object.defineProperty(window, 'innerWidth', { writable: true, value: 1024 });

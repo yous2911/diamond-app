@@ -153,7 +153,7 @@ const AdvancedMascotSystem: React.FC<AdvancedMascotProps> = React.memo(({
         studentProgress: studentData.level
       }
     }));
-  }, [aiState, studentData, currentActivity]);
+  }, [studentData, currentActivity]);
 
   // Intelligent Dialogue Generation
   const generateIntelligentDialogue = useCallback(() => {

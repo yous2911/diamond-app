@@ -1,6 +1,6 @@
 /**
  * RealTimeNotifications Component Tests for FastRevEd Kids
- * Tests notification display, real-time updates, animations, and user interactions
+ * Tests real-time notification display, WebSocket connection, and celebrations
  */
 
 import React from 'react';
@@ -30,17 +30,13 @@ jest.mock('framer-motion', () => ({
 // Mock Lucide React icons
 jest.mock('lucide-react', () => ({
   Bell: () => <div data-testid="bell-icon" />,
+  BellOff: () => <div data-testid="bell-off-icon" />,
   X: () => <div data-testid="close-icon" />,
-  CheckCircle: () => <div data-testid="success-icon" />,
-  AlertCircle: () => <div data-testid="warning-icon" />,
-  Info: () => <div data-testid="info-icon" />,
-  Trophy: () => <div data-testid="trophy-icon" />,
   Star: () => <div data-testid="star-icon" />,
-  Heart: () => <div data-testid="heart-icon" />,
-  Zap: () => <div data-testid="zap-icon" />,
-  BookOpen: () => <div data-testid="book-icon" />,
   Target: () => <div data-testid="target-icon" />,
-  Clock: () => <div data-testid="clock-icon" />,
+  Flame: () => <div data-testid="flame-icon" />,
+  Trophy: () => <div data-testid="trophy-icon" />,
+  BookOpen: () => <div data-testid="book-icon" />,
 }));
 
 // Mock window dimensions
@@ -51,101 +47,99 @@ Object.defineProperty(window, 'innerHeight', { writable: true, value: 768 });
 const mockWebSocket = {
   send: jest.fn(),
   close: jest.fn(),
-  addEventListener: jest.fn(),
-  removeEventListener: jest.fn(),
+  onopen: null as ((event: Event) => void) | null,
+  onmessage: null as ((event: MessageEvent) => void) | null,
+  onclose: null as ((event: Event) => void) | null,
+  onerror: null as ((event: Event) => void) | null,
   readyState: WebSocket.OPEN,
 };
 
+// Mock WebSocket constructor
 global.WebSocket = jest.fn(() => mockWebSocket) as any;
 
-
-// Mock notification service - create a simple mock since the service doesn't exist
-const mockNotificationService = {
-  subscribe: jest.fn(),
-  unsubscribe: jest.fn(),
-  sendNotification: jest.fn(),
-  markAsRead: jest.fn(),
-  markAllAsRead: jest.fn(),
-  getUnreadCount: jest.fn(),
-};
+// Mock WebSocket constants
+Object.defineProperty(global.WebSocket, 'OPEN', { value: 1 });
+Object.defineProperty(global.WebSocket, 'CLOSED', { value: 3 });
+Object.defineProperty(global.WebSocket, 'CONNECTING', { value: 0 });
+Object.defineProperty(global.WebSocket, 'CLOSING', { value: 2 });
 
 // Test wrapper component
 const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
   <div>{children}</div>
 );
 
-// Mock notification data
-const mockNotifications = [
-  {
-    id: '1',
-    type: 'achievement',
-    title: 'Nouveau Badge!',
-    message: 'Tu as débloqué le badge "Mathématicien"',
-    timestamp: new Date('2024-01-20T10:30:00Z'),
-    read: false,
-    priority: 'high',
-    icon: 'trophy',
-    actionUrl: '/achievements',
-    metadata: {
-      badgeId: 'math_genius',
-      xpGained: 50,
+// Default props for RealTimeNotifications component
+const defaultProps = {
+  userId: 1,
+  userType: 'student' as const,
+};
+
+// Mock WebSocket messages
+const mockWebSocketMessages = {
+  progressUpdate: {
+    type: 'progress_update',
+    update: {
+      data: { score: 95 },
+      timestamp: new Date().toISOString(),
     },
   },
-  {
-    id: '2',
-    type: 'exercise_completed',
-    title: 'Exercice Terminé',
-    message: 'Félicitations! Tu as terminé l\'exercice de mathématiques',
-    timestamp: new Date('2024-01-20T10:25:00Z'),
-    read: false,
-    priority: 'medium',
-    icon: 'check-circle',
-    actionUrl: '/exercises',
-    metadata: {
-      exerciseId: 'math_001',
-      score: 95,
-      timeSpent: 120,
+  levelUpCelebration: {
+    type: 'level_up_celebration',
+    celebration: {
+      title: 'Niveau Supérieur!',
+      message: 'Tu es maintenant niveau 5! Continue comme ça!',
+      confetti: true,
+      duration: 5000,
+    },
+    update: {
+      timestamp: new Date().toISOString(),
     },
   },
-  {
-    id: '3',
-    type: 'level_up',
-    title: 'Niveau Supérieur!',
-    message: 'Tu es maintenant niveau 5! Continue comme ça!',
-    timestamp: new Date('2024-01-20T10:20:00Z'),
-    read: true,
-    priority: 'high',
-    icon: 'star',
-    actionUrl: '/profile',
-    metadata: {
-      newLevel: 5,
-      xpGained: 100,
+  streakCelebration: {
+    type: 'streak_celebration',
+    celebration: {
+      title: 'Série de 7 jours!',
+      message: 'Tu as une série de 7 jours consécutifs!',
+      confetti: true,
+      duration: 4000,
+    },
+    update: {
+      timestamp: new Date().toISOString(),
     },
   },
-  {
-    id: '4',
-    type: 'reminder',
-    title: 'Rappel',
-    message: 'N\'oublie pas de faire tes exercices quotidiens!',
-    timestamp: new Date('2024-01-20T09:00:00Z'),
-    read: false,
-    priority: 'low',
-    icon: 'clock',
-    actionUrl: '/exercises',
-    metadata: {
-      reminderType: 'daily_exercise',
+  competencyMastery: {
+    type: 'competency_mastery_celebration',
+    celebration: {
+      title: 'Compétence Maîtrisée!',
+      message: 'Tu as maîtrisé la compétence "Calcul mental"!',
+      confetti: true,
+      duration: 6000,
+    },
+    update: {
+      timestamp: new Date().toISOString(),
     },
   },
-];
+  dailyGoalAchieved: {
+    type: 'daily_goal_achieved',
+    data: {
+      message: 'Objectif quotidien atteint!',
+    },
+  },
+};
 
 beforeEach(() => {
   jest.clearAllMocks();
-  mockNotificationService.getUnreadCount.mockReturnValue(2);
-  mockNotificationService.subscribe.mockImplementation((callback) => {
-    // Simulate receiving notifications
-    setTimeout(() => callback(mockNotifications), 100);
-    return () => {}; // unsubscribe function
-  });
+  // Reset WebSocket mock
+  mockWebSocket.send.mockClear();
+  mockWebSocket.close.mockClear();
+  mockWebSocket.onopen = null;
+  mockWebSocket.onmessage = null;
+  mockWebSocket.onclose = null;
+  mockWebSocket.onerror = null;
+  mockWebSocket.readyState = WebSocket.OPEN;
+  
+  // Reset global WebSocket mock
+  (global.WebSocket as unknown as jest.Mock).mockClear();
 });
 
 // =============================================================================
@@ -153,498 +147,501 @@ beforeEach(() => {
 // =============================================================================
 
 describe('RealTimeNotifications', () => {
-  describe('Rendering', () => {
-    it('should render notification bell icon', () => {
-      render(<RealTimeNotifications />, { wrapper: TestWrapper });
+  describe('WebSocket Connection', () => {
+    it('should establish WebSocket connection on mount', () => {
+      render(<RealTimeNotifications {...defaultProps} />, { wrapper: TestWrapper });
 
-      expect(screen.getByTestId('bell-icon')).toBeInTheDocument();
+      expect(global.WebSocket).toHaveBeenCalledWith('ws://localhost:3004/ws');
     });
 
-    it('should display unread count badge', () => {
-      render(<RealTimeNotifications />, { wrapper: TestWrapper });
+    it('should send registration message when connected', async () => {
+      render(<RealTimeNotifications {...defaultProps} />, { wrapper: TestWrapper });
 
-      expect(screen.getByText('2')).toBeInTheDocument();
+      // Simulate WebSocket connection
+      act(() => {
+        if (mockWebSocket.onopen) {
+          mockWebSocket.onopen(new Event('open'));
+        }
+      });
+
+      await waitFor(() => {
+        expect(mockWebSocket.send).toHaveBeenCalledWith(
+          JSON.stringify({
+            type: 'register',
+            userId: 1,
+            userType: 'student',
+          })
+        );
+      });
     });
 
-    it('should not display count badge when no unread notifications', () => {
-      mockNotificationService.getUnreadCount.mockReturnValue(0);
+    it('should show connection status indicator', async () => {
+      render(<RealTimeNotifications {...defaultProps} />, { wrapper: TestWrapper });
+
+      // Initially disconnected
+      expect(screen.getByTestId('bell-off-icon')).toBeInTheDocument();
+      expect(screen.getByText('Reconnexion...')).toBeInTheDocument();
+
+      // Simulate connection
+      act(() => {
+        if (mockWebSocket.onopen) {
+          mockWebSocket.onopen(new Event('open'));
+        }
+      });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('bell-icon')).toBeInTheDocument();
+        expect(screen.getByText('Notifications actives')).toBeInTheDocument();
+      });
+    });
+
+    it('should attempt to reconnect on connection loss', async () => {
+      jest.useFakeTimers();
+      render(<RealTimeNotifications {...defaultProps} />, { wrapper: TestWrapper });
+
+      // Simulate connection and then disconnection
+      act(() => {
+        if (mockWebSocket.onopen) {
+          mockWebSocket.onopen(new Event('open'));
+        }
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('Notifications actives')).toBeInTheDocument();
+      });
+
+      // Simulate disconnection
+      act(() => {
+        if (mockWebSocket.onclose) {
+          mockWebSocket.onclose(new Event('close'));
+        }
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('Reconnexion...')).toBeInTheDocument();
+      });
+
+      // Fast-forward time to trigger reconnection
+      act(() => {
+        jest.advanceTimersByTime(3000);
+      });
+
+      // Should attempt to reconnect
+      expect(global.WebSocket).toHaveBeenCalledTimes(2);
       
-      render(<RealTimeNotifications />, { wrapper: TestWrapper });
-
-      expect(screen.queryByText('0')).not.toBeInTheDocument();
-    });
-
-    it('should display count badge with max 99 for large numbers', () => {
-      mockNotificationService.getUnreadCount.mockReturnValue(150);
-      
-      render(<RealTimeNotifications />, { wrapper: TestWrapper });
-
-      expect(screen.getByText('99+')).toBeInTheDocument();
-    });
-  });
-
-  describe('Notification Panel', () => {
-    it('should open notification panel when bell is clicked', async () => {
-      const user = userEvent.setup();
-      render(<RealTimeNotifications />, { wrapper: TestWrapper });
-
-      const bellButton = screen.getByTestId('bell-icon').closest('button');
-      expect(bellButton).toBeInTheDocument();
-
-      await user.click(bellButton!);
-
-      await waitFor(() => {
-        expect(screen.getByText('Notifications')).toBeInTheDocument();
-      });
-    });
-
-    it('should close notification panel when close button is clicked', async () => {
-      const user = userEvent.setup();
-      render(<RealTimeNotifications />, { wrapper: TestWrapper });
-
-      // Open panel
-      const bellButton = screen.getByTestId('bell-icon').closest('button');
-      await user.click(bellButton!);
-
-      await waitFor(() => {
-        expect(screen.getByText('Notifications')).toBeInTheDocument();
-      });
-
-      // Close panel
-      const closeButton = screen.getByTestId('close-icon').closest('button');
-      await user.click(closeButton!);
-
-      await waitFor(() => {
-        expect(screen.queryByText('Notifications')).not.toBeInTheDocument();
-      });
-    });
-
-    it('should close notification panel when clicking outside', async () => {
-      const user = userEvent.setup();
-      render(
-        <div>
-          <RealTimeNotifications />
-          <div data-testid="outside-element">Outside</div>
-        </div>,
-        { wrapper: TestWrapper }
-      );
-
-      // Open panel
-      const bellButton = screen.getByTestId('bell-icon').closest('button');
-      await user.click(bellButton!);
-
-      await waitFor(() => {
-        expect(screen.getByText('Notifications')).toBeInTheDocument();
-      });
-
-      // Click outside
-      const outsideElement = screen.getByTestId('outside-element');
-      await user.click(outsideElement);
-
-      await waitFor(() => {
-        expect(screen.queryByText('Notifications')).not.toBeInTheDocument();
-      });
+      jest.useRealTimers();
     });
   });
 
   describe('Notification Display', () => {
-    beforeEach(async () => {
-      const user = userEvent.setup();
-      render(<RealTimeNotifications />, { wrapper: TestWrapper });
+    it('should display progress update notifications', async () => {
+      render(<RealTimeNotifications {...defaultProps} />, { wrapper: TestWrapper });
 
-      // Open notification panel
-      const bellButton = screen.getByTestId('bell-icon').closest('button');
-      await user.click(bellButton!);
+      // Simulate receiving progress update
+      act(() => {
+        if (mockWebSocket.onmessage) {
+          const event = {
+            data: JSON.stringify(mockWebSocketMessages.progressUpdate),
+          } as MessageEvent;
+          mockWebSocket.onmessage(event);
+        }
+      });
 
       await waitFor(() => {
-        expect(screen.getByText('Notifications')).toBeInTheDocument();
+        expect(screen.getByText('Exercice terminé !')).toBeInTheDocument();
+        expect(screen.getByText('Score: 95%')).toBeInTheDocument();
       });
     });
 
-    it('should display all notifications', async () => {
+    it('should display level up celebration notifications', async () => {
+      render(<RealTimeNotifications {...defaultProps} />, { wrapper: TestWrapper });
+
+      // Simulate receiving level up celebration
+      act(() => {
+        if (mockWebSocket.onmessage) {
+          const event = {
+            data: JSON.stringify(mockWebSocketMessages.levelUpCelebration),
+          } as MessageEvent;
+          mockWebSocket.onmessage(event);
+        }
+      });
+
       await waitFor(() => {
-        expect(screen.getByText('Nouveau Badge!')).toBeInTheDocument();
-        expect(screen.getByText('Exercice Terminé')).toBeInTheDocument();
         expect(screen.getByText('Niveau Supérieur!')).toBeInTheDocument();
-        expect(screen.getByText('Rappel')).toBeInTheDocument();
-      });
-    });
-
-    it('should display notification messages', async () => {
-      await waitFor(() => {
-        expect(screen.getByText('Tu as débloqué le badge "Mathématicien"')).toBeInTheDocument();
-        expect(screen.getByText('Félicitations! Tu as terminé l\'exercice de mathématiques')).toBeInTheDocument();
         expect(screen.getByText('Tu es maintenant niveau 5! Continue comme ça!')).toBeInTheDocument();
-        expect(screen.getByText('N\'oublie pas de faire tes exercices quotidiens!')).toBeInTheDocument();
       });
     });
 
-    it('should display appropriate icons for different notification types', async () => {
+    it('should display streak celebration notifications', async () => {
+      render(<RealTimeNotifications {...defaultProps} />, { wrapper: TestWrapper });
+
+      // Simulate receiving streak celebration
+      act(() => {
+        if (mockWebSocket.onmessage) {
+          const event = {
+            data: JSON.stringify(mockWebSocketMessages.streakCelebration),
+          } as MessageEvent;
+          mockWebSocket.onmessage(event);
+        }
+      });
+
       await waitFor(() => {
-        expect(screen.getAllByTestId('trophy-icon')).toHaveLength(1);
-        expect(screen.getAllByTestId('success-icon')).toHaveLength(1);
-        expect(screen.getAllByTestId('star-icon')).toHaveLength(1);
-        expect(screen.getAllByTestId('clock-icon')).toHaveLength(1);
+        expect(screen.getByText('Série de 7 jours!')).toBeInTheDocument();
+        expect(screen.getByText('Tu as une série de 7 jours consécutifs!')).toBeInTheDocument();
+      });
+    });
+
+    it('should display competency mastery notifications', async () => {
+      render(<RealTimeNotifications {...defaultProps} />, { wrapper: TestWrapper });
+
+      // Simulate receiving competency mastery
+      act(() => {
+        if (mockWebSocket.onmessage) {
+          const event = {
+            data: JSON.stringify(mockWebSocketMessages.competencyMastery),
+          } as MessageEvent;
+          mockWebSocket.onmessage(event);
+        }
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('Compétence Maîtrisée!')).toBeInTheDocument();
+        expect(screen.getByText('Tu as maîtrisé la compétence "Calcul mental"!')).toBeInTheDocument();
+      });
+    });
+
+    it('should display daily goal achieved notifications', async () => {
+      render(<RealTimeNotifications {...defaultProps} />, { wrapper: TestWrapper });
+
+      // Simulate receiving daily goal achieved
+      act(() => {
+        if (mockWebSocket.onmessage) {
+          const event = {
+            data: JSON.stringify(mockWebSocketMessages.dailyGoalAchieved),
+          } as MessageEvent;
+          mockWebSocket.onmessage(event);
+        }
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('Objectif quotidien atteint !')).toBeInTheDocument();
+        expect(screen.getByText('Objectif quotidien atteint!')).toBeInTheDocument();
+      });
+    });
+
+    it('should show appropriate icons for different notification types', async () => {
+      render(<RealTimeNotifications {...defaultProps} />, { wrapper: TestWrapper });
+
+      // Test progress update icon
+      act(() => {
+        if (mockWebSocket.onmessage) {
+          const event = {
+            data: JSON.stringify(mockWebSocketMessages.progressUpdate),
+          } as MessageEvent;
+          mockWebSocket.onmessage(event);
+        }
+      });
+
+      await waitFor(() => {
+        expect(screen.getByTestId('book-icon')).toBeInTheDocument();
       });
     });
 
     it('should show timestamps for notifications', async () => {
-      await waitFor(() => {
-        expect(screen.getByText(/il y a/i)).toBeInTheDocument();
-      });
-    });
+      render(<RealTimeNotifications {...defaultProps} />, { wrapper: TestWrapper });
 
-    it('should highlight unread notifications', async () => {
+      // Simulate receiving notification
+      act(() => {
+        if (mockWebSocket.onmessage) {
+          const event = {
+            data: JSON.stringify(mockWebSocketMessages.progressUpdate),
+          } as MessageEvent;
+          mockWebSocket.onmessage(event);
+        }
+      });
+
       await waitFor(() => {
-        const unreadNotifications = screen.getAllByText(/Nouveau Badge|Exercice Terminé|Rappel/);
-        unreadNotifications.forEach(notification => {
-          expect(notification.closest('div')).toHaveClass(/unread|highlight/);
-        });
+        // Should show time in format like "10:30:00"
+        expect(screen.getByText(/\d{1,2}:\d{2}:\d{2}/)).toBeInTheDocument();
       });
     });
   });
 
   describe('Notification Interactions', () => {
-    beforeEach(async () => {
-      const user = userEvent.setup();
-      render(<RealTimeNotifications />, { wrapper: TestWrapper });
+    it('should allow closing individual notifications', async () => {
+      render(<RealTimeNotifications {...defaultProps} />, { wrapper: TestWrapper });
 
-      // Open notification panel
-      const bellButton = screen.getByTestId('bell-icon').closest('button');
-      await user.click(bellButton!);
-
+      // Simulate receiving notification
+      act(() => {
+        if (mockWebSocket.onmessage) {
+          const event = {
+            data: JSON.stringify(mockWebSocketMessages.progressUpdate),
+          } as MessageEvent;
+          mockWebSocket.onmessage(event);
+        }
+      });
+      
       await waitFor(() => {
-        expect(screen.getByText('Notifications')).toBeInTheDocument();
+        expect(screen.getByText('Exercice terminé !')).toBeInTheDocument();
+      });
+
+      // Click close button
+      const closeButton = screen.getByTestId('close-icon').closest('button');
+      fireEvent.click(closeButton!);
+      
+      await waitFor(() => {
+        expect(screen.queryByText('Exercice terminé !')).not.toBeInTheDocument();
       });
     });
 
-    it('should mark notification as read when clicked', async () => {
-      const user = userEvent.setup();
-      
-      await waitFor(() => {
-        expect(screen.getByText('Nouveau Badge!')).toBeInTheDocument();
+    it('should call onNotificationReceived callback when notification is received', async () => {
+      const mockCallback = jest.fn();
+      render(
+        <RealTimeNotifications {...defaultProps} onNotificationReceived={mockCallback} />,
+        { wrapper: TestWrapper }
+      );
+
+      // Simulate receiving notification
+      act(() => {
+        if (mockWebSocket.onmessage) {
+          const event = {
+            data: JSON.stringify(mockWebSocketMessages.progressUpdate),
+          } as MessageEvent;
+          mockWebSocket.onmessage(event);
+        }
       });
 
-      const notification = screen.getByText('Nouveau Badge!').closest('div');
-      await user.click(notification!);
-
-      expect(mockNotificationService.markAsRead).toHaveBeenCalledWith('1');
-    });
-
-    it('should navigate to action URL when notification is clicked', async () => {
-      const user = userEvent.setup();
-      
-      // Mock window.location
-      delete (window as any).location;
-      window.location = { href: '' } as any;
-
       await waitFor(() => {
-        expect(screen.getByText('Nouveau Badge!')).toBeInTheDocument();
-      });
-
-      const notification = screen.getByText('Nouveau Badge!').closest('div');
-      await user.click(notification!);
-
-      expect(window.location.href).toBe('/achievements');
-    });
-
-    it('should mark all notifications as read when mark all button is clicked', async () => {
-      const user = userEvent.setup();
-      
-      await waitFor(() => {
-        expect(screen.getByText('Notifications')).toBeInTheDocument();
-      });
-
-      const markAllButton = screen.getByText(/marquer tout comme lu/i);
-      await user.click(markAllButton);
-
-      expect(mockNotificationService.markAllAsRead).toHaveBeenCalled();
-    });
-
-    it('should clear all notifications when clear all button is clicked', async () => {
-      const user = userEvent.setup();
-      
-      await waitFor(() => {
-        expect(screen.getByText('Notifications')).toBeInTheDocument();
-      });
-
-      const clearAllButton = screen.getByText(/tout effacer/i);
-      await user.click(clearAllButton);
-
-      await waitFor(() => {
-        expect(screen.queryByText('Nouveau Badge!')).not.toBeInTheDocument();
-        expect(screen.queryByText('Exercice Terminé')).not.toBeInTheDocument();
+        expect(mockCallback).toHaveBeenCalledWith(
+          expect.objectContaining({
+            type: 'progress_update',
+            title: 'Exercice terminé !',
+            message: 'Score: 95%',
+          })
+        );
       });
     });
   });
 
-  describe('Real-time Updates', () => {
-    it('should subscribe to notification updates on mount', () => {
-      render(<RealTimeNotifications />, { wrapper: TestWrapper });
+  describe('Celebration Modal', () => {
+    it('should show celebration modal for confetti celebrations', async () => {
+      render(<RealTimeNotifications {...defaultProps} />, { wrapper: TestWrapper });
 
-      expect(mockNotificationService.subscribe).toHaveBeenCalled();
-    });
-
-    it('should unsubscribe from notification updates on unmount', () => {
-      const { unmount } = render(<RealTimeNotifications />, { wrapper: TestWrapper });
-
-      unmount();
-
-      // The unsubscribe function should be called
-      expect(mockNotificationService.subscribe).toHaveBeenCalled();
-    });
-
-    it('should update notification count when new notifications arrive', async () => {
-      const user = userEvent.setup();
-      render(<RealTimeNotifications />, { wrapper: TestWrapper });
-
-      // Initially shows 2 unread
-      expect(screen.getByText('2')).toBeInTheDocument();
-
-      // Simulate new notification arriving
+      // Simulate receiving level up celebration with confetti
       act(() => {
-        mockNotificationService.getUnreadCount.mockReturnValue(3);
-        // Trigger re-render
-        const bellButton = screen.getByTestId('bell-icon').closest('button');
-        fireEvent.click(bellButton!);
+        if (mockWebSocket.onmessage) {
+          const event = {
+            data: JSON.stringify(mockWebSocketMessages.levelUpCelebration),
+          } as MessageEvent;
+          mockWebSocket.onmessage(event);
+        }
       });
 
       await waitFor(() => {
-        expect(screen.getByText('3')).toBeInTheDocument();
+        expect(screen.getByText('Niveau Supérieur!')).toBeInTheDocument();
+        expect(screen.getByText('Tu es maintenant niveau 5! Continue comme ça!')).toBeInTheDocument();
+        expect(screen.getByText('Continuer ! ✨')).toBeInTheDocument();
       });
     });
 
-    it('should display new notifications in real-time', async () => {
+    it('should close celebration modal when continue button is clicked', async () => {
       const user = userEvent.setup();
-      render(<RealTimeNotifications />, { wrapper: TestWrapper });
+      render(<RealTimeNotifications {...defaultProps} />, { wrapper: TestWrapper });
 
-      // Open notification panel
-      const bellButton = screen.getByTestId('bell-icon').closest('button');
-      await user.click(bellButton!);
-
-      await waitFor(() => {
-        expect(screen.getByText('Notifications')).toBeInTheDocument();
+      // Simulate receiving celebration
+      act(() => {
+        if (mockWebSocket.onmessage) {
+          const event = {
+            data: JSON.stringify(mockWebSocketMessages.levelUpCelebration),
+          } as MessageEvent;
+          mockWebSocket.onmessage(event);
+        }
       });
 
-      // Simulate new notification
-      const newNotification = {
-        id: '5',
-        type: 'streak',
-        title: 'Série de 7 jours!',
-        message: 'Tu as une série de 7 jours consécutifs!',
-        timestamp: new Date(),
-        read: false,
-        priority: 'high',
-        icon: 'zap',
-        actionUrl: '/streaks',
-        metadata: { streakDays: 7 },
+      await waitFor(() => {
+        expect(screen.getByText('Continuer ! ✨')).toBeInTheDocument();
+      });
+
+      // Click continue button
+      const continueButton = screen.getByText('Continuer ! ✨');
+      await user.click(continueButton);
+
+      await waitFor(() => {
+        expect(screen.queryByText('Continuer ! ✨')).not.toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('Parent Notifications', () => {
+    it('should display child progress notifications for parent users', async () => {
+      const parentProps = { ...defaultProps, userType: 'parent' as const };
+      render(<RealTimeNotifications {...parentProps} />, { wrapper: TestWrapper });
+
+      // Simulate receiving child progress notification
+      const childProgressMessage = {
+        type: 'child_progress_notification',
+        notification: {
+          title: 'Progrès de votre enfant',
+          message: 'Marie a terminé son exercice de mathématiques',
+          icon: '📚',
+          color: 'bg-blue-500',
+        },
       };
 
       act(() => {
-        // Simulate receiving new notification
-        const callback = mockNotificationService.subscribe.mock.calls[0][0];
-        callback([...mockNotifications, newNotification]);
+        if (mockWebSocket.onmessage) {
+          const event = {
+            data: JSON.stringify(childProgressMessage),
+          } as MessageEvent;
+          mockWebSocket.onmessage(event);
+        }
       });
 
       await waitFor(() => {
-        expect(screen.getByText('Série de 7 jours!')).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('Notification Types and Priorities', () => {
-    beforeEach(async () => {
-      const user = userEvent.setup();
-      render(<RealTimeNotifications />, { wrapper: TestWrapper });
-
-      // Open notification panel
-      const bellButton = screen.getByTestId('bell-icon').closest('button');
-      await user.click(bellButton!);
-
-      await waitFor(() => {
-        expect(screen.getByText('Notifications')).toBeInTheDocument();
+        expect(screen.getByText('Progrès de votre enfant')).toBeInTheDocument();
+        expect(screen.getByText('Marie a terminé son exercice de mathématiques')).toBeInTheDocument();
       });
     });
 
-    it('should display high priority notifications first', async () => {
-      await waitFor(() => {
-        const notifications = screen.getAllByText(/Nouveau Badge|Exercice Terminé|Niveau Supérieur|Rappel/);
-        // High priority notifications should appear first
-        expect(notifications[0]).toHaveTextContent(/Nouveau Badge|Niveau Supérieur/);
+    it('should not display child progress notifications for student users', async () => {
+      render(<RealTimeNotifications {...defaultProps} />, { wrapper: TestWrapper });
+
+      // Simulate receiving child progress notification
+      const childProgressMessage = {
+        type: 'child_progress_notification',
+        notification: {
+          title: 'Progrès de votre enfant',
+          message: 'Marie a terminé son exercice de mathématiques',
+          icon: '📚',
+          color: 'bg-blue-500',
+        },
+      };
+
+      act(() => {
+        if (mockWebSocket.onmessage) {
+          const event = {
+            data: JSON.stringify(childProgressMessage),
+          } as MessageEvent;
+          mockWebSocket.onmessage(event);
+        }
       });
-    });
 
-    it('should show different styling for different priorities', async () => {
       await waitFor(() => {
-        const highPriorityNotification = screen.getByText('Nouveau Badge!').closest('div');
-        const lowPriorityNotification = screen.getByText('Rappel').closest('div');
-
-        expect(highPriorityNotification).toHaveClass(/high-priority|priority-high/);
-        expect(lowPriorityNotification).toHaveClass(/low-priority|priority-low/);
-      });
-    });
-
-    it('should group notifications by type', async () => {
-      await waitFor(() => {
-        // Should have sections for different notification types
-        expect(screen.getByText(/Achievements|Badges/)).toBeInTheDocument();
-        expect(screen.getByText(/Exercises|Activités/)).toBeInTheDocument();
-        expect(screen.getByText(/Progress|Progrès/)).toBeInTheDocument();
+        expect(screen.queryByText('Progrès de votre enfant')).not.toBeInTheDocument();
       });
     });
   });
 
   describe('Error Handling', () => {
-    it('should handle WebSocket connection errors gracefully', async () => {
+    it('should handle WebSocket connection errors gracefully', () => {
       // Mock WebSocket error
-      const mockWebSocketError = new Error('Connection failed');
       global.WebSocket = jest.fn(() => {
-        throw mockWebSocketError;
+        throw new Error('Connection failed');
       }) as any;
 
       // Should not crash the component
       expect(() => {
-        render(<RealTimeNotifications />, { wrapper: TestWrapper });
+        render(<RealTimeNotifications {...defaultProps} />, { wrapper: TestWrapper });
       }).not.toThrow();
     });
 
-    it('should handle notification service errors', async () => {
-      mockNotificationService.subscribe.mockImplementation(() => {
-        throw new Error('Service unavailable');
+    it('should handle malformed WebSocket messages', async () => {
+      render(<RealTimeNotifications {...defaultProps} />, { wrapper: TestWrapper });
+
+      // Simulate malformed message
+      act(() => {
+        if (mockWebSocket.onmessage) {
+          const event = {
+            data: 'invalid json',
+          } as MessageEvent;
+          mockWebSocket.onmessage(event);
+        }
       });
 
       // Should not crash the component
-      expect(() => {
-        render(<RealTimeNotifications />, { wrapper: TestWrapper });
-      }).not.toThrow();
+      expect(screen.getByTestId('bell-off-icon')).toBeInTheDocument();
     });
 
-    it('should display error message when notifications fail to load', async () => {
-      mockNotificationService.subscribe.mockImplementation((callback) => {
-        setTimeout(() => callback([]), 100);
-        return () => {};
-      });
+    it('should handle unknown message types', async () => {
+      render(<RealTimeNotifications {...defaultProps} />, { wrapper: TestWrapper });
 
-      const user = userEvent.setup();
-      render(<RealTimeNotifications />, { wrapper: TestWrapper });
+      // Simulate unknown message type
+      const unknownMessage = {
+        type: 'unknown_type',
+        data: { some: 'data' },
+      };
 
-      // Open notification panel
-      const bellButton = screen.getByTestId('bell-icon').closest('button');
-      await user.click(bellButton!);
-
-      await waitFor(() => {
-        expect(screen.getByText(/Aucune notification/i)).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('Accessibility', () => {
-    it('should have proper ARIA labels', () => {
-      render(<RealTimeNotifications />, { wrapper: TestWrapper });
-
-      const bellButton = screen.getByTestId('bell-icon').closest('button');
-      expect(bellButton).toHaveAttribute('aria-label', /notifications/i);
-    });
-
-    it('should announce new notifications to screen readers', async () => {
-      const user = userEvent.setup();
-      render(<RealTimeNotifications />, { wrapper: TestWrapper });
-
-      // Simulate new notification
       act(() => {
-        const callback = mockNotificationService.subscribe.mock.calls[0][0];
-        callback([...mockNotifications, {
-          id: '6',
-          type: 'achievement',
-          title: 'Nouveau Badge!',
-          message: 'Tu as débloqué un nouveau badge!',
-          timestamp: new Date(),
-          read: false,
-          priority: 'high',
-          icon: 'trophy',
-          actionUrl: '/achievements',
-          metadata: {},
-        }]);
+        if (mockWebSocket.onmessage) {
+          const event = {
+            data: JSON.stringify(unknownMessage),
+          } as MessageEvent;
+          mockWebSocket.onmessage(event);
+        }
       });
 
-      // Should have aria-live region for announcements
-      expect(screen.getByRole('status')).toBeInTheDocument();
-    });
-
-    it('should support keyboard navigation', async () => {
-      const user = userEvent.setup();
-      render(<RealTimeNotifications />, { wrapper: TestWrapper });
-
-      const bellButton = screen.getByTestId('bell-icon').closest('button');
-      
-      // Should be focusable
-      bellButton?.focus();
-      expect(bellButton).toHaveFocus();
-
-      // Should open with Enter key
-      await user.keyboard('{Enter}');
-
-      await waitFor(() => {
-        expect(screen.getByText('Notifications')).toBeInTheDocument();
-      });
-    });
-
-    it('should have proper button roles and text', () => {
-      render(<RealTimeNotifications />, { wrapper: TestWrapper });
-
-      const bellButton = screen.getByTestId('bell-icon').closest('button');
-      expect(bellButton).toHaveAttribute('role', 'button');
+      // Should not crash the component
+      expect(screen.getByTestId('bell-off-icon')).toBeInTheDocument();
     });
   });
 
   describe('Performance', () => {
-    it('should not re-render unnecessarily', () => {
-      const renderSpy = jest.fn();
-      const TestComponent = () => {
-        renderSpy();
-        return <RealTimeNotifications />;
-      };
+    it('should limit number of displayed notifications', async () => {
+      render(<RealTimeNotifications {...defaultProps} />, { wrapper: TestWrapper });
 
-      render(<TestComponent />, { wrapper: TestWrapper });
-
-      // Should only render once initially
-      expect(renderSpy).toHaveBeenCalledTimes(1);
-    });
-
-    it('should handle large numbers of notifications efficiently', async () => {
-      const user = userEvent.setup();
-      
-      // Create many notifications
-      const manyNotifications = Array.from({ length: 100 }, (_, i) => ({
-        id: `notification-${i}`,
-        type: 'info',
-        title: `Notification ${i}`,
-        message: `This is notification number ${i}`,
-        timestamp: new Date(),
-        read: false,
-        priority: 'low',
-        icon: 'info',
-        actionUrl: '/',
-        metadata: {},
-      }));
-
-      mockNotificationService.subscribe.mockImplementation((callback) => {
-        setTimeout(() => callback(manyNotifications), 100);
-        return () => {};
-      });
-
-      render(<RealTimeNotifications />, { wrapper: TestWrapper });
-
-      // Open notification panel
-      const bellButton = screen.getByTestId('bell-icon').closest('button');
-      await user.click(bellButton!);
+      // Send multiple notifications
+      for (let i = 0; i < 10; i++) {
+        act(() => {
+          if (mockWebSocket.onmessage) {
+            const event = {
+              data: JSON.stringify({
+                ...mockWebSocketMessages.progressUpdate,
+                update: {
+                  ...mockWebSocketMessages.progressUpdate.update,
+                  data: { score: 80 + i },
+                },
+              }),
+            } as MessageEvent;
+            mockWebSocket.onmessage(event);
+          }
+        });
+      }
 
       await waitFor(() => {
-        expect(screen.getByText('Notifications')).toBeInTheDocument();
+        // Should only show 5 notifications (component limits to 5)
+        const notifications = screen.getAllByText(/Exercice terminé/);
+        expect(notifications.length).toBeLessThanOrEqual(5);
+    });
+  });
+
+    it('should auto-remove notifications after duration', async () => {
+      jest.useFakeTimers();
+      render(<RealTimeNotifications {...defaultProps} />, { wrapper: TestWrapper });
+
+      // Simulate receiving notification with duration
+      act(() => {
+        if (mockWebSocket.onmessage) {
+          const event = {
+            data: JSON.stringify(mockWebSocketMessages.progressUpdate),
+          } as MessageEvent;
+          mockWebSocket.onmessage(event);
+        }
       });
 
-      // Should handle large number of notifications without crashing
-      expect(screen.getByText(/100 notifications/i)).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Exercice terminé !')).toBeInTheDocument();
+      });
+
+      // Fast-forward time to trigger auto-removal
+      act(() => {
+        jest.advanceTimersByTime(3000);
+      });
+
+      await waitFor(() => {
+        expect(screen.queryByText('Exercice terminé !')).not.toBeInTheDocument();
+      });
+
+      jest.useRealTimers();
     });
   });
 });

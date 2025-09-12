@@ -48,4 +48,6 @@ WHERE
     OR mascotte_color IS NULL;
 
 -- Verify the schema update
-DESCRIBE students;
+
+
+at DESCRIBE students;

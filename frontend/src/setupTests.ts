@@ -190,6 +190,22 @@ Object.defineProperty(global, 'crypto', {
 });
 
 // =============================================================================
+// LIBRARY MOCKS
+// =============================================================================
+
+// Mock useGPUPerformance hook (specific to this project)
+jest.mock('./hooks/useGPUPerformance', () => ({
+  useGPUPerformance: () => ({
+    getOptimalDuration: () => 1000,
+    getOptimalParticleCount: () => 50,
+    shouldUseComplexAnimation: () => true,
+    performanceTier: 'high',
+    gpuInfo: { vendor: 'test', renderer: 'test' },
+    canUseAdvancedEffects: true
+  })
+}));
+
+// =============================================================================
 // TESTING CONFIGURATION
 // =============================================================================
 
