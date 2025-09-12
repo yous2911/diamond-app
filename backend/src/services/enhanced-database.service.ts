@@ -30,6 +30,7 @@ import {
 } from '../db/schema';
 import { eq, and, or, desc, asc, sql, count, sum, avg, between, inArray, gte, lte } from 'drizzle-orm';
 import { logger } from '../utils/logger';
+import { StudentCache } from './enhanced-cache.service';
 
 export interface CompetenceProgressFilters {
   matiere?: string;
@@ -473,13 +474,29 @@ class EnhancedDatabaseService {
    */
   async getStudentById(id: number): Promise<Student | null> {
     try {
+      // 1. Try to get from cache
+      const cachedStudent = await StudentCache.getProfile(id);
+      if (cachedStudent) {
+        logger.debug('Cache hit for student profile', { studentId: id });
+        return cachedStudent as Student;
+      }
+
+      logger.debug('Cache miss for student profile', { studentId: id });
+      // 2. If miss, get from DB
       const result = await this.db
         .select()
         .from(students)
         .where(eq(students.id, id))
         .limit(1);
       
-      return result[0] || null;
+      const student = result[0] || null;
+
+      // 3. Set in cache for next time
+      if (student) {
+        await StudentCache.setProfile(id, student);
+      }
+
+      return student;
     } catch (error) {
       logger.error('Get student by ID error:', { id, error });
       throw new Error('Failed to get student');

@@ -12,7 +12,7 @@ interface ProgressBarProps {
   glow?: boolean;
 }
 
-export const ProgressBar: React.FC<ProgressBarProps> = ({
+export const ProgressBar: React.FC<ProgressBarProps> = React.memo(({
   progress,
   className = '',
   showPercentage = true,
@@ -186,4 +186,4 @@ export const AchievementProgressBar: React.FC<Omit<ProgressBarProps, 'color'>> =
     striped={true}
     animated={true}
   />
-);
+));

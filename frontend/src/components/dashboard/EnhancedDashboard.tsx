@@ -9,7 +9,7 @@
  * - Loading states and error handling
  */
 
-import React from 'react';
+import React, { useCallback } from 'react';
 import { motion } from 'framer-motion';
 import UserCentricLeaderboard from './UserCentricLeaderboard';
 import XPProgressWidget from './XPProgressWidget';
@@ -23,7 +23,7 @@ interface EnhancedDashboardProps {
   className?: string;
 }
 
-const EnhancedDashboard: React.FC<EnhancedDashboardProps> = ({
+const EnhancedDashboard: React.FC<EnhancedDashboardProps> = React.memo(({
   className = ''
 }) => {
   const { student } = useAuth();

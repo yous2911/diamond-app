@@ -1,6 +1,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { enhancedDatabaseService as databaseService } from '../services/enhanced-database.service.js';
+import { getStudentWithProgress } from '../db/optimized-queries';
 import { realTimeProgressService } from '../services/real-time-progress.service.js';
 import { db } from '../db/connection';
 import { students } from '../db/schema';
@@ -59,20 +60,16 @@ export default async function studentRoutes(fastify: FastifyInstance) {
     }
 
     try {
-      const student = await databaseService.getStudentById(studentId);
-      if (!student) {
+      // Use the optimized query to fetch the student and their related progress data at once.
+      // This prevents N+1 query problems.
+      const studentData = await getStudentWithProgress(studentId);
+      if (!studentData) {
         return reply.status(404).send({ success: false, error: { code: 'STUDENT_NOT_FOUND', message: 'Student not found' } });
       }
+      // The frontend can now use this comprehensive payload without making multiple follow-up requests.
       return reply.send({
         success: true,
-        data: {
-          id: student.id,
-          prenom: student.prenom,
-          nom: student.nom,
-          niveauActuel: student.niveauActuel,
-          totalPoints: student.totalPoints,
-          serieJours: student.serieJours
-        }
+        data: studentData
       });
     } catch (error) {
       (fastify.log as any).error('Get student error:', error);
