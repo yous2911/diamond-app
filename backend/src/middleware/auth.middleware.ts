@@ -19,7 +19,7 @@ export async function authenticateMiddleware(
 ): Promise<void> {
   try {
     // Get token from HTTP-only cookie
-    const token = request.cookies.auth_token;
+    const token = request.cookies['access-token'];
 
     if (!token) {
       return reply.status(401).send({
@@ -44,18 +44,22 @@ export async function authenticateMiddleware(
       });
     }
 
-    // Add user to request
+    // Add user to request and determine role
+    const adminEmails = ['admin@revedkids.com', 'teacher@revedkids.com'];
+    const userRole = adminEmails.includes(decoded.email) ? 'admin' : 'student';
+
     request.user = {
       studentId: decoded.studentId,
       email: decoded.email,
       type: decoded.type,
+      role: userRole,
     };
 
     return; // Continue with request
 
   } catch (error) {
     // Check if we can refresh the token
-    const refreshToken = request.cookies.refresh_token;
+    const refreshToken = request.cookies['refresh-token'];
     
     if (refreshToken) {
       try {

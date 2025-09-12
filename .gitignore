@@ -156,6 +156,7 @@ reports/
 
 # Environment and config files
 .env*
+env.*
 !.env.example
 config/local.*
 secrets/
