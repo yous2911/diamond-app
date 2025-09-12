@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import * as studentService from '../services/studentService';
-import * as exerciseService from '../services/exerciseService';
-import * as leaderboardService from '../services/leaderboardService';
+import apiClient from '../services/api';
+import { Exercise } from '../types/exercise';
+import { User } from '../types/auth';
+
+// --- Generic API Hooks ---
 
 interface ApiState<T> {
   data: T | null;
@@ -27,20 +29,16 @@ export const useApiData = <T>(apiCall: () => Promise<T>, deps: any[] = []) => {
   }, deps);
 
   useEffect(() => {
-    fetchData();
+    if (deps.every(dep => dep !== undefined && dep !== null && dep !== '')) {
+        fetchData();
+    }
   }, [fetchData]);
 
   return { ...state, refetch: fetchData };
 };
 
-interface MutationState<T> {
-    data: T | null;
-    loading: boolean;
-    error: string | null;
-}
-
 export const useApiMutation = <T, P>(mutationFn: (params: P) => Promise<T>) => {
-    const [state, setState] = useState<MutationState<T>>({
+    const [state, setState] = useState<ApiState<T>>({
         data: null,
         loading: false,
         error: null,
@@ -61,36 +59,52 @@ export const useApiMutation = <T, P>(mutationFn: (params: P) => Promise<T>) => {
     return { ...state, mutate };
 };
 
-export const useStudentStats = (studentId: string) => {
-  return useApiData(() => studentService.getStudent(studentId), [studentId]);
-};
 
-export const useExerciseSubmission = () => {
-    return useApiMutation((params: { exerciseId: string, answer: any }) =>
-        exerciseService.submitExercise(params.exerciseId, params.answer)
-    );
+// --- Specific Hooks ---
+
+export const useStudentStats = (studentId: string) => {
+  return useApiData<any>(() => apiClient.get(`/students/${studentId}`).then(res => res.data), [studentId]);
 };
 
 export const useXpTracking = (studentId: string) => {
-  return useApiData(() => studentService.getStudentProgress(studentId), [studentId]);
+    return useApiData<any>(() => apiClient.get(`/progress/${studentId}`).then(res => res.data), [studentId]);
 };
 
 export const useMascot = () => {
     // Mock implementation as no endpoint is defined for mascot
     return useApiData(async () => {
-        console.log('Fetching mascot data');
-        await new Promise(res => setTimeout(res, 600));
-        return {
-            name: 'Sparky',
-            emotion: 'happy',
-        };
+        await new Promise(res => setTimeout(res, 100));
+        return { name: 'Sparky', emotion: 'happy' };
     });
 };
 
 export const useExercises = (level: string) => {
-    return useApiData(() => exerciseService.getExercises(level), [level]);
+    return useApiData<Exercise[]>(() => apiClient.get(`/exercises?level=${level}`).then(res => res.data), [level]);
 };
 
-export const useLeaderboard = () => {
-    return useApiData(() => leaderboardService.getLeaderboard());
+export const useExerciseSubmission = () => {
+    return useApiMutation((params: { exerciseId: string, answer: any }) =>
+        apiClient.post(`/exercises/${params.exerciseId}/submit`, { answer: params.answer }).then(res => res.data)
+    );
+};
+
+// --- Mocked Hooks for missing endpoints ---
+
+export const useCompetences = () => {
+    return useApiData(async () => {
+        await new Promise(res => setTimeout(res, 100));
+        return [];
+    });
+};
+
+export const useExercisesByLevel = (level: string) => {
+    return useExercises(level);
+};
+
+export const useSessionManagement = () => {
+    return {
+        startSession: async () => console.log('Session started'),
+        endSession: async () => console.log('Session ended'),
+        data: { hasActiveSession: false, session: null },
+    };
 };

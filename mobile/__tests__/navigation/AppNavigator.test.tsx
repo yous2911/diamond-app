@@ -1,14 +1,23 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react-native';
-import { View, Text } from 'react-native';
 import AppNavigator from '../../src/navigation/AppNavigator';
 import { useAuth } from '../../src/contexts/AuthContext';
 
 jest.mock('../../src/contexts/AuthContext');
 
-jest.mock('../../src/navigation/AuthNavigator', () => () => <View><Text testID="auth-navigator">Auth Navigator</Text></View>);
-jest.mock('../../src/navigation/StudentNavigator', () => () => <View><Text testID="student-navigator">Student Navigator</Text></View>);
-jest.mock('../../src/navigation/ParentNavigator', () => () => <View><Text testID="parent-navigator">Parent Navigator</Text></View>);
+jest.mock('../../src/navigation/AuthNavigator', () => {
+  const { View, Text } = require('react-native');
+  return () => <View><Text testID="auth-navigator">Auth Navigator</Text></View>;
+});
+jest.mock('../../src/navigation/StudentNavigator', () => {
+  const { View, Text } = require('react-native');
+  return () => <View><Text testID="student-navigator">Student Navigator</Text></View>;
+});
+jest.mock('../../src/navigation/ParentNavigator', () => {
+  const { View, Text } = require('react-native');
+  return () => <View><Text testID="parent-navigator">Parent Navigator</Text></View>;
+});
+
 
 const renderWithProviders = (authValue: any) => {
   (useAuth as jest.Mock).mockReturnValue(authValue);

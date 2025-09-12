@@ -1,16 +1,31 @@
-import React, { createContext, useContext, ReactNode } from 'react';
+import React, { createContext, useState, useContext, ReactNode } from 'react';
+
+type MascotEmotion = 'happy' | 'sad' | 'thinking' | 'excited' | 'sleepy';
 
 interface PremiumFeaturesContextType {
-  celebrations: boolean;
-  mascotEmotions: boolean;
+  mascotEmotion: MascotEmotion;
+  setMascotEmotion: (emotion: MascotEmotion) => void;
+  soundEnabled: boolean;
+  setSoundEnabled: (enabled: boolean) => void;
+  triggerParticles: () => void;
 }
 
 const PremiumFeaturesContext = createContext<PremiumFeaturesContextType | undefined>(undefined);
 
 export const PremiumFeaturesProvider = ({ children }: { children: ReactNode }) => {
+  const [mascotEmotion, setMascotEmotion] = useState<MascotEmotion>('happy');
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
+
+  const triggerParticles = () => {
+    console.log('✨ Particles triggered! ✨');
+  };
+
   const contextValue: PremiumFeaturesContextType = {
-    celebrations: true, // Mock value
-    mascotEmotions: true, // Mock value
+    mascotEmotion,
+    setMascotEmotion,
+    soundEnabled,
+    setSoundEnabled,
+    triggerParticles,
   };
 
   return (

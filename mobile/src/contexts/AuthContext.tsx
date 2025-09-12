@@ -40,12 +40,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     setError(null);
     try {
-      // In a real app, you would call your API, but we use the mock service for now
       const loggedInUser = await authService.loginWithEmailPassword(email, pass);
       setUser(loggedInUser);
       await AsyncStorage.setItem('user', JSON.stringify(loggedInUser));
     } catch (err: any) {
       setError(err.message || 'An error occurred during login.');
+      throw err; // Re-throw error to be caught by the UI
     } finally {
       setLoading(false);
     }
@@ -63,10 +63,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const isLoggedIn = !!user;
-
   return (
-    <AuthContext.Provider value={{ user, isLoggedIn, login, logout, loading, error }}>
+    <AuthContext.Provider value={{ user, isLoggedIn: !!user, login, logout, loading, error }}>
       {children}
     </AuthContext.Provider>
   );
