@@ -19,18 +19,10 @@ export const loginWithStudentName = async (name: string): Promise<User> => {
 };
 
 export const loginWithEmailPassword = async (email: string, pass: string): Promise<User> => {
-  console.log(`Logging in with email: ${email}`);
-  // Simulate an API call
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const mockUser: User = {
-        id: 'parent-456',
-        name: 'Parent User',
-        email: email,
-        type: 'parent',
-        token: 'mock-parent-token',
-      };
-      resolve(mockUser);
-    }, 1000);
-  });
+  const response = await apiClient.post('/auth/login', { email, password: pass });
+  // The backend should return the user object and a token
+  // The user object from the backend might have a different shape,
+  // so in a real app, you might need to map it to the frontend User type.
+  // For now, we assume the backend returns a User object compatible with our type.
+  return response.data;
 };

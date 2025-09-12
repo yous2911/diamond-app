@@ -21,16 +21,12 @@ import LinearGradient from 'react-native-linear-gradient';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePremiumFeatures } from '../../contexts/PremiumFeaturesContext';
 import {
-  useCompetences,
-  useExercisesByLevel,
+  useExercises,
   useMascot,
-  useSessionManagement,
   useStudentStats,
-  useXpTracking
 } from '../../hooks/useApiData';
 
 // Mobile components (converted from web versions)
-import DiamondMobileInterface from '../../components/DiamondMobileInterface';
 import XPCrystalsMobile from '../../components/premium/XPCrystalsMobile';
 import MascotMobile3D from '../../components/MascotMobile3D';
 
@@ -38,57 +34,45 @@ const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const StudentHomeScreen = () => {
   const navigation = useNavigation();
-  const { student, logout } = useAuth();
+  const { user, logout } = useAuth();
 
   // Debug logging (same as web)
-  console.log('🏠 HomeScreen loaded for student:', student?.prenom);
+  console.log('🏠 HomeScreen loaded for student:', user?.name);
 
-  const {
-    setMascotEmotion,
-    setMascotMessage,
-    addXP,
-    triggerParticles,
-    soundEnabled,
-    setSoundEnabled
-  } = usePremiumFeatures();
+  const { celebrations, mascotEmotions } = usePremiumFeatures();
 
   // Same hooks as web version
-  const { data: competencesData } = useCompetences();
-  const { data: exercisesData } = useExercisesByLevel(student?.niveau || 'CP');
-  const { data: statsData } = useStudentStats();
-  const { updateEmotion: updateMascotEmotion } = useMascot();
-  const { startSession, endSession, data: activeSessionData } = useSessionManagement();
-  const { currentXp, currentLevel, addXp } = useXpTracking();
+  const { data: exercisesData } = useExercises(user?.niveau || 'CP');
+  const { data: statsData } = useStudentStats(user?.id || '');
+  const { data: mascotData, updateEmotion: updateMascotEmotion } = useMascot();
 
   // State for mobile-specific features
-  const [selectedMascot, setSelectedMascot] = useState<'dragon' | 'fairy' | 'robot'>('dragon');
+  const [mascotEmotion, setMascotEmotion] = useState('happy');
+  const [mascotMessage, setMascotMessage] = useState('Welcome!');
   const [showMascotSelector, setShowMascotSelector] = useState(false);
   const [equippedItems, setEquippedItems] = useState<string[]>(['golden_crown', 'magic_cape']);
   const [showWardrobe, setShowWardrobe] = useState(false);
 
   const studentData = useMemo(() => ({
-    prenom: student?.prenom || 'Élève',
-    niveau: student?.niveau || 'CP',
-    stars: statsData?.stats?.totalCorrectAnswers || 0,
-    hearts: student?.heartsRemaining || 3,
-    streak: student?.currentStreak || 0,
-    currentXP: currentXp,
-    maxXP: 100 + (currentLevel * 20),
-    level: currentLevel
-  }), [student, statsData, currentXp, currentLevel]);
+    prenom: user?.name || 'Élève',
+    niveau: user?.niveau || 'CP',
+    stars: statsData?.exercisesCompleted || 0,
+    hearts: 3, // Mocked
+    streak: 0, // Mocked
+    currentXP: statsData?.totalXp || 0,
+    maxXP: 100 + ((statsData?.level || 1) * 20),
+    level: statsData?.level || 1
+  }), [user, statsData]);
 
   // Same subjects logic as web (using backend data)
   const subjects = useMemo(() => {
     if (exercisesData && exercisesData.length > 0) {
       return exercisesData.map((exercise: any) => ({
-        id: `subject-${exercise.matiere}`,
-        name: exercise.matiere === 'mathematiques' ? 'Mathématiques' :
-              exercise.matiere === 'francais' ? 'Français' : 'Sciences',
-        emoji: exercise.matiere === 'mathematiques' ? '🔢' :
-               exercise.matiere === 'francais' ? '📚' : '🔬',
+        id: `subject-${exercise.type}`,
+        name: exercise.type === 'math' ? 'Mathématiques' : 'Français',
+        emoji: exercise.type === 'math' ? '🔢' : '📚',
         exercises: [exercise],
-        gradient: exercise.matiere === 'mathematiques' ? ['#3B82F6', '#06B6D4'] :
-                 exercise.matiere === 'francais' ? ['#10B981', '#059669'] : ['#8B5CF6', '#EC4899']
+        gradient: exercise.type === 'math' ? ['#3B82F6', '#06B6D4'] : ['#10B981', '#059669']
       }));
     }
     // Fallback data same as web
@@ -120,18 +104,12 @@ const StudentHomeScreen = () => {
     setMascotEmotion('thinking');
     setMascotMessage("C'est parti pour une nouvelle aventure !");
 
-    await updateMascotEmotion('good', 'exercise_complete').catch(console.warn);
-
-    if (!activeSessionData?.hasActiveSession) {
-      await startSession(subject.competences?.map((c: any) => c.code) || []).catch(console.warn);
-    }
-
     if (subject.exercises.length > 0) {
       const randomExercise = subject.exercises[Math.floor(Math.random() * subject.exercises.length)];
       console.log('🎯 HomeScreen - Navigating to exercise:', randomExercise);
 
       // React Native navigation instead of web router
-      navigation.navigate('Exercise', { exercise: randomExercise });
+      navigation.navigate('StudentExercise', { exercise: randomExercise });
     } else {
       console.log('🎯 HomeScreen - No exercises available');
       setMascotEmotion('sleepy');
@@ -140,9 +118,6 @@ const StudentHomeScreen = () => {
   };
 
   const handleLogout = async () => {
-    if (activeSessionData?.hasActiveSession && activeSessionData.session) {
-      await endSession(activeSessionData.session.id).catch(console.error);
-    }
     await logout();
   };
 
@@ -181,14 +156,6 @@ const StudentHomeScreen = () => {
             <Text style={styles.statsEmoji}>❤️</Text>
             <Text style={styles.statsText}>{studentData.hearts}</Text>
           </View>
-          <TouchableOpacity
-            style={styles.soundButton}
-            onPress={() => setSoundEnabled(!soundEnabled)}
-          >
-            <Text style={styles.soundEmoji}>
-              {soundEnabled ? '🔊' : '🔇'}
-            </Text>
-          </TouchableOpacity>
         </View>
       </View>
 
