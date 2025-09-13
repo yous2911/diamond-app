@@ -1,16 +1,16 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import useAuthStore from '../store/authStore';
+import { useAuth } from '../contexts/AuthContext';
 import AuthNavigator from './AuthNavigator';
 import StudentNavigator from './StudentNavigator';
-import ParentNavigator from './ParentNavigator'; // Assuming this will be created
+import ParentNavigator from './ParentNavigator';
 
 const AppNavigator = () => {
-  const { isAuthenticated, user } = useAuthStore();
+  const { isLoggedIn, user } = useAuth();
 
   return (
     <NavigationContainer>
-      {!isAuthenticated ? (
+      {!isLoggedIn ? (
         <AuthNavigator />
       ) : user?.type === 'student' ? (
         <StudentNavigator />
