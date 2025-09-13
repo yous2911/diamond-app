@@ -2,14 +2,14 @@
 
 import Fastify from 'fastify';
 import { config } from './config/config';
-import { logger } from './utils/logger';
 import { connectDatabase, disconnectDatabase } from './db/connection';
+import { randomUUID } from 'crypto';
 
 // Build Fastify instance
 const fastify = Fastify({
   logger: {
     level: process.env.LOG_LEVEL || 'info',
-    transport: process.env.NODE_ENV === 'development' ? {
+    transport: process.env.NODE_ENV !== 'production' ? {
       target: 'pino-pretty',
       options: {
         colorize: true,
@@ -22,10 +22,10 @@ const fastify = Fastify({
   bodyLimit: 10485760, // 10MB
   keepAliveTimeout: 5000,
   requestIdHeader: 'x-request-id',
-  genReqId: () => {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2);
-  }
+  genReqId: () => randomUUID(),
 });
+
+const logger = fastify.log;
 
 // Register plugins
 async function registerPlugins() {

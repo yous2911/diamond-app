@@ -8,8 +8,8 @@ import { db } from '../db/connection';
 import { students } from '../db/schema';
 import { eq, and, lt, gt } from 'drizzle-orm';
 import * as crypto from 'crypto';
-import { logger } from '../utils/logger';
 import { AuthenticationError, ConflictError, NotFoundError } from '../utils/AppError';
+import { FastifyBaseLogger } from 'fastify';
 
 interface LoginCredentials {
   email?: string;
@@ -133,7 +133,8 @@ export class AuthService {
   /**
    * Register new student with secure password
    */
-  async registerStudent(data: RegisterData): Promise<any> {
+  async registerStudent(data: RegisterData, log: FastifyBaseLogger): Promise<any> {
+    log.info({ email: data.email }, 'Registering new student');
     // Check if email already exists
     const existingStudent = await db.select()
       .from(students)
@@ -177,7 +178,8 @@ export class AuthService {
   /**
    * Authenticate student with secure password verification
    */
-  async authenticateStudent(credentials: LoginCredentials): Promise<any> {
+  async authenticateStudent(credentials: LoginCredentials, log: FastifyBaseLogger): Promise<any> {
+    log.info({ email: credentials.email, prenom: credentials.prenom, nom: credentials.nom }, 'Authenticating student');
     let student;
 
     // Find student by email or name combination

@@ -3,6 +3,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { authSchemas, loginSchema, registerSchema } from '../schemas/auth.schema';
 import { AuthService } from '../services/auth.service';
+import { addSendWelcomeEmailJob } from '../jobs/producers/email.producer';
 
 // Types will be inferred from Zod schemas, removing manual interfaces
 type LoginRequestBody = z.infer<typeof loginSchema>;
@@ -33,7 +34,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
       request: FastifyRequest<{ Body: LoginRequestBody }>,
       reply: FastifyReply
     ) => {
-      const student = await authService.authenticateStudent(request.body);
+      const student = await authService.authenticateStudent(request.body, request.log);
       const payload = { studentId: student.id, email: student.email, role: student.role };
 
       const accessToken = await reply.jwtSign(payload);
@@ -57,9 +58,12 @@ export default async function authRoutes(fastify: FastifyInstance) {
       request: FastifyRequest<{ Body: RegisterRequestBody }>,
       reply: FastifyReply
     ) => {
-      const student = await authService.registerStudent(request.body);
+      const student = await authService.registerStudent(request.body, request.log);
       const payload = { studentId: student.id, email: student.email, role: student.role };
       const accessToken = await reply.jwtSign(payload);
+
+      // Offload welcome email to the background queue
+      addSendWelcomeEmailJob({ email: student.email, name: student.prenom });
 
       return reply.status(201).send({
         success: true,

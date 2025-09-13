@@ -46,6 +46,7 @@
     "pm2:stop": "pm2 stop ecosystem.config.js",
     "pm2:restart": "pm2 restart ecosystem.config.js",
     "pm2:logs": "pm2 logs",
+    "jobs:worker": "tsx src/jobs/workers/email.worker.ts",
     "prepare": "echo 'Skipping husky install in development'",
     "precommit": "lint-staged"
   },
@@ -83,6 +84,7 @@
     "@types/node-cron": "^3.0.11",
     "bcrypt": "^6.0.0",
     "better-sqlite3": "^12.2.0",
+    "bullmq": "^5.58.5",
     "cors": "^2.8.5",
     "csv-writer": "^1.6.0",
     "dompurify": "^3.2.6",

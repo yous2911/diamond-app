@@ -1,7 +1,6 @@
 import fp from 'fastify-plugin';
 import * as Redis from 'ioredis';
 import { redisConfig, config } from '../config/config';
-import { logger } from '../utils/logger';
 
 interface CacheStats {
   hits: number;
@@ -38,8 +37,10 @@ interface CacheInterface {
   getJSON<T>(key: string): Promise<T | null>;
 }
 
+export let redis: Redis.Redis | null = null;
+
 const redisPlugin = async (fastify: any) => {
-  let redis: any = null;
+  const logger = fastify.log;
   let isRedisAvailable = false;
   
   // Fallback memory cache
@@ -59,7 +60,7 @@ const redisPlugin = async (fastify: any) => {
   // Try to connect to Redis if enabled
   if (config.REDIS_ENABLED) {
     try {
-      logger.info('Attempting Redis connection...', {
+      fastify.log.info('Attempting Redis connection...', {
         host: redisConfig.host,
         port: redisConfig.port,
         db: redisConfig.db
@@ -80,11 +81,11 @@ const redisPlugin = async (fastify: any) => {
         // Connection retry configuration
         retryStrategy: (times) => {
           if (times > 3) {
-            logger.error('Redis connection failed after 3 retries, falling back to memory cache');
+            fastify.log.error('Redis connection failed after 3 retries, falling back to memory cache');
             return null; // Stop retrying
           }
           const delay = Math.min(times * 50, 2000);
-          logger.warn(`Redis connection retry ${times} in ${delay}ms`);
+          fastify.log.warn(`Redis connection retry ${times} in ${delay}ms`);
           return delay;
         }
       });
@@ -92,37 +93,37 @@ const redisPlugin = async (fastify: any) => {
       // Event handlers
       redis.on('ready', () => {
         isRedisAvailable = true;
-        logger.info('Redis connection established successfully');
+        fastify.log.info('Redis connection established successfully');
       });
       
       redis.on('error', (error) => {
         isRedisAvailable = false;
         stats.operations.errors++;
-        logger.warn('Redis connection error, falling back to memory cache:', { 
+        fastify.log.warn('Redis connection error, falling back to memory cache:', {
           error: error.message 
         });
       });
       
       redis.on('close', () => {
         isRedisAvailable = false;
-        logger.warn('Redis connection closed, using memory cache');
+        fastify.log.warn('Redis connection closed, using memory cache');
       });
 
       // Test connection
       await redis.ping();
       isRedisAvailable = true;
       
-      logger.info('✅ Redis connected successfully');
+      fastify.log.info('✅ Redis connected successfully');
 
     } catch (error) {
-      logger.warn('Redis connection failed, using memory cache fallback:', { 
+      fastify.log.warn('Redis connection failed, using memory cache fallback:', {
         error: error instanceof Error ? error.message : 'Unknown error'
       });
       isRedisAvailable = false;
       redis = null;
     }
   } else {
-    logger.info('Redis disabled - using memory cache only');
+    fastify.log.info('Redis disabled - using memory cache only');
   }
 
   // Unified cache interface that works with Redis or memory
@@ -142,7 +143,7 @@ const redisPlugin = async (fastify: any) => {
         }
       } catch (error) {
         stats.operations.errors++;
-        logger.warn('Redis get error, falling back to memory cache:', {
+        fastify.log.warn('Redis get error, falling back to memory cache:', {
           key, 
           error: error instanceof Error ? error.message : 'Unknown error'
         });
@@ -171,7 +172,7 @@ const redisPlugin = async (fastify: any) => {
         }
       } catch (error) {
         stats.operations.errors++;
-        logger.warn('Redis set error, falling back to memory cache:', {
+        fastify.log.warn('Redis set error, falling back to memory cache:', {
           key, 
           error: error instanceof Error ? error.message : 'Unknown error'
         });
@@ -194,7 +195,7 @@ const redisPlugin = async (fastify: any) => {
         }
       } catch (error) {
         stats.operations.errors++;
-        logger.warn('Redis mget error:', error);
+        fastify.log.warn('Redis mget error:', error);
       }
       
       // Memory cache fallback
@@ -218,7 +219,7 @@ const redisPlugin = async (fastify: any) => {
         }
       } catch (error) {
         stats.operations.errors++;
-        logger.warn('Redis mset error:', error);
+        fastify.log.warn('Redis mset error:', error);
       }
       
       // Memory cache fallback
@@ -238,7 +239,7 @@ const redisPlugin = async (fastify: any) => {
         }
       } catch (error) {
         stats.operations.errors++;
-        logger.warn('Redis del error:', error);
+        fastify.log.warn('Redis del error:', error);
       }
       
       // Memory cache fallback
@@ -258,7 +259,7 @@ const redisPlugin = async (fastify: any) => {
         }
       } catch (error) {
         stats.operations.errors++;
-        logger.warn('Redis exists error:', error);
+        fastify.log.warn('Redis exists error:', error);
       }
       
       // Memory cache fallback
@@ -273,7 +274,7 @@ const redisPlugin = async (fastify: any) => {
         }
       } catch (error) {
         stats.operations.errors++;
-        logger.warn('Redis expire error:', error);
+        fastify.log.warn('Redis expire error:', error);
       }
       
       // Memory cache fallback
@@ -296,7 +297,7 @@ const redisPlugin = async (fastify: any) => {
         }
       } catch (error) {
         stats.operations.errors++;
-        logger.warn('Redis incr error:', error);
+        fastify.log.warn('Redis incr error:', error);
       }
       
       // Memory cache fallback
@@ -317,7 +318,7 @@ const redisPlugin = async (fastify: any) => {
         }
       } catch (error) {
         stats.operations.errors++;
-        logger.warn('Redis flush error:', error);
+        fastify.log.warn('Redis flush error:', error);
       }
       
       // Clear memory cache
@@ -331,7 +332,7 @@ const redisPlugin = async (fastify: any) => {
         }
       } catch (error) {
         stats.operations.errors++;
-        logger.warn('Redis keys error:', error);
+        fastify.log.warn('Redis keys error:', error);
       }
       
       // Memory cache fallback - simple pattern matching
@@ -348,7 +349,7 @@ const redisPlugin = async (fastify: any) => {
           return await redis.ping();
         }
       } catch (error) {
-        logger.warn('Redis ping error:', error);
+        fastify.log.warn('Redis ping error:', error);
       }
       
       return 'PONG (memory cache)';
@@ -361,7 +362,7 @@ const redisPlugin = async (fastify: any) => {
           return { redis: true, info };
         }
       } catch (error) {
-        logger.warn('Redis info error:', error);
+        fastify.log.warn('Redis info error:', error);
       }
       
       return { 
@@ -401,7 +402,7 @@ const redisPlugin = async (fastify: any) => {
           baseStats.keys = keyCount;
         }
       } catch (error) {
-        logger.warn('Redis stats error:', error);
+        fastify.log.warn('Redis stats error:', error);
       }
       
       return baseStats;
@@ -418,7 +419,7 @@ const redisPlugin = async (fastify: any) => {
       try {
         return JSON.parse(value);
       } catch (error) {
-        logger.warn('JSON parse error for cache key:', { key, error });
+        fastify.log.warn('JSON parse error for cache key:', { key, error });
         return null;
       }
     }
@@ -437,7 +438,7 @@ const redisPlugin = async (fastify: any) => {
   });
     
     if (expiredCount > 0) {
-      logger.debug(`Cleaned up ${expiredCount} expired memory cache entries`);
+      fastify.log.debug(`Cleaned up ${expiredCount} expired memory cache entries`);
     }
   }, 60000); // Every minute
 
@@ -450,11 +451,11 @@ const redisPlugin = async (fastify: any) => {
     clearInterval(cleanupInterval);
     if (redis && isRedisAvailable) {
       await redis.quit();
-      logger.info('Redis connection closed');
+      fastify.log.info('Redis connection closed');
     }
   });
 
-  logger.info(`✅ Cache plugin registered successfully (Redis: ${isRedisAvailable ? 'enabled' : 'disabled'})`);
+  fastify.log.info(`✅ Cache plugin registered successfully (Redis: ${isRedisAvailable ? 'enabled' : 'disabled'})`);
 };
 
 export default fp(redisPlugin, { name: 'cache' });
