@@ -9,6 +9,7 @@ import { students } from '../db/schema';
 import { eq, and, lt, gt } from 'drizzle-orm';
 import * as crypto from 'crypto';
 import { logger } from '../utils/logger';
+import { AuthenticationError, ConflictError, NotFoundError } from '../utils/AppError';
 
 interface LoginCredentials {
   email?: string;
@@ -19,9 +20,7 @@ interface LoginCredentials {
 
 // This will now return the student object on success, not tokens
 interface AuthResult {
-  success: boolean;
   student?: any;
-  error?: string;
   lockoutInfo?: {
     isLocked: boolean;
     remainingTime?: number;
@@ -134,200 +133,108 @@ export class AuthService {
   /**
    * Register new student with secure password
    */
-  async registerStudent(data: RegisterData): Promise<AuthResult> {
-    try {
-      // Check if email already exists
-      const existingStudent = await db.select()
-        .from(students)
-        .where(eq(students.email, data.email))
-        .limit(1);
+  async registerStudent(data: RegisterData): Promise<any> {
+    // Check if email already exists
+    const existingStudent = await db.select()
+      .from(students)
+      .where(eq(students.email, data.email))
+      .limit(1);
 
-      if (existingStudent.length > 0) {
-        return {
-          success: false,
-          error: 'Un compte avec cette adresse email existe déjà'
-        };
-      }
-
-      // Hash password
-      const passwordHash = await this.hashPassword(data.password);
-
-      // Create student
-      const newStudentResult = await db.insert(students).values({
-        prenom: data.prenom,
-        nom: data.nom,
-        email: data.email,
-        passwordHash,
-        dateNaissance: new Date(data.dateNaissance),
-        niveauActuel: data.niveauActuel,
-        niveauScolaire: data.niveauActuel,
-        totalPoints: 0,
-        serieJours: 0,
-        mascotteType: 'dragon'
-      });
-
-      const studentId = newStudentResult[0].insertId;
-
-      // The service now returns the student data, not tokens.
-      return {
-        success: true,
-        student: {
-          id: studentId,
-          prenom: data.prenom,
-          nom: data.nom,
-          email: data.email,
-          role: 'student', // New users default to 'student' role
-          niveauActuel: data.niveauActuel
-        }
-      };
-
-    } catch (error) {
-      logger.error('Registration error:', error);
-      return {
-        success: false,
-        error: 'Erreur lors de la création du compte'
-      };
+    if (existingStudent.length > 0) {
+      throw new ConflictError('Un compte avec cette adresse email existe déjà');
     }
+
+    // Hash password
+    const passwordHash = await this.hashPassword(data.password);
+
+    // Create student
+    const newStudentResult = await db.insert(students).values({
+      prenom: data.prenom,
+      nom: data.nom,
+      email: data.email,
+      passwordHash,
+      dateNaissance: new Date(data.dateNaissance),
+      niveauActuel: data.niveauActuel,
+      niveauScolaire: data.niveauActuel,
+      totalPoints: 0,
+      serieJours: 0,
+      mascotteType: 'dragon'
+    }).returning({ id: students.id });
+
+    const studentId = newStudentResult[0].id;
+
+    // The service now returns the student data, not tokens.
+    return {
+      id: studentId,
+      prenom: data.prenom,
+      nom: data.nom,
+      email: data.email,
+      role: 'student', // New users default to 'student' role
+      niveauActuel: data.niveauActuel
+    };
   }
 
   /**
    * Authenticate student with secure password verification
    */
-  async authenticateStudent(credentials: LoginCredentials): Promise<AuthResult> {
-    try {
-      logger.info('AuthenticateStudent called with:', { 
-        prenom: credentials.prenom, 
-        nom: credentials.nom, 
-        email: credentials.email 
-      });
-      console.log('🔍 AUTH DEBUG - Credentials:', credentials);
-      
-      // Test database connection
-      try {
-        await db.select().from(students).limit(1);
-        logger.info('Database connection test: SUCCESS');
-      } catch (dbError) {
-        logger.error('Database connection test: FAILED', dbError);
-        throw dbError;
-      }
-      
-      let student;
+  async authenticateStudent(credentials: LoginCredentials): Promise<any> {
+    let student;
 
-      // Find student by email or name combination
-      if (credentials.email) {
-        const result = await db.select()
-          .from(students)
-          .where(eq(students.email, credentials.email))
-          .limit(1);
-        student = result[0];
-      } else if (credentials.prenom && credentials.nom) {
-        // Legacy support for name-based login
-        logger.info('Searching by name:', { prenom: credentials.prenom, nom: credentials.nom });
-        const result = await db.select()
-          .from(students)
-          .where(
-            and(
-              eq(students.prenom, credentials.prenom),
-              eq(students.nom, credentials.nom)
-            )
-          )
-          .limit(1);
-        logger.info('Database query result:', { 
-          found: result.length, 
-          student: result[0] ? 'found' : 'not found',
-          result: result
-        });
-        console.log('🔍 AUTH DEBUG - Query result:', result);
-        console.log('🔍 AUTH DEBUG - Student found:', result[0]);
-        student = result[0];
-      }
-
-      if (!student) {
-        return {
-          success: false,
-          error: 'Identifiants incorrects'
-        };
-      }
-
-      // Check if account is locked
-      const isLocked = await this.isAccountLocked(student.id);
-      if (isLocked) {
-        return {
-          success: false,
-          error: 'Compte temporairement verrouillé. Veuillez réessayer plus tard.',
-          lockoutInfo: {
-            isLocked: true,
-            remainingTime: student.lockedUntil ? 
-              Math.max(0, new Date(student.lockedUntil).getTime() - Date.now()) : 0
-          }
-        };
-      }
-
-      // Verify password
-      if (!student.passwordHash) {
-        // Legacy user without password - require password setup
-        return {
-          success: false,
-          error: 'Veuillez configurer un mot de passe pour ce compte'
-        };
-      }
-
-      const isPasswordValid = await this.verifyPassword(credentials.password, student.passwordHash);
-
-      if (!isPasswordValid) {
-        // Increment failed attempts
-        const attempts = await this.incrementFailedAttempts(student.id);
-        const remainingAttempts = this.MAX_LOGIN_ATTEMPTS - attempts;
-
-        return {
-          success: false,
-          error: 'Mot de passe incorrect',
-          lockoutInfo: {
-            isLocked: false,
-            attemptsRemaining: Math.max(0, remainingAttempts)
-          }
-        };
-      }
-
-      // Successful login - reset failed attempts
-      await this.resetFailedAttempts(student.id);
-
-      // Update last access
-      await db.update(students)
-        .set({
-          dernierAcces: new Date(),
-          estConnecte: true
-        })
-        .where(eq(students.id, student.id));
-
-      // The service now returns the full student object. Token generation is moved to the route.
-      return {
-        success: true,
-        student: {
-          id: student.id,
-          prenom: student.prenom,
-          nom: student.nom,
-          email: student.email,
-          role: student.role, // <-- ADDED ROLE
-          niveauActuel: student.niveauActuel,
-          totalPoints: student.totalPoints,
-          serieJours: student.serieJours,
-          mascotteType: student.mascotteType
-        }
-      };
-
-    } catch (error) {
-      logger.error('Authentication error:', error);
-      logger.error('Authentication error details:', {
-        message: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined,
-        credentials: { prenom: credentials.prenom, nom: credentials.nom, email: credentials.email }
-      });
-      return {
-        success: false,
-        error: 'Erreur d\'authentification'
-      };
+    // Find student by email or name combination
+    if (credentials.email) {
+      const result = await db.select().from(students).where(eq(students.email, credentials.email)).limit(1);
+      student = result[0];
+    } else if (credentials.prenom && credentials.nom) {
+      const result = await db.select().from(students).where(and(eq(students.prenom, credentials.prenom), eq(students.nom, credentials.nom))).limit(1);
+      student = result[0];
     }
+
+    if (!student) {
+      throw new AuthenticationError('Identifiants incorrects');
+    }
+
+    // Check if account is locked
+    const isLocked = await this.isAccountLocked(student.id);
+    if (isLocked) {
+      throw new AuthenticationError('Compte temporairement verrouillé. Veuillez réessayer plus tard.');
+    }
+
+    // Verify password
+    if (!student.passwordHash) {
+      throw new AuthenticationError('Veuillez configurer un mot de passe pour ce compte');
+    }
+
+    const isPasswordValid = await this.verifyPassword(credentials.password, student.passwordHash);
+
+    if (!isPasswordValid) {
+      // Increment failed attempts
+      await this.incrementFailedAttempts(student.id);
+      throw new AuthenticationError('Mot de passe incorrect');
+    }
+
+    // Successful login - reset failed attempts
+    await this.resetFailedAttempts(student.id);
+
+    // Update last access
+    await db.update(students)
+      .set({
+        dernierAcces: new Date(),
+        estConnecte: true
+      })
+      .where(eq(students.id, student.id));
+
+    // The service now returns the full student object.
+    return {
+      id: student.id,
+      prenom: student.prenom,
+      nom: student.nom,
+      email: student.email,
+      role: student.role,
+      niveauActuel: student.niveauActuel,
+      totalPoints: student.totalPoints,
+      serieJours: student.serieJours,
+      mascotteType: student.mascotteType
+    };
   }
 
   /**

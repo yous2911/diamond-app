@@ -193,6 +193,12 @@ async function registerPlugins() {
     });
     
     console.log('✅ All routes registered successfully');
+
+    // Register global error handler
+    logger.info('📦 Registering global error handler...');
+    const { errorHandler } = await import('./middleware/errorHandler.middleware');
+    fastify.setErrorHandler(errorHandler);
+    logger.info('🔧 Error handler registered successfully');
     
   } catch (error) {
     console.error('❌ Error during plugin/route registration:', error);

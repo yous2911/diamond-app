@@ -26,135 +26,49 @@ export default async function authRoutes(fastify: FastifyInstance) {
 
   // Secure login endpoint
   fastify.post('/login', {
-    preValidation: async (request, reply) => {
-      try {
-        request.body = await loginSchema.parseAsync(request.body);
-      } catch (error) {
-        (request.log as any).warn('Login validation error:', { error });
-        reply.status(400).send({
-          success: false,
-          error: {
-            message: 'Données invalides. Veuillez vérifier votre email et mot de passe.',
-            code: 'VALIDATION_ERROR'
-          }
-        });
-        return;
-      }
+    schema: {
+      body: loginSchema,
     },
     handler: async (
       request: FastifyRequest<{ Body: LoginRequestBody }>,
       reply: FastifyReply
     ) => {
-      try {
-        (fastify.log as any).info('Login attempt started:', { body: request.body });
-        const authResult = await authService.authenticateStudent(request.body as any);
-        (fastify.log as any).info('Auth service result:', { success: authResult.success });
+      const student = await authService.authenticateStudent(request.body);
+      const payload = { studentId: student.id, email: student.email, role: student.role };
 
-        if (!authResult.success || !authResult.student) {
-          const statusCode = authResult.lockoutInfo?.isLocked ? 429 : 401;
-          return reply.status(statusCode).send({
-            success: false,
-            error: {
-              message: authResult.error,
-              code: authResult.lockoutInfo?.isLocked ? 'ACCOUNT_LOCKED' : 'INVALID_CREDENTIALS',
-              lockoutInfo: authResult.lockoutInfo,
-            },
-          });
-        }
+      const accessToken = await reply.jwtSign(payload);
 
-        const { student } = authResult;
-        const payload = { studentId: student.id, email: student.email, role: student.role };
-
-        // In test mode, return a mock token that matches what mockAuthenticate expects
-        const accessToken = process.env.NODE_ENV === 'test' 
-          ? 'mock-jwt-token-' + Date.now()
-          : await reply.jwtSign(payload);
-
-        return reply.send({
-          success: true,
-          data: {
-            token: accessToken,
-            student: authResult.student,
-          },
-        });
-
-      } catch (error) {
-        (fastify.log as any).error('Login error:', error);
-        (fastify.log as any).error('Error details:', {
-          message: error instanceof Error ? error.message : 'Unknown error',
-          stack: error instanceof Error ? error.stack : undefined,
-          body: request.body
-        } as any);
-        return reply.status(500).send({
-          success: false,
-          error: {
-            message: 'Erreur interne du serveur',
-            code: 'INTERNAL_ERROR',
-            details: error instanceof Error ? error.message : 'Unknown error'
-          },
-        });
-      }
+      return reply.send({
+        success: true,
+        data: {
+          token: accessToken,
+          student,
+        },
+      });
     }
   });
 
   // Register new student
   fastify.post('/register', {
-    preValidation: async (request, reply) => {
-      try {
-        request.body = await registerSchema.parseAsync(request.body);
-      } catch (error) {
-        (request.log as any).warn('Registration validation error:', { error });
-        reply.status(400).send({
-          success: false,
-          error: {
-            message: 'Données d\'inscription invalides. Veuillez vérifier les informations fournies.',
-            code: 'VALIDATION_ERROR'
-          }
-        });
-        return;
-      }
+    schema: {
+      body: registerSchema,
     },
     handler: async (
       request: FastifyRequest<{ Body: RegisterRequestBody }>,
       reply: FastifyReply
     ) => {
-      try {
-        const authResult = await authService.registerStudent(request.body as any);
+      const student = await authService.registerStudent(request.body);
+      const payload = { studentId: student.id, email: student.email, role: student.role };
+      const accessToken = await reply.jwtSign(payload);
 
-        if (!authResult.success || !authResult.student) {
-          return reply.status(400).send({
-            success: false,
-            error: {
-              message: authResult.error,
-              code: 'REGISTRATION_FAILED',
-            },
-          });
-        }
-        
-        const { student } = authResult;
-        const payload = { studentId: student.id, email: student.email, role: student.role };
-
-        const accessToken = await reply.jwtSign(payload);
-
-        return reply.status(201).send({
-          success: true,
-          data: {
-            student: authResult.student,
-            token: accessToken,
-            message: 'Compte créé avec succès'
-          },
-        });
-
-      } catch (error) {
-        (fastify.log as any).error('Registration error:', error);
-        return reply.status(500).send({
-          success: false,
-          error: {
-            message: 'Erreur lors de la création du compte',
-            code: 'INTERNAL_ERROR',
-          },
-        });
-      }
+      return reply.status(201).send({
+        success: true,
+        data: {
+          student,
+          token: accessToken,
+          message: 'Compte créé avec succès'
+        },
+      });
     }
   });
 

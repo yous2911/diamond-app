@@ -1,16 +1,22 @@
 import type { Config } from 'drizzle-kit';
-import { config } from './src/config/config';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
 
-const dbConfig = config;
+dotenv.config({ path: path.resolve(process.cwd(), 'env.backend') });
+
+if (!process.env.DB_HOST || !process.env.DB_USER || !process.env.DB_PASSWORD || !process.env.DB_NAME) {
+  throw new Error('Database credentials are not set in the environment variables');
+}
 
 export default {
   schema: './src/db/schema.ts',
-  out: './drizzle',
+  out: './src/db/migrations',
+  dialect: 'mysql', // Specify the dialect
   dbCredentials: {
-    host: dbConfig.DB_HOST,
-    port: dbConfig.DB_PORT,
-    user: dbConfig.DB_USER,
-    password: dbConfig.DB_PASSWORD,
-    database: dbConfig.DB_NAME,
+    host: process.env.DB_HOST,
+    port: Number(process.env.DB_PORT) || 3306,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
   },
 } satisfies Config;

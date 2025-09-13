@@ -72,12 +72,12 @@ const configSchema = z.object({
   REDIS_ENABLED: z.coerce.boolean().default(false), // Disabled by default for easier setup
   
   // Security (with development fallbacks)
-  JWT_SECRET: z.string().min(32),
+  JWT_SECRET: z.string().min(32, { message: 'JWT_SECRET must be at least 32 characters long' }),
   JWT_EXPIRES_IN: z.string().default('24h'),
-  JWT_REFRESH_SECRET: z.string().min(32),
+  JWT_REFRESH_SECRET: z.string().min(32, { message: 'JWT_REFRESH_SECRET must be at least 32 characters long' }),
   JWT_REFRESH_EXPIRES_IN: z.string().default('7d'),
-  ENCRYPTION_KEY: z.string().length(32),
-  COOKIE_SECRET: z.string().min(32),
+  ENCRYPTION_KEY: z.string().length(32, { message: 'ENCRYPTION_KEY must be 32 characters long' }),
+  COOKIE_SECRET: z.string().min(32, { message: 'COOKIE_SECRET must be at least 32 characters long' }),
   
   // Production security settings
   TRUST_PROXY: z.coerce.boolean().default(true),
@@ -167,7 +167,20 @@ const configSchema = z.object({
 );
 
 // Directly parse the environment. If it fails, the app will crash. This is what we want.
-const config = configSchema.parse(process.env);
+let config;
+try {
+  config = configSchema.parse(process.env);
+} catch (error) {
+  if (error instanceof z.ZodError) {
+    console.error('❌ Invalid environment variables:');
+    error.errors.forEach((err) => {
+      console.error(`- ${err.path.join('.')}: ${err.message}`);
+    });
+    process.exit(1);
+  }
+  console.error('❌ An unexpected error occurred during configuration loading:', error);
+  process.exit(1);
+}
 
 // Environment helpers
 export const isDevelopment = config.NODE_ENV === 'development';
