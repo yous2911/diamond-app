@@ -176,6 +176,7 @@ export class AuthService {
           prenom: data.prenom,
           nom: data.nom,
           email: data.email,
+          role: 'student', // New users default to 'student' role
           niveauActuel: data.niveauActuel
         }
       };
@@ -307,6 +308,7 @@ export class AuthService {
           prenom: student.prenom,
           nom: student.nom,
           email: student.email,
+          role: student.role, // <-- ADDED ROLE
           niveauActuel: student.niveauActuel,
           totalPoints: student.totalPoints,
           serieJours: student.serieJours,

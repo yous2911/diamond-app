@@ -42,8 +42,11 @@ async function registerPlugins() {
     logger.info('📦 Registering cors plugin...');
     await fastify.register(import('./plugins/cors'));
     
-    logger.info('📦 Registering helmet plugin...');
-    await fastify.register(import('./plugins/helmet'));
+    logger.info('📦 Registering security plugin (Helmet)...');
+    await fastify.register(import('./plugins/security'));
+
+    logger.info('📦 Registering CSRF protection plugin...');
+    await fastify.register(import('./plugins/csrf'));
     
     logger.info('📦 Registering rate-limit plugin...');
     await fastify.register(import('./plugins/rate-limit'));

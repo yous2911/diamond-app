@@ -213,10 +213,6 @@ class APIService {
     if (response.success && response.data) {
       this.isAuthenticated = true;
       this.currentStudent = response.data.student;
-      
-      // Store student data in localStorage for persistence
-      localStorage.setItem('currentStudent', JSON.stringify(response.data.student));
-      localStorage.setItem('isAuthenticated', 'true');
     }
 
     return response;
@@ -227,12 +223,9 @@ class APIService {
       method: 'POST',
     });
 
-    if (response.success) {
-      this.isAuthenticated = false;
-      this.currentStudent = null;
-      localStorage.removeItem('currentStudent');
-      localStorage.removeItem('isAuthenticated');
-    }
+    // Always clear local state on logout attempt
+    this.isAuthenticated = false;
+    this.currentStudent = null;
 
     return response;
   }
@@ -243,26 +236,25 @@ class APIService {
 
   // Check authentication status on app start
   async checkAuthStatus(): Promise<boolean> {
-    const storedAuth = localStorage.getItem('isAuthenticated');
-    const storedStudent = localStorage.getItem('currentStudent');
-
-    if (storedAuth === 'true' && storedStudent) {
-      try {
-        // Verify with server
-        const response = await this.getCurrentUser();
-        if (response.success && response.data) {
-          this.isAuthenticated = true;
-          this.currentStudent = response.data.student;
-          return true;
-        }
-      } catch (error) {
-        // Clear invalid stored data
-        localStorage.removeItem('currentStudent');
-        localStorage.removeItem('isAuthenticated');
+    try {
+      // Verify with server by checking if the session cookie is valid and returns user data
+      const response = await this.getCurrentUser();
+      if (response.success && response.data) {
+        this.isAuthenticated = true;
+        this.currentStudent = response.data.student;
+        return true;
       }
-    }
 
-    return false;
+      // If the request fails or returns no data, user is not authenticated
+      this.isAuthenticated = false;
+      this.currentStudent = null;
+      return false;
+    } catch (error) {
+      // This would catch network errors etc.
+      this.isAuthenticated = false;
+      this.currentStudent = null;
+      return false;
+    }
   }
 
   // =============================================================================

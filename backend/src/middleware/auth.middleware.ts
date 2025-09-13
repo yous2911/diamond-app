@@ -19,7 +19,7 @@ export async function authenticateMiddleware(
 ): Promise<void> {
   try {
     // Get token from HTTP-only cookie
-    const token = request.cookies.auth_token;
+    const token = request.cookies['access-token'];
 
     if (!token) {
       return reply.status(401).send({
@@ -44,18 +44,19 @@ export async function authenticateMiddleware(
       });
     }
 
-    // Add user to request
+    // The role is now included in the JWT payload, so we can read it directly.
     request.user = {
       studentId: decoded.studentId,
       email: decoded.email,
       type: decoded.type,
+      role: decoded.role || 'student', // Default to 'student' if role is missing
     };
 
     return; // Continue with request
 
   } catch (error) {
     // Check if we can refresh the token
-    const refreshToken = request.cookies.refresh_token;
+    const refreshToken = request.cookies['refresh-token'];
     
     if (refreshToken) {
       try {
@@ -152,11 +153,8 @@ export async function authenticateAdminMiddleware(
     });
   }
 
-  // Check if user has admin privileges (implement based on your needs)
-  // For now, simple check - in production, check database role
-  const adminEmails = ['admin@revedkids.com', 'teacher@revedkids.com'];
-  
-  if (!adminEmails.includes((user as any).email)) {
+  // Check if user has admin privileges by looking at the role from the JWT
+  if ((user as any).role !== 'admin') {
     return reply.status(403).send({
       success: false,
       error: {

@@ -3,7 +3,6 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { authSchemas, loginSchema, registerSchema } from '../schemas/auth.schema';
 import { AuthService } from '../services/auth.service';
-import { createRateLimitMiddleware } from '../services/rate-limit.service';
 
 // Types will be inferred from Zod schemas, removing manual interfaces
 type LoginRequestBody = z.infer<typeof loginSchema>;
@@ -31,18 +30,17 @@ export default async function authRoutes(fastify: FastifyInstance) {
       try {
         request.body = await loginSchema.parseAsync(request.body);
       } catch (error) {
+        (request.log as any).warn('Login validation error:', { error });
         reply.status(400).send({
           success: false,
           error: {
-            message: 'Données invalides',
-            code: 'VALIDATION_ERROR',
-            details: error instanceof Error ? error.message : 'Erreur de validation'
+            message: 'Données invalides. Veuillez vérifier votre email et mot de passe.',
+            code: 'VALIDATION_ERROR'
           }
         });
         return;
       }
     },
-    preHandler: process.env.NODE_ENV === 'test' ? [] : [createRateLimitMiddleware('auth:login')],
     handler: async (
       request: FastifyRequest<{ Body: LoginRequestBody }>,
       reply: FastifyReply
@@ -65,7 +63,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
         }
 
         const { student } = authResult;
-        const payload = { studentId: student.id, email: student.email };
+        const payload = { studentId: student.id, email: student.email, role: student.role };
 
         // In test mode, return a mock token that matches what mockAuthenticate expects
         const accessToken = process.env.NODE_ENV === 'test' 
@@ -105,18 +103,17 @@ export default async function authRoutes(fastify: FastifyInstance) {
       try {
         request.body = await registerSchema.parseAsync(request.body);
       } catch (error) {
+        (request.log as any).warn('Registration validation error:', { error });
         reply.status(400).send({
           success: false,
           error: {
-            message: 'Données invalides',
-            code: 'VALIDATION_ERROR',
-            details: error instanceof Error ? error.message : 'Erreur de validation'
+            message: 'Données d\'inscription invalides. Veuillez vérifier les informations fournies.',
+            code: 'VALIDATION_ERROR'
           }
         });
         return;
       }
     },
-    preHandler: [createRateLimitMiddleware('auth:register')],
     handler: async (
       request: FastifyRequest<{ Body: RegisterRequestBody }>,
       reply: FastifyReply
@@ -135,7 +132,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
         }
         
         const { student } = authResult;
-        const payload = { studentId: student.id, email: student.email };
+        const payload = { studentId: student.id, email: student.email, role: student.role };
 
         const accessToken = await reply.jwtSign(payload);
 
@@ -211,7 +208,6 @@ export default async function authRoutes(fastify: FastifyInstance) {
   // Password reset request
   fastify.post('/password-reset', {
     schema: authSchemas.passwordReset,
-    preHandler: [createRateLimitMiddleware('auth:password-reset')],
     handler: async (
       request: FastifyRequest<{ Body: PasswordResetBody }>,
       reply: FastifyReply
