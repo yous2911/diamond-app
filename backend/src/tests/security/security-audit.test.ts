@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+vi.unmock('../../services/security-audit.service');
 
 // Mock the SecurityAuditService before import
 // vi.mock('../../services/security-audit.service', () => {
@@ -243,25 +244,24 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
   };
 }); */
 
+import { logger } from '../../utils/logger';
 import { 
   SecurityAuditService, 
   SecurityIncidentType, 
   SecuritySeverity, 
-  SecurityComponent,
-  securityAuditService
+  SecurityComponent
 } from '../../services/security-audit.service';
 import { FastifyRequest } from 'fastify';
 
 describe('SecurityAuditService', () => {
-  let service: SecurityAuditService;
+  let securityAuditService: SecurityAuditService;
   let mockRequest: Partial<FastifyRequest>;
 
   beforeEach(() => {
-    service = securityAuditService as any;
-    
+    securityAuditService = new SecurityAuditService();
     // Clear incidents for fresh test state
-    if (service.clearIncidents) {
-      service.clearIncidents();
+    if (securityAuditService.clearIncidents) {
+      securityAuditService.clearIncidents();
     }
 
     mockRequest = {
@@ -278,12 +278,12 @@ describe('SecurityAuditService', () => {
   });
 
   afterEach(() => {
-    service.shutdown();
+    securityAuditService.shutdown();
   });
 
   describe('Incident Logging', () => {
     it('should log security incident successfully', async () => {
-      const incidentId = await service.logIncident(
+      const incidentId = await securityAuditService.logIncident(
         SecurityIncidentType.XSS_ATTEMPT,
         SecuritySeverity.HIGH,
         SecurityComponent.INPUT_SANITIZATION,
@@ -298,7 +298,7 @@ describe('SecurityAuditService', () => {
       expect(incidentId).toBeDefined();
       expect(incidentId).toMatch(/^SEC-\d+-[a-z0-9]+$/);
 
-      const incident = service.getIncident(incidentId);
+      const incident = securityAuditService.getIncident(incidentId);
       expect(incident).not.toBeNull();
       expect(incident!.type).toBe(SecurityIncidentType.XSS_ATTEMPT);
       expect(incident!.severity).toBe(SecuritySeverity.HIGH);
@@ -307,8 +307,20 @@ describe('SecurityAuditService', () => {
       expect(incident!.details.blocked).toBe(true);
     });
 
+    it('should generate security recommendations', async () => {
+      const timeRange = {
+        start: new Date(Date.now() - 24 * 60 * 60 * 1000),
+        end: new Date()
+      };
+
+      const report = securityAuditService.generateReport(timeRange);
+
+      expect(report.recommendations.length).toBeGreaterThan(0);
+      expect(report.recommendations).toContain('Consider strengthening input sanitization and XSS protection');
+    });
+
     it('should log manual incident', async () => {
-      const incidentId = await service.logManualIncident(
+      const incidentId = await securityAuditService.logManualIncident(
         SecurityIncidentType.CONFIGURATION_ERROR,
         SecuritySeverity.MEDIUM,
         SecurityComponent.MONITORING,
@@ -322,7 +334,7 @@ describe('SecurityAuditService', () => {
 
       expect(incidentId).toBeDefined();
 
-      const incident = service.getIncident(incidentId);
+      const incident = securityAuditService.getIncident(incidentId);
       expect(incident).not.toBeNull();
       expect(incident!.metadata.automated).toBe(false);
       expect(incident!.source.ip).toBe('manual');
@@ -338,7 +350,7 @@ describe('SecurityAuditService', () => {
         'accept': 'application/json'
       };
 
-      const incidentId = await service.logIncident(
+      const incidentId = await securityAuditService.logIncident(
         SecurityIncidentType.SUSPICIOUS_REQUEST,
         SecuritySeverity.LOW,
         SecurityComponent.MONITORING,
@@ -348,7 +360,7 @@ describe('SecurityAuditService', () => {
         }
       );
 
-      const incident = service.getIncident(incidentId);
+      const incident = securityAuditService.getIncident(incidentId);
       expect(incident!.details.headers).toHaveProperty('user-agent');
       expect(incident!.details.headers).toHaveProperty('accept');
       expect(incident!.details.headers).not.toHaveProperty('authorization');
@@ -364,7 +376,7 @@ describe('SecurityAuditService', () => {
       incidentIds = [];
       
       // Create test incidents
-      incidentIds.push(await service.logIncident(
+      incidentIds.push(await securityAuditService.logIncident(
         SecurityIncidentType.XSS_ATTEMPT,
         SecuritySeverity.HIGH,
         SecurityComponent.INPUT_SANITIZATION,
@@ -372,7 +384,7 @@ describe('SecurityAuditService', () => {
         { description: 'XSS attempt 1' }
       ));
 
-      incidentIds.push(await service.logIncident(
+      incidentIds.push(await securityAuditService.logIncident(
         SecurityIncidentType.SQL_INJECTION,
         SecuritySeverity.CRITICAL,
         SecurityComponent.INPUT_SANITIZATION,
@@ -380,7 +392,7 @@ describe('SecurityAuditService', () => {
         { description: 'SQL injection attempt' }
       ));
 
-      incidentIds.push(await service.logIncident(
+      incidentIds.push(await securityAuditService.logIncident(
         SecurityIncidentType.RATE_LIMIT_EXCEEDED,
         SecuritySeverity.MEDIUM,
         SecurityComponent.RATE_LIMITING,
@@ -390,18 +402,18 @@ describe('SecurityAuditService', () => {
     });
 
     it('should retrieve incident by ID', () => {
-      const incident = service.getIncident(incidentIds[0]);
+      const incident = securityAuditService.getIncident(incidentIds[0]);
       expect(incident).not.toBeNull();
       expect(incident!.type).toBe(SecurityIncidentType.XSS_ATTEMPT);
     });
 
     it('should return null for non-existent incident', () => {
-      const incident = service.getIncident('non-existent-id');
+      const incident = securityAuditService.getIncident('non-existent-id');
       expect(incident).toBeNull();
     });
 
     it('should retrieve incidents by type', () => {
-      const incidents = service.getIncidents({
+      const incidents = securityAuditService.getIncidents({
         type: SecurityIncidentType.XSS_ATTEMPT
       });
 
@@ -410,7 +422,7 @@ describe('SecurityAuditService', () => {
     });
 
     it('should retrieve incidents by severity', () => {
-      const incidents = service.getIncidents({
+      const incidents = securityAuditService.getIncidents({
         severity: SecuritySeverity.CRITICAL
       });
 
@@ -419,7 +431,7 @@ describe('SecurityAuditService', () => {
     });
 
     it('should retrieve incidents by component', () => {
-      const incidents = service.getIncidents({
+      const incidents = securityAuditService.getIncidents({
         component: SecurityComponent.INPUT_SANITIZATION
       });
 
@@ -430,7 +442,7 @@ describe('SecurityAuditService', () => {
     });
 
     it('should retrieve incidents by IP', () => {
-      const incidents = service.getIncidents({
+      const incidents = securityAuditService.getIncidents({
         ip: '192.168.1.100'
       });
 
@@ -441,8 +453,8 @@ describe('SecurityAuditService', () => {
     });
 
     it('should retrieve incidents with pagination', () => {
-      const page1 = service.getIncidents({ limit: 2, offset: 0 });
-      const page2 = service.getIncidents({ limit: 2, offset: 2 });
+      const page1 = securityAuditService.getIncidents({ limit: 2, offset: 0 });
+      const page2 = securityAuditService.getIncidents({ limit: 2, offset: 2 });
 
       expect(page1).toHaveLength(2);
       expect(page2).toHaveLength(1);
@@ -454,7 +466,7 @@ describe('SecurityAuditService', () => {
       const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
       const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000);
 
-      const incidents = service.getIncidents({
+      const incidents = securityAuditService.getIncidents({
         timeRange: { start: oneHourAgo, end: oneHourFromNow }
       });
 
@@ -462,7 +474,7 @@ describe('SecurityAuditService', () => {
     });
 
     it('should sort incidents by timestamp (newest first)', () => {
-      const incidents = service.getIncidents();
+      const incidents = securityAuditService.getIncidents();
       
       expect(incidents).toHaveLength(3);
       for (let i = 1; i < incidents.length; i++) {
@@ -476,7 +488,7 @@ describe('SecurityAuditService', () => {
   describe('Security Metrics', () => {
     beforeEach(async () => {
       // Create diverse test incidents
-      await service.logIncident(
+      await securityAuditService.logIncident(
         SecurityIncidentType.XSS_ATTEMPT,
         SecuritySeverity.HIGH,
         SecurityComponent.INPUT_SANITIZATION,
@@ -484,7 +496,7 @@ describe('SecurityAuditService', () => {
         { description: 'XSS 1', blocked: true }
       );
 
-      await service.logIncident(
+      await securityAuditService.logIncident(
         SecurityIncidentType.XSS_ATTEMPT,
         SecuritySeverity.MEDIUM,
         SecurityComponent.INPUT_SANITIZATION,
@@ -492,7 +504,7 @@ describe('SecurityAuditService', () => {
         { description: 'XSS 2', blocked: false }
       );
 
-      await service.logIncident(
+      await securityAuditService.logIncident(
         SecurityIncidentType.SQL_INJECTION,
         SecuritySeverity.CRITICAL,
         SecurityComponent.INPUT_SANITIZATION,
@@ -502,7 +514,7 @@ describe('SecurityAuditService', () => {
     });
 
     it('should generate comprehensive metrics', () => {
-      const metrics = service.getMetrics();
+      const metrics = securityAuditService.getMetrics();
 
       expect(metrics.totalIncidents).toBe(3);
       expect(metrics.incidentsByType[SecurityIncidentType.XSS_ATTEMPT]).toBe(2);
@@ -514,7 +526,7 @@ describe('SecurityAuditService', () => {
     });
 
     it('should calculate blocking effectiveness', () => {
-      const metrics = service.getMetrics();
+      const metrics = securityAuditService.getMetrics();
 
       expect(metrics.blockingEffectiveness.totalRequests).toBe(3);
       expect(metrics.blockingEffectiveness.blockedRequests).toBe(2);
@@ -522,7 +534,7 @@ describe('SecurityAuditService', () => {
     });
 
     it('should identify top attacker IPs', () => {
-      const metrics = service.getMetrics();
+      const metrics = securityAuditService.getMetrics();
 
       expect(metrics.topAttackerIPs).toHaveLength(2);
       expect(metrics.topAttackerIPs[0].ip).toBe('192.168.1.100');
@@ -532,7 +544,7 @@ describe('SecurityAuditService', () => {
     });
 
     it('should identify top target routes', () => {
-      const metrics = service.getMetrics();
+      const metrics = securityAuditService.getMetrics();
 
       expect(metrics.topTargetRoutes).toHaveLength(1);
       expect(metrics.topTargetRoutes[0].route).toBe('/api/test');
@@ -540,7 +552,7 @@ describe('SecurityAuditService', () => {
     });
 
     it('should generate timeline data', () => {
-      const metrics = service.getMetrics();
+      const metrics = securityAuditService.getMetrics();
 
       expect(Array.isArray(metrics.timelineData)).toBe(true);
       expect(metrics.timelineData).toHaveLength(24); // 24 hours
@@ -559,7 +571,7 @@ describe('SecurityAuditService', () => {
       const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
       const now = new Date();
 
-      const metrics = service.getMetrics({
+      const metrics = securityAuditService.getMetrics({
         start: oneHourAgo,
         end: now
       });
@@ -575,7 +587,7 @@ describe('SecurityAuditService', () => {
 
       // Generate many incidents from the same IP
       for (let i = 0; i < 15; i++) {
-        await service.logIncident(
+        await securityAuditService.logIncident(
           SecurityIncidentType.XSS_ATTEMPT,
           SecuritySeverity.HIGH,
           SecurityComponent.INPUT_SANITIZATION,
@@ -584,7 +596,7 @@ describe('SecurityAuditService', () => {
         );
       }
 
-      const isSuspicious = service.isIPSuspicious(suspiciousIP);
+      const isSuspicious = securityAuditService.isIPSuspicious(suspiciousIP);
       expect(isSuspicious).toBe(true);
     });
 
@@ -592,7 +604,7 @@ describe('SecurityAuditService', () => {
       const suspiciousIP = '192.168.1.777';
       mockRequest.ip = suspiciousIP;
 
-      await service.logIncident(
+      await securityAuditService.logIncident(
         SecurityIncidentType.BRUTE_FORCE,
         SecuritySeverity.CRITICAL,
         SecurityComponent.AUTHENTICATION,
@@ -600,13 +612,13 @@ describe('SecurityAuditService', () => {
         { description: 'Brute force attack detected' }
       );
 
-      const isSuspicious = service.isIPSuspicious(suspiciousIP);
+      const isSuspicious = securityAuditService.isIPSuspicious(suspiciousIP);
       expect(isSuspicious).toBe(true);
     });
 
     it('should not flag normal IPs as suspicious', () => {
       const normalIP = '192.168.1.1';
-      const isSuspicious = service.isIPSuspicious(normalIP);
+      const isSuspicious = securityAuditService.isIPSuspicious(normalIP);
       expect(isSuspicious).toBe(false);
     });
 
@@ -617,7 +629,7 @@ describe('SecurityAuditService', () => {
       // Generate incidents outside the time window
       const shortTimeWindow = 1000; // 1 second
 
-      await service.logIncident(
+      await securityAuditService.logIncident(
         SecurityIncidentType.XSS_ATTEMPT,
         SecuritySeverity.HIGH,
         SecurityComponent.INPUT_SANITIZATION,
@@ -628,7 +640,7 @@ describe('SecurityAuditService', () => {
       // Wait for time window to pass
       await new Promise(resolve => setTimeout(resolve, 1100));
 
-      const isSuspicious = service.isIPSuspicious(testIP, shortTimeWindow);
+      const isSuspicious = securityAuditService.isIPSuspicious(testIP, shortTimeWindow);
       expect(isSuspicious).toBe(false);
     });
   });
@@ -636,7 +648,7 @@ describe('SecurityAuditService', () => {
   describe('Security Reports', () => {
     beforeEach(async () => {
       // Create incidents for report testing
-      await service.logIncident(
+      await securityAuditService.logIncident(
         SecurityIncidentType.SQL_INJECTION,
         SecuritySeverity.CRITICAL,
         SecurityComponent.INPUT_SANITIZATION,
@@ -644,7 +656,7 @@ describe('SecurityAuditService', () => {
         { description: 'Critical SQL injection' }
       );
 
-      await service.logIncident(
+      await securityAuditService.logIncident(
         SecurityIncidentType.XSS_ATTEMPT,
         SecuritySeverity.HIGH,
         SecurityComponent.INPUT_SANITIZATION,
@@ -654,7 +666,7 @@ describe('SecurityAuditService', () => {
 
       // Add many XSS attempts to trigger recommendations
       for (let i = 0; i < 15; i++) {
-        await service.logIncident(
+        await securityAuditService.logIncident(
           SecurityIncidentType.XSS_ATTEMPT,
           SecuritySeverity.MEDIUM,
           SecurityComponent.INPUT_SANITIZATION,
@@ -670,7 +682,7 @@ describe('SecurityAuditService', () => {
         end: new Date()
       };
 
-      const report = service.generateReport(timeRange);
+      const report = securityAuditService.generateReport(timeRange);
 
       expect(report.summary).toBeDefined();
       expect(report.topThreats).toBeDefined();
@@ -687,7 +699,7 @@ describe('SecurityAuditService', () => {
         end: new Date()
       };
 
-      const report = service.generateReport(timeRange);
+      const report = securityAuditService.generateReport(timeRange);
 
       expect(report.topThreats).toHaveLength(1);
       expect(report.topThreats[0].severity).toBe(SecuritySeverity.CRITICAL);
@@ -700,12 +712,10 @@ describe('SecurityAuditService', () => {
         end: new Date()
       };
 
-      const report = service.generateReport(timeRange);
+      const report = securityAuditService.generateReport(timeRange);
 
       expect(report.recommendations.length).toBeGreaterThan(0);
-      expect(report.recommendations).toContain(
-        expect.stringContaining('XSS protection')
-      );
+      expect(report.recommendations).toContain('XSS protection');
     });
   });
 
@@ -719,7 +729,7 @@ describe('SecurityAuditService', () => {
         }
       });
 
-      const logSpy = vi.fn();
+      const logSpy = vi.spyOn(logger, 'error');
 
       // Generate incidents to trigger alert
       for (let i = 0; i < 3; i++) {
@@ -752,12 +762,11 @@ describe('SecurityAuditService', () => {
         retentionDays: 0 // Immediate cleanup for testing
       });
 
-      await cleanupService.logIncident(
+      await cleanupService.logManualIncident(
         SecurityIncidentType.XSS_ATTEMPT,
         SecuritySeverity.HIGH,
         SecurityComponent.INPUT_SANITIZATION,
-        mockRequest as FastifyRequest,
-        { description: 'Test incident' }
+        'Test incident'
       );
 
       const metricsBefore = cleanupService.getMetrics();
@@ -772,13 +781,13 @@ describe('SecurityAuditService', () => {
     });
 
     it('should handle service shutdown gracefully', () => {
-      const metrics = service.getMetrics();
+      const metrics = securityAuditService.getMetrics();
       expect(metrics.totalIncidents).toBeGreaterThanOrEqual(0);
 
-      service.shutdown();
+      securityAuditService.shutdown();
 
       // After shutdown, metrics should be reset
-      const metricsAfterShutdown = service.getMetrics();
+      const metricsAfterShutdown = securityAuditService.getMetrics();
       expect(metricsAfterShutdown.totalIncidents).toBe(0);
     });
   });
@@ -791,7 +800,7 @@ describe('SecurityAuditService', () => {
         ip: '127.0.0.1'
       } as FastifyRequest;
 
-      const incidentId = await service.logIncident(
+      const incidentId = await securityAuditService.logIncident(
         SecurityIncidentType.SUSPICIOUS_REQUEST,
         SecuritySeverity.LOW,
         SecurityComponent.MONITORING,
@@ -801,7 +810,7 @@ describe('SecurityAuditService', () => {
 
       expect(incidentId).toBeDefined();
 
-      const incident = service.getIncident(incidentId);
+      const incident = securityAuditService.getIncident(incidentId);
       expect(incident).not.toBeNull();
       expect(incident!.source.userAgent).toBeUndefined();
     });
@@ -815,7 +824,7 @@ describe('SecurityAuditService', () => {
         }
       };
 
-      const incidentId = await service.logIncident(
+      const incidentId = await securityAuditService.logIncident(
         SecurityIncidentType.SUSPICIOUS_REQUEST,
         SecuritySeverity.LOW,
         SecurityComponent.MONITORING,
@@ -828,7 +837,7 @@ describe('SecurityAuditService', () => {
 
       expect(incidentId).toBeDefined();
 
-      const incident = service.getIncident(incidentId);
+      const incident = securityAuditService.getIncident(incidentId);
       expect(incident).not.toBeNull();
       expect(incident!.details.payload).toBeDefined();
     });
@@ -838,7 +847,7 @@ describe('SecurityAuditService', () => {
 
       for (let i = 0; i < 10; i++) {
         promises.push(
-          service.logIncident(
+          securityAuditService.logIncident(
             SecurityIncidentType.RATE_LIMIT_EXCEEDED,
             SecuritySeverity.MEDIUM,
             SecurityComponent.RATE_LIMITING,
@@ -853,7 +862,7 @@ describe('SecurityAuditService', () => {
       expect(incidentIds).toHaveLength(10);
       expect(new Set(incidentIds).size).toBe(10); // All IDs should be unique
 
-      const metrics = service.getMetrics();
+      const metrics = securityAuditService.getMetrics();
       expect(metrics.totalIncidents).toBeGreaterThanOrEqual(10);
     });
   });

@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm';
 import { getDatabase } from '../db/connection';
 import { students, studentProgress, sessions, gdprFiles } from '../db/schema';
 import { encryptionService } from './encryption.service';
+import { auditTrailService } from './audit-trail.service';
 
 interface AnonymizationRule {
   field: string;
@@ -67,6 +68,15 @@ class AnonymizationService {
       // 4. Conserver les données d'apprentissage (sans identification)
       // Les données de progress et revisions sont conservées pour les statistiques
       // mais ne contiennent pas d'informations personnelles identifiables
+
+      await auditTrailService.logAction({
+        entityType: 'student',
+        entityId: studentId.toString(),
+        action: 'anonymize',
+        userId: 'system',
+        details: { reason: 'Student data anonymized' },
+        severity: 'high',
+      });
 
       return { success: true, affectedRecords };
 

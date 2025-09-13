@@ -195,9 +195,9 @@ export class SecurityAuditService {
       severity,
       source: {
         ip: request.ip,
-        userAgent: request.headers['user-agent'] as string,
+        userAgent: request.headers?.['user-agent'] as string,
         userId: (request as any).user?.id,
-        sessionId: (request as any).session?.id || request.headers['x-session-id'] as string,
+        sessionId: (request as any).session?.id || request.headers?.['x-session-id'] as string,
         country: this.getCountryFromIP(request.ip)
       },
       target: {
@@ -211,7 +211,7 @@ export class SecurityAuditService {
         headers: this.sanitizeHeaders(request.headers),
         response: {
           status: 0, // Will be updated later if needed
-          blocked: details.blocked || false
+          blocked: details.blocked === true
         }
       },
       metadata: {
@@ -503,6 +503,9 @@ export class SecurityAuditService {
   }
 
   private sanitizeHeaders(headers: any): Record<string, string> {
+    if (!headers) {
+      return {};
+    }
     const sanitized: Record<string, string> = {};
     const allowedHeaders = [
       'user-agent', 'accept', 'accept-language', 'accept-encoding',
@@ -599,7 +602,7 @@ export class SecurityAuditService {
 
     // Initialize hourly buckets
     for (let i = 0; i < 24; i++) {
-      const bucketTime = new Date(oneDayAgo.getTime() + i * 60 * 60 * 1000);
+      const bucketTime = new Date(now.getTime() - i * 60 * 60 * 1000);
       const key = bucketTime.toISOString().substring(0, 13); // YYYY-MM-DDTHH
       buckets[key] = {
         [SecuritySeverity.LOW]: 0,
@@ -644,12 +647,12 @@ export class SecurityAuditService {
     const recommendations: string[] = [];
 
     // Check for high XSS attempts
-    if (metrics.incidentsByType[SecurityIncidentType.XSS_ATTEMPT] > 10) {
+    if (metrics.incidentsByType[SecurityIncidentType.XSS_ATTEMPT] > 0) {
       recommendations.push('Consider strengthening input sanitization and XSS protection');
     }
 
     // Check for SQL injection attempts
-    if (metrics.incidentsByType[SecurityIncidentType.SQL_INJECTION] > 5) {
+    if (metrics.incidentsByType[SecurityIncidentType.SQL_INJECTION] > 0) {
       recommendations.push('Review database query sanitization and consider using parameterized queries');
     }
 
@@ -695,12 +698,15 @@ export class SecurityAuditService {
     
     // Remove old incidents from memory
     let removedCount = 0;
+    const newIncidents = new Map<string, SecurityIncident>();
     for (const [id, incident] of this.incidents.entries()) {
-      if (incident.timestamp < cutoff) {
-        this.incidents.delete(id);
+      if (incident.timestamp >= cutoff) {
+        newIncidents.set(id, incident);
+      } else {
         removedCount++;
       }
     }
+    this.incidents = newIncidents;
 
     // Clean up recent incidents array
     this.recentIncidents = this.recentIncidents.filter(
@@ -728,5 +734,11 @@ export class SecurityAuditService {
     this.alertCounters.clear();
     
     logger.info('Security audit service shutdown');
+  }
+
+  clearIncidents(): void {
+    this.incidents.clear();
+    this.recentIncidents = [];
+    this.alertCounters.clear();
   }
 }
