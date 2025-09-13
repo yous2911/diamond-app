@@ -4,6 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi, beforeAll, afterAll } from 'vitest';
+vi.unmock('../services/audit-trail.service');
 import { AuditTrailService } from '../services/audit-trail.service';
 import { db } from '../db/connection';
 import { auditLogs, securityAlerts, complianceReports } from '../db/schema';

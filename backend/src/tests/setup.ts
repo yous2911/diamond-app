@@ -339,13 +339,7 @@ vi.mock('fs/promises', () => ({
   unlink: vi.fn(() => Promise.resolve()),
   mkdir: vi.fn(() => Promise.resolve()),
   stat: vi.fn(() => Promise.resolve({ size: 1024 })),
-  pathExists: vi.fn((path) => {
-    // Return false for thumbnail paths to simulate files not existing
-    if (path.includes('/thumbnails/')) {
-      return Promise.resolve(false);
-    }
-    return Promise.resolve(true);
-  })
+  pathExists: vi.fn().mockResolvedValue(true),
 }));
 
 // Mock GDPR Service with expanded functionality
@@ -657,7 +651,7 @@ vi.mock('../services/encryption.service', () => {
 // Mock File Upload Service
 const mockFileUploadService = vi.hoisted(() => {
   let fileIdCounter = 1;
-  
+
   return {
     processFile: vi.fn((file) => {
       const fileId = fileIdCounter++;
@@ -671,33 +665,24 @@ const mockFileUploadService = vi.hoisted(() => {
         uploadedAt: new Date()
       });
     }),
-    
     processUpload: vi.fn((uploadRequest, userId) => {
       const file = uploadRequest.files[0];
       const fileId = fileIdCounter++;
-      
-      // Check for dangerous extensions
       const dangerousExtensions = ['.exe', '.bat', '.cmd', '.scr', '.pif'];
       const extension = file.originalname.toLowerCase().substring(file.originalname.lastIndexOf('.'));
-      
       if (dangerousExtensions.includes(extension)) {
         return Promise.resolve({
           success: false,
           errors: ['File type not allowed']
         });
       }
-      
-      // Check file size (5MB limit)
       if (file.size > 5 * 1024 * 1024) {
         return Promise.resolve({
           success: false,
           errors: ['File exceeds maximum size']
         });
       }
-      
-      // Generate consistent checksum based on filename and size
       const checksum = `checksum-${file.originalname}-${file.size}`;
-      
       return Promise.resolve({
         success: true,
         files: [{
@@ -714,29 +699,28 @@ const mockFileUploadService = vi.hoisted(() => {
         }]
       });
     }),
-    
     validateFile: vi.fn((file) => {
       const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
       if (!allowedTypes.includes(file.mimetype)) {
         return Promise.reject(new Error('File type not allowed'));
       }
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+      if (file.size > 5 * 1024 * 1024) {
         return Promise.reject(new Error('File too large'));
       }
-      return Promise.resolve({ valid: true });
+      return Promise.resolve({
+        valid: true
+      });
     }),
-    
     generateUniqueFilename: vi.fn((originalName) => {
       const timestamp = Date.now();
       const extension = originalName.split('.').pop();
       return `file-${timestamp}.${extension}`;
     }),
-    
-    deleteFile: vi.fn(() => Promise.resolve({ success: true }))
+    deleteFile: vi.fn(() => Promise.resolve({
+      success: true
+    }))
   };
-
 });
-
 vi.mock('../services/file-upload.service', () => ({
   FileUploadService: vi.fn().mockImplementation(() => mockFileUploadService),
   fileUploadService: mockFileUploadService,
@@ -745,140 +729,117 @@ vi.mock('../services/file-upload.service', () => ({
 
 // Mock File Security Service
 const mockFileSecurityService = vi.hoisted(() => ({
-    scanFile: vi.fn((file) => {
-      const dangerousExtensions = ['.exe', '.bat', '.cmd', '.scr', '.pif'];
-      const extension = file.originalname.toLowerCase().substring(file.originalname.lastIndexOf('.'));
-      
-      if (dangerousExtensions.includes(extension)) {
-        return Promise.resolve({
-          safe: false,
-          threats: ['Dangerous file extension detected'],
-          scanId: `scan-${Date.now()}`
-        });
-      }
-      
+  scanFile: vi.fn((file) => {
+    const dangerousExtensions = ['.exe', '.bat', '.cmd', '.scr', '.pif'];
+    const extension = file.originalname.toLowerCase().substring(file.originalname.lastIndexOf('.'));
+    if (dangerousExtensions.includes(extension)) {
       return Promise.resolve({
-        safe: true,
-        threats: [],
+        safe: false,
+        threats: ['Dangerous file extension detected'],
         scanId: `scan-${Date.now()}`
       });
-    }),
-    
-    validateFile: vi.fn((buffer, filename, mimeType) => {
-      const dangerousExtensions = ['.exe', '.bat', '.cmd', '.scr', '.pif'];
-      const extension = filename.toLowerCase().substring(filename.lastIndexOf('.'));
-      
-      if (dangerousExtensions.includes(extension)) {
-        return Promise.resolve({
-          isValid: false,
-          errors: ['Dangerous file extension detected'],
-          warnings: [],
-          detectedMimeType: mimeType
-        });
-      }
-      
-      if (buffer.length === 0) {
-        return Promise.resolve({
-          isValid: false,
-          errors: ['Empty file not allowed'],
-          warnings: [],
-          detectedMimeType: mimeType
-        });
-      }
-      
-      if (buffer.length > 100 * 1024 * 1024) { // 100MB limit
-        return Promise.resolve({
-          isValid: false,
-          errors: ['File exceeds maximum size limit'],
-          warnings: [],
-          detectedMimeType: mimeType
-        });
-      }
-      
-      // Check for MIME type mismatch
-      const warnings = [];
-      if (filename.includes('.pdf') && mimeType !== 'application/pdf') {
-        warnings.push('MIME type mismatch detected');
-        return Promise.resolve({
-          isValid: false,
-          errors: [],
-          warnings,
-          detectedMimeType: mimeType
-        });
-      }
-      
-      // Check for suspicious patterns
-      if (buffer.includes('SUSPICIOUS')) {
-        warnings.push('Suspicious pattern detected');
-      }
-      
-      // Check for corrupted files
-      if (buffer.includes('CORRUPTED')) {
-        warnings.push('Could not detect file type');
-        return Promise.resolve({
-          isValid: false,
-          errors: [],
-          warnings,
-          detectedMimeType: mimeType
-        });
-      }
-      
+    }
+    return Promise.resolve({
+      safe: true,
+      threats: [],
+      scanId: `scan-${Date.now()}`
+    });
+  }),
+  validateFile: vi.fn((buffer, filename, mimeType) => {
+    const dangerousExtensions = ['.exe', '.bat', '.cmd', '.scr', '.pif'];
+    const extension = filename.toLowerCase().substring(filename.lastIndexOf('.'));
+    if (dangerousExtensions.includes(extension)) {
       return Promise.resolve({
-        isValid: true,
+        isValid: false,
+        errors: ['Dangerous file extension detected'],
+        warnings: [],
+        detectedMimeType: mimeType
+      });
+    }
+    if (buffer.length === 0) {
+      return Promise.resolve({
+        isValid: false,
+        errors: ['Empty file not allowed'],
+        warnings: [],
+        detectedMimeType: mimeType
+      });
+    }
+    if (buffer.length > 100 * 1024 * 1024) {
+      return Promise.resolve({
+        isValid: false,
+        errors: ['File exceeds maximum size limit'],
+        warnings: [],
+        detectedMimeType: mimeType
+      });
+    }
+    const warnings = [];
+    if (filename.includes('.pdf') && mimeType !== 'application/pdf') {
+      warnings.push('MIME type mismatch detected');
+      return Promise.resolve({
+        isValid: false,
         errors: [],
         warnings,
         detectedMimeType: mimeType
       });
-    }),
-    
-    performSecurityScan: vi.fn((_filePath, buffer) => {
-      // Check for EICAR test string
-      if (buffer.includes('X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*')) {
-        return Promise.resolve({
-          isClean: false,
-          threats: ['EICAR test virus detected']
-        });
-      }
-      
-      // Check for null bytes
-      if (buffer.includes('\x00')) {
-        return Promise.resolve({
-          isClean: true,
-          threats: ['Null bytes detected in file content']
-        });
-      }
-      
+    }
+    if (buffer.includes('SUSPICIOUS')) {
+      warnings.push('Suspicious pattern detected');
+    }
+    if (buffer.includes('CORRUPTED')) {
+      warnings.push('Could not detect file type');
+      return Promise.resolve({
+        isValid: false,
+        errors: [],
+        warnings,
+        detectedMimeType: mimeType
+      });
+    }
+    return Promise.resolve({
+      isValid: true,
+      errors: [],
+      warnings,
+      detectedMimeType: mimeType
+    });
+  }),
+  performSecurityScan: vi.fn((_filePath, buffer) => {
+    if (buffer.includes('X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*')) {
+      return Promise.resolve({
+        isClean: false,
+        threats: ['EICAR test virus detected']
+      });
+    }
+    if (buffer.includes('\x00')) {
       return Promise.resolve({
         isClean: true,
-        threats: []
+        threats: ['Null bytes detected in file content']
       });
-    }),
-    
-    validateFileType: vi.fn((file) => {
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
-      return Promise.resolve({
-        valid: allowedTypes.includes(file.mimetype),
-        detectedType: file.mimetype
-      });
-    }),
-    
-    checkFileSize: vi.fn((file, maxSize = 5 * 1024 * 1024) => {
-      return Promise.resolve({
-        valid: file.size <= maxSize,
-        size: file.size,
-        maxSize
-      });
-    })
-  }));
-
+    }
+    return Promise.resolve({
+      isClean: true,
+      threats: []
+    });
+  }),
+  validateFileType: vi.fn((file) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
+    return Promise.resolve({
+      valid: allowedTypes.includes(file.mimetype),
+      detectedType: file.mimetype
+    });
+  }),
+  checkFileSize: vi.fn((file, maxSize = 5 * 1024 * 1024) => {
+    return Promise.resolve({
+      valid: file.size <= maxSize,
+      size: file.size,
+      maxSize
+    });
+  })
+}));
 vi.mock('../services/file-security.service', () => ({
   FileSecurityService: vi.fn().mockImplementation((options) => {
-    // If options has maxScanTimeMs, simulate timeout behavior
     if (options && options.maxScanTimeMs === 1) {
       return {
         ...mockFileSecurityService,
         performSecurityScan: vi.fn((_h, buffer) => {
-          // Simulate timeout for large files
           if (buffer.length > 512 * 1024) {
             return Promise.reject(new Error('Operation timed out'));
           }
@@ -1045,14 +1006,16 @@ vi.mock('../services/exercise-generator.service', () => {
 vi.mock('../services/auth.service', () => {
   const mockAuthService = {
     login: vi.fn((email, password) => {
-      if (email === 'test@example.com' && password === 'password123') {
+      if (email === 'alice.dupont@test.com' && password === 'test-password-123456') {
         return Promise.resolve({
           success: true,
-          token: 'mock-jwt-token-123',
-          user: {
-            id: 1,
-            email: 'test@example.com',
-            role: 'student'
+          data: {
+            token: 'mock-jwt-token-123',
+            user: {
+              id: 1,
+              email: 'alice.dupont@test.com',
+              role: 'student'
+            }
           }
         });
       }
@@ -1408,7 +1371,7 @@ vi.mock('../services/security-audit.service', () => {
     }),
     
     logIncident: vi.fn((type: any, severity: any, component: any, request: any, details: any) => {
-      const id = securityIncidentIdCounter++;
+      const id = `SEC-${securityIncidentIdCounter++}-${Math.random().toString(36).substr(2, 9)}`;
       const fullIncident = {
         id,
         type,
@@ -1434,7 +1397,7 @@ vi.mock('../services/security-audit.service', () => {
         blocked: true
       };
       securityIncidents.push(fullIncident);
-      return Promise.resolve(fullIncident);
+      return Promise.resolve(id);
     }),
     
     logManualIncident: vi.fn((type: any, severity: any, details: any = {}) => {
@@ -1460,7 +1423,7 @@ vi.mock('../services/security-audit.service', () => {
     }),
     
     getIncident: vi.fn((id: string) => {
-      return securityIncidents.find(i => i.id === id) || null;
+      return Promise.resolve(securityIncidents.find(i => i.id === id) || null);
     }),
     
     getIncidents: vi.fn((filters: any = {}) => {
@@ -1473,7 +1436,7 @@ vi.mock('../services/security-audit.service', () => {
         filtered = filtered.filter(i => i.severity === filters.severity);
       }
       if (filters.component) {
-        filtered = filtered.filter(i => i.metadata?.component === filters.component);
+        filtered = filtered.filter(i => i.component === filters.component);
       }
       if (filters.ip) {
         filtered = filtered.filter(i => i.source?.ip === filters.ip);
@@ -1495,66 +1458,61 @@ vi.mock('../services/security-audit.service', () => {
         filtered = filtered.slice(offset, offset + limit);
       }
       
-      return filtered;
+      return Promise.resolve(filtered);
     }),
     
     getMetrics: vi.fn((timeRange: any = null) => {
       let relevantIncidents = securityIncidents;
       if (timeRange) {
-        relevantIncidents = securityIncidents.filter(i => 
+        relevantIncidents = securityIncidents.filter(i =>
           i.timestamp >= timeRange.start && i.timestamp <= timeRange.end
         );
       }
-      
+
       const totalIncidents = relevantIncidents.length;
       const blockedIncidents = relevantIncidents.filter(i => i.details?.blocked).length;
-      
-      // Group by IP
+
       const ipCounts: any = {};
       relevantIncidents.forEach(i => {
         const ip = i.source?.ip || 'unknown';
         ipCounts[ip] = (ipCounts[ip] || 0) + 1;
       });
-      
+
       const topAttackerIPs = Object.entries(ipCounts)
         .map(([ip, count]) => ({ ip, count }))
         .sort((a: any, b: any) => b.count - a.count)
         .slice(0, 5);
-      
-      // Group by route
+
       const routeCounts: any = {};
       relevantIncidents.forEach(i => {
-        const route = i.target?.route || '/unknown';
+        const route = i.details.route || '/unknown';
         routeCounts[route] = (routeCounts[route] || 0) + 1;
       });
-      
+
       const topTargetRoutes = Object.entries(routeCounts)
         .map(([route, count]) => ({ route, count }))
         .sort((a: any, b: any) => b.count - a.count)
         .slice(0, 5);
-      
-      // Group by type
+
       const typeCounts: any = {};
       relevantIncidents.forEach(i => {
         const type = i.type || 'UNKNOWN';
         typeCounts[type] = (typeCounts[type] || 0) + 1;
       });
 
-      // Group by severity
       const severityCounts: any = {};
       relevantIncidents.forEach(i => {
         const severity = i.severity || 'medium';
         severityCounts[severity] = (severityCounts[severity] || 0) + 1;
       });
 
-      // Group by component
       const componentCounts: any = {};
       relevantIncidents.forEach(i => {
-        const component = i.metadata?.component || 'UNKNOWN';
+        const component = i.component || 'UNKNOWN';
         componentCounts[component] = (componentCounts[component] || 0) + 1;
       });
 
-      return {
+      return Promise.resolve({
         totalIncidents,
         blockedIncidents,
         incidentsByType: typeCounts,
@@ -1576,7 +1534,7 @@ vi.mock('../services/security-audit.service', () => {
             count: relevantIncidents.filter(i => new Date(i.timestamp).getHours() === hour).length
           };
         })
-      };
+      });
     }),
     
     isIPSuspicious: vi.fn((ip: string, timeWindow: any = { hours: 24 }) => {
@@ -1593,14 +1551,14 @@ vi.mock('../services/security-audit.service', () => {
     generateReport: vi.fn((timeRange: any = null) => {
       let relevantIncidents = securityIncidents;
       if (timeRange) {
-        relevantIncidents = securityIncidents.filter(i => 
+        relevantIncidents = securityIncidents.filter(i =>
           i.timestamp >= timeRange.start && i.timestamp <= timeRange.end
         );
       }
-      
-      const criticalIncidents = relevantIncidents.filter(i => i.severity === 'critical');
-      
-      return {
+
+      const criticalIncidents = relevantIncidents.filter(i => i.severity === 'CRITICAL');
+
+      return Promise.resolve({
         summary: {
           totalIncidents: relevantIncidents.length,
           criticalIncidents: criticalIncidents.length,
@@ -1618,7 +1576,7 @@ vi.mock('../services/security-audit.service', () => {
           'XSS protection',
           'Strengthen SQL injection prevention'
         ]
-      };
+      });
     }),
     
     shutdown: vi.fn(() => {
@@ -1771,88 +1729,100 @@ vi.mock('../services/gdpr-rights.service', () => {
 
 // Mock Image Processing Service
 const mockImageProcessingService = vi.hoisted(() => ({
-    processImage: vi.fn(() => Promise.resolve({ 
-      success: true,
-      processedPath: '/processed/image.jpg'
-    })),
-    optimizeImage: vi.fn(() => Promise.resolve({ 
-      success: true,
-      optimizedPath: '/optimized/image.jpg'
-    })),
-    getImageInfo: vi.fn((buffer) => {
-      // Detect format based on buffer content
-      let format = 'jpeg';
-      let width = 800;
-      let height = 600;
-      
-      if (buffer.includes('WEBP')) {
-        format = 'webp';
-      } else if (buffer.includes('PNG')) {
-        format = 'png';
-      } else if (buffer.includes('RESIZED_')) {
-        // Extract dimensions from resize marker
-        const match = buffer.toString().match(/RESIZED_(\d+)x(\d+)/);
-        if (match) {
-          width = parseInt(match[1]);
-          height = parseInt(match[2]);
-        }
+    processImage: vi.fn(() => Promise.resolve({
+    success: true,
+    processedPath: '/processed/image.jpg'
+  })),
+    optimizeImage: vi.fn(() => Promise.resolve({
+    success: true,
+    optimizedPath: '/optimized/image.jpg'
+  })),
+  getImageInfo: vi.fn((buffer) => {
+    let format = 'jpeg';
+    let width = 800;
+    let height = 600;
+    if (buffer.includes('WEBP')) {
+      format = 'webp';
+    } else if (buffer.includes('PNG')) {
+      format = 'png';
+    } else if (buffer.includes('RESIZED_')) {
+      const match = buffer.toString().match(/RESIZED_(\d+)x(\d+)/);
+      if (match) {
+        width = parseInt(match[1]);
+        height = parseInt(match[2]);
       }
-      
-      return Promise.resolve({
-        width,
-        height,
-        format,
-        size: buffer.length,
-        hasAlpha: false
-      });
-    }),
-    validateImageStructure: vi.fn((buffer) => {
-      // Simple validation - check for common image headers
-      const isValid = buffer.includes('JFIF') || buffer.includes('PNG') || buffer.includes('GIF');
-      
-      if (!isValid) {
-        return Promise.reject(new Error('Invalid image structure'));
-      }
-      
-      return Promise.resolve(isValid);
-    }),
-    generateThumbnails: vi.fn((_imagePath, sizes) => {
-      return Promise.resolve(sizes.map((size: any, index: any) => ({
-        type: index === 0 ? 'small' : 'medium',
-        path: `/thumbnails/${size}/image.jpg`,
-        width: size.width,
-        height: size.height
-      })));
-    }),
-    compressImage: vi.fn((buffer, options) => {
-      const compressionRatio = options.quality / 100;
-      const compressedSize = Math.floor(buffer.length * compressionRatio);
-      return Promise.resolve(Buffer.alloc(compressedSize));
-    }),
-    addWatermark: vi.fn((buffer: any, _watermarkOptions: any) => {
-      return Promise.resolve(Buffer.concat([buffer, Buffer.from('WATERMARK')]));
-    }),
-    convertFormat: vi.fn((buffer: any, format: any, _quality: any) => {
-      return Promise.resolve(Buffer.concat([buffer, Buffer.from(format.toUpperCase())]));
-    }),
-    optimizeForWeb: vi.fn((buffer) => {
-      return Promise.resolve({
-        webp: Buffer.concat([buffer, Buffer.from('WEBP')]),
-        jpeg: Buffer.concat([buffer, Buffer.from('JPEG')]),
-        png: Buffer.concat([buffer, Buffer.from('PNG')])
-      });
-    }),
-    resizeImage: vi.fn((buffer: any, width: any, height: any) => {
-      // Return a buffer that when analyzed will show the new dimensions
-      return Promise.resolve(Buffer.concat([buffer, Buffer.from(`RESIZED_${width}x${height}`)]));
-    })
-  }));
-
+    }
+    return Promise.resolve({
+      width,
+      height,
+      format,
+      size: buffer.length,
+      hasAlpha: false
+    });
+  }),
+  validateImageStructure: vi.fn((buffer) => {
+    const isValid = buffer.includes('JFIF') || buffer.includes('PNG') || buffer.includes('GIF');
+    if (!isValid) {
+      return Promise.reject(new Error('Invalid image structure'));
+    }
+    return Promise.resolve(isValid);
+  }),
+  generateThumbnails: vi.fn((_imagePath, sizes) => {
+    return Promise.resolve(sizes.map((size, index) => ({
+      type: index === 0 ? 'small' : 'medium',
+      path: `/thumbnails/${size.width}x${size.height}/image.jpg`,
+      width: size.width,
+      height: size.height
+    })));
+  }),
+  compressImage: vi.fn((buffer, options) => {
+    const compressionRatio = options.quality / 100;
+    const compressedSize = Math.floor(buffer.length * compressionRatio);
+    return Promise.resolve(Buffer.alloc(compressedSize));
+  }),
+  addWatermark: vi.fn((buffer, _watermarkOptions) => {
+    return Promise.resolve(Buffer.concat([buffer, Buffer.from('WATERMARK')]));
+  }),
+  convertFormat: vi.fn((buffer, format, _quality) => {
+    return Promise.resolve(Buffer.concat([buffer, Buffer.from(format.toUpperCase())]));
+  }),
+  optimizeForWeb: vi.fn((buffer) => {
+    return Promise.resolve({
+      webp: Buffer.concat([buffer, Buffer.from('WEBP')]),
+      jpeg: Buffer.concat([buffer, Buffer.from('JPEG')]),
+      png: Buffer.concat([buffer, Buffer.from('PNG')])
+    });
+  }),
+  resizeImage: vi.fn((buffer, width, height) => {
+    return Promise.resolve(Buffer.concat([buffer, Buffer.from(`RESIZED_${width}x${height}`)]));
+  })
+}));
 vi.mock('../services/image-processing.service', () => ({
   ImageProcessingService: vi.fn().mockImplementation(() => mockImageProcessingService),
   imageProcessingService: mockImageProcessingService,
   default: mockImageProcessingService
 }));
+
+// Mock shortTimeoutService for timeout tests
+vi.mock('../services/short-timeout.service', () => {
+  const mockShortTimeoutService = {
+    performSecurityScan: vi.fn((_filePath, buffer) => {
+      // Simulate timeout for large files
+      if (buffer.length > 512 * 1024) { // 512KB
+        return Promise.reject(new Error('Operation timed out'));
+      }
+      return Promise.resolve({
+        isClean: true,
+        threats: []
+      });
+    })
+  };
+
+  return {
+    ShortTimeoutService: vi.fn().mockImplementation(() => mockShortTimeoutService),
+    shortTimeoutService: mockShortTimeoutService,
+  };
+});
 
 // Mock Storage Service
 vi.mock('../services/storage.service', () => {
@@ -1927,6 +1897,13 @@ vi.mock('../services/short-timeout.service', () => {
     shortTimeoutService: mockShortTimeoutService,
   };
 });
+
+// Mock Real-Time Progress Service
+vi.mock('../services/real-time-progress.service', () => ({
+  realTimeProgressService: {
+    sendProgressUpdate: vi.fn(),
+  },
+}));
 
 // Mock SuperMemo Service
 vi.mock('../services/supermemo.service', () => {
