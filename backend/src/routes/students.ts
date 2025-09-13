@@ -1,7 +1,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { enhancedDatabaseService as databaseService } from '../services/enhanced-database.service.js';
-import { getStudentWithProgress } from '../db/optimized-queries';
+import { getStudentWithProgress, getRecommendedExercises } from '../db/optimized-queries';
 import { realTimeProgressService } from '../services/real-time-progress.service.js';
 import { db } from '../db/connection';
 import { students } from '../db/schema';
@@ -95,7 +95,8 @@ export default async function studentRoutes(fastify: FastifyInstance) {
       return reply.status(400).send({ success: false, error: { message: 'Paramètre limit invalide', code: 'INVALID_LIMIT' } });
     }
     try {
-      const recommendations = await databaseService.getRecommendedExercises(studentId, exerciseLimit);
+      // Use the optimized query which has a more intelligent recommendation algorithm
+      const recommendations = await getRecommendedExercises(studentId, exerciseLimit);
       return reply.send({ success: true, data: recommendations });
     } catch (error) {
       (fastify.log as any).error('Get recommendations error:', error);

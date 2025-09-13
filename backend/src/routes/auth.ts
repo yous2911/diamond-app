@@ -63,7 +63,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
         }
 
         const { student } = authResult;
-        const payload = { studentId: student.id, email: student.email };
+        const payload = { studentId: student.id, email: student.email, role: student.role };
 
         // In test mode, return a mock token that matches what mockAuthenticate expects
         const accessToken = process.env.NODE_ENV === 'test' 
@@ -132,7 +132,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
         }
         
         const { student } = authResult;
-        const payload = { studentId: student.id, email: student.email };
+        const payload = { studentId: student.id, email: student.email, role: student.role };
 
         const accessToken = await reply.jwtSign(payload);
 

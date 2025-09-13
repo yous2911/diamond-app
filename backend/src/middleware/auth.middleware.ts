@@ -44,15 +44,12 @@ export async function authenticateMiddleware(
       });
     }
 
-    // Add user to request and determine role
-    const adminEmails = ['admin@revedkids.com', 'teacher@revedkids.com'];
-    const userRole = adminEmails.includes(decoded.email) ? 'admin' : 'student';
-
+    // The role is now included in the JWT payload, so we can read it directly.
     request.user = {
       studentId: decoded.studentId,
       email: decoded.email,
       type: decoded.type,
-      role: userRole,
+      role: decoded.role || 'student', // Default to 'student' if role is missing
     };
 
     return; // Continue with request
@@ -156,11 +153,8 @@ export async function authenticateAdminMiddleware(
     });
   }
 
-  // Check if user has admin privileges (implement based on your needs)
-  // For now, simple check - in production, check database role
-  const adminEmails = ['admin@revedkids.com', 'teacher@revedkids.com'];
-  
-  if (!adminEmails.includes((user as any).email)) {
+  // Check if user has admin privileges by looking at the role from the JWT
+  if ((user as any).role !== 'admin') {
     return reply.status(403).send({
       success: false,
       error: {
