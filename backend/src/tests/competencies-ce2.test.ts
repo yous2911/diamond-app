@@ -5,7 +5,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { FastifyInstance } from 'fastify';
-import { buildApp } from '../app';
+import { app } from './setup';
 import { competenciesService } from '../services/competencies.service';
 
 // Mock data for CE2 competencies
@@ -30,24 +30,19 @@ const mockCE2Content = {
 };
 
 describe('CE2 Competencies Implementation', () => {
-  let app: FastifyInstance;
   let mockDb: any;
 
   beforeEach(async () => {
-    // Build app with test configuration
-    app = await buildApp({
-      logger: false,
-      pluginTimeout: 10000
-    });
+    // App is already built in setup.ts
 
     // Mock database
     mockDb = {
       execute: vi.fn()
     };
-    app.db = mockDb;
+    (app as any).db = mockDb;
 
     // Mock Redis
-    app.redis = {
+    (app as any).redis = {
       get: vi.fn(),
       setex: vi.fn(),
       del: vi.fn()
@@ -57,7 +52,7 @@ describe('CE2 Competencies Implementation', () => {
   });
 
   afterEach(async () => {
-    await app.close();
+    // Don't close the app between tests to prevent "Fastify has already been closed" errors
     vi.clearAllMocks();
   });
 
@@ -158,8 +153,8 @@ describe('CE2 Competencies Implementation', () => {
     describe('GET /api/competences', () => {
       it('should return competencies list with caching', async () => {
         mockDb.execute.mockResolvedValueOnce([[mockCE2Competency]]);
-        app.redis.get.mockResolvedValueOnce(null); // Cache miss
-        app.redis.setex.mockResolvedValueOnce('OK');
+        (app as any).redis.get.mockResolvedValueOnce(null); // Cache miss
+        (app as any).redis.setex.mockResolvedValueOnce('OK');
 
         const response = await app.inject({
           method: 'GET',
@@ -171,12 +166,12 @@ describe('CE2 Competencies Implementation', () => {
         expect(data.success).toBe(true);
         expect(data.cached).toBe(false);
         expect(data.data).toEqual([mockCE2Competency]);
-        expect(app.redis.setex).toHaveBeenCalled();
+        expect((app as any).redis.setex).toHaveBeenCalled();
       });
 
       it('should return cached competencies', async () => {
         const cachedData = [mockCE2Competency];
-        app.redis.get.mockResolvedValueOnce(JSON.stringify(cachedData));
+        (app as any).redis.get.mockResolvedValueOnce(JSON.stringify(cachedData));
 
         const response = await app.inject({
           method: 'GET',
@@ -192,9 +187,9 @@ describe('CE2 Competencies Implementation', () => {
       });
 
       it('should handle Redis cache errors gracefully', async () => {
-        app.redis.get.mockRejectedValueOnce(new Error('Redis error'));
+        (app as any).redis.get.mockRejectedValueOnce(new Error('Redis error'));
         mockDb.execute.mockResolvedValueOnce([[mockCE2Competency]]);
-        app.redis.setex.mockRejectedValueOnce(new Error('Redis set error'));
+        (app as any).redis.setex.mockRejectedValueOnce(new Error('Redis set error'));
 
         const response = await app.inject({
           method: 'GET',
@@ -211,8 +206,8 @@ describe('CE2 Competencies Implementation', () => {
     describe('GET /api/competences/:code', () => {
       it('should return CE2 competency with content', async () => {
         mockDb.execute.mockResolvedValueOnce([[mockCE2Competency]]);
-        app.redis.get.mockResolvedValueOnce(null);
-        app.redis.setex.mockResolvedValueOnce('OK');
+        (app as any).redis.get.mockResolvedValueOnce(null);
+        (app as any).redis.setex.mockResolvedValueOnce('OK');
         
         // Mock content loading
         vi.spyOn(competenciesService, 'loadCompetencyContent')
@@ -257,7 +252,7 @@ describe('CE2 Competencies Implementation', () => {
 
       it('should return cached competency', async () => {
         const cachedCompetency = { ...mockCE2Competency, content: mockCE2Content };
-        app.redis.get.mockResolvedValueOnce(JSON.stringify(cachedCompetency));
+        (app as any).redis.get.mockResolvedValueOnce(JSON.stringify(cachedCompetency));
 
         const response = await app.inject({
           method: 'GET',
@@ -284,7 +279,8 @@ describe('CE2 Competencies Implementation', () => {
         ];
 
         // Mock the database service call
-        vi.spyOn(require('../services/enhanced-database.service').enhancedDatabaseService, 'getCompetencePrerequisites')
+        const enhancedDbService = await import('../services/enhanced-database.service');
+        vi.spyOn(enhancedDbService.enhancedDatabaseService, 'getCompetencePrerequisites')
           .mockResolvedValueOnce(mockPrerequisites);
 
         const response = await app.inject({
@@ -386,15 +382,15 @@ describe('CE2 Competencies Implementation', () => {
   describe('Performance and Caching', () => {
     it('should cache competencies list with correct TTL', async () => {
       mockDb.execute.mockResolvedValueOnce([[mockCE2Competency]]);
-      app.redis.get.mockResolvedValueOnce(null);
-      app.redis.setex.mockResolvedValueOnce('OK');
+      (app as any).redis.get.mockResolvedValueOnce(null);
+      (app as any).redis.setex.mockResolvedValueOnce('OK');
 
       await app.inject({
         method: 'GET',
         url: '/api/competences?level=CE2'
       });
 
-      expect(app.redis.setex).toHaveBeenCalledWith(
+      expect((app as any).redis.setex).toHaveBeenCalledWith(
         'comp:list:CE2:all:100:0',
         300, // 5 minutes TTL
         JSON.stringify([mockCE2Competency])
@@ -403,8 +399,8 @@ describe('CE2 Competencies Implementation', () => {
 
     it('should cache individual competency with correct TTL', async () => {
       mockDb.execute.mockResolvedValueOnce([[mockCE2Competency]]);
-      app.redis.get.mockResolvedValueOnce(null);
-      app.redis.setex.mockResolvedValueOnce('OK');
+      (app as any).redis.get.mockResolvedValueOnce(null);
+      (app as any).redis.setex.mockResolvedValueOnce('OK');
       
       vi.spyOn(competenciesService, 'loadCompetencyContent')
         .mockResolvedValueOnce(mockCE2Content);
@@ -414,7 +410,7 @@ describe('CE2 Competencies Implementation', () => {
         url: '/api/competences/CE2.FR.L.FL.01'
       });
 
-      expect(app.redis.setex).toHaveBeenCalledWith(
+      expect((app as any).redis.setex).toHaveBeenCalledWith(
         'comp:item:CE2.FR.L.FL.01',
         300, // 5 minutes TTL
         expect.any(String)

@@ -129,6 +129,10 @@ const mockWebSocketMessages = {
 
 beforeEach(() => {
   jest.clearAllMocks();
+  
+  // Set environment variable for consistent URL
+  process.env.REACT_APP_API_URL = 'http://localhost:3004';
+  
   // Reset WebSocket mock
   mockWebSocket.send.mockClear();
   mockWebSocket.close.mockClear();

@@ -244,7 +244,12 @@ vi.unmock('../../services/security-audit.service');
   };
 }); */
 
-import { logger } from '../../utils/logger';
+// Logger is now handled by the job logger or fastify logger
+const logger = {
+  error: console.error,
+  warn: console.warn,
+  info: console.info
+};
 import { 
   SecurityAuditService, 
   SecurityIncidentType, 
@@ -304,7 +309,7 @@ describe('SecurityAuditService', () => {
       expect(incident!.severity).toBe(SecuritySeverity.HIGH);
       expect(incident!.metadata.component).toBe(SecurityComponent.INPUT_SANITIZATION);
       expect(incident!.source.ip).toBe('192.168.1.100');
-      expect(incident!.details.blocked).toBe(true);
+      expect(incident!.blocked).toBe(true);
     });
 
     it('should generate security recommendations', async () => {

@@ -6,7 +6,13 @@
 import path from 'path';
 import fs from 'fs/promises';
 import { sql } from 'drizzle-orm';
-import { logger } from '../utils/logger.js';
+// Using console for logging since logger was moved to job-specific logger
+const logger = {
+  info: console.log,
+  error: console.error,
+  warn: console.warn,
+  debug: console.log
+};
 
 const __dirname = path.dirname(__filename);
 

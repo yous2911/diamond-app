@@ -35,8 +35,7 @@ describe('Students Routes', () => {
       method: 'POST',
       url: '/api/auth/login',
       payload: {
-        prenom: 'Alice',
-        nom: 'Dupont',
+        email: 'alice.dupont@test.com',
         password: 'test-password-123456'
       }
     });

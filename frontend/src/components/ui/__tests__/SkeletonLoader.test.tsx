@@ -40,7 +40,7 @@ describe('SkeletonLoader', () => {
   it('renders exercise skeleton correctly', () => {
     const { container } = render(<SkeletonLoader type="exercise" />);
     
-    const exerciseContainer = container.querySelector('.space-y-4');
+    const exerciseContainer = container.querySelector('.p-6');
     expect(exerciseContainer).toBeInTheDocument();
   });
 

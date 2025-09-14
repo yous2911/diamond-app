@@ -521,6 +521,32 @@ export default async function gdprRoutes(fastify: FastifyInstance) {
       try {
         const { requestType, requesterType, requestDetails, studentId, urgent = false, urgentRequest = false } = request.body as any;
         
+        // Validate request type
+        const validRequestTypes = ['access', 'rectification', 'erasure', 'portability', 'restriction', 'objection'];
+        if (!validRequestTypes.includes(requestType)) {
+          return reply.status(400).send({
+            success: false,
+            error: { message: 'Invalid request type', code: 'INVALID_REQUEST_TYPE' }
+          });
+        }
+        
+        // Validate requester type
+        const validRequesterTypes = ['parent', 'guardian', 'student', 'legal_representative'];
+        if (!validRequesterTypes.includes(requesterType)) {
+          return reply.status(400).send({
+            success: false,
+            error: { message: 'Invalid requester type', code: 'INVALID_REQUESTER_TYPE' }
+          });
+        }
+        
+        // Validate required fields
+        if (!requestDetails || typeof requestDetails !== 'string' || requestDetails.length < 10) {
+          return reply.status(400).send({
+            success: false,
+            error: { message: 'Request details must be at least 10 characters long', code: 'INVALID_REQUEST_DETAILS' }
+          });
+        }
+        
         const requestId = 'mock-request-' + Date.now();
         const isUrgent = urgent || urgentRequest;
         const deadline = new Date(Date.now() + (isUrgent ? 3 : 30) * 24 * 60 * 60 * 1000);
@@ -626,21 +652,35 @@ export default async function gdprRoutes(fastify: FastifyInstance) {
   fastify.post('/consent/preferences', {
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const { studentId, dataProcessing, educationalContent, progressTracking, marketing } = request.body as any;
+        const { essential, functional, analytics, marketing, personalization } = request.body as any;
+        
+        // Validate that all preference fields are boolean
+        const booleanFields = ['essential', 'functional', 'analytics', 'marketing', 'personalization'];
+        for (const field of booleanFields) {
+          if (request.body[field] !== undefined && typeof request.body[field] !== 'boolean') {
+            return reply.status(400).send({
+              success: false,
+              error: { message: `Field ${field} must be a boolean`, code: 'INVALID_FIELD_TYPE' }
+            });
+          }
+        }
+        
+        // Validate that all required fields are present
+        const requiredFields = ['essential', 'functional', 'analytics', 'marketing', 'personalization'];
+        for (const field of requiredFields) {
+          if (request.body[field] === undefined) {
+            return reply.status(400).send({
+              success: false,
+              error: { message: `Field ${field} is required`, code: 'MISSING_REQUIRED_FIELD' }
+            });
+          }
+        }
         
         return reply.send({
           success: true,
           data: {
-            studentId,
             preferencesId: '12345678-1234-4567-8901-123456789012',
-            preferences: {
-              dataProcessing,
-              educationalContent,
-              progressTracking,
-              marketing
-            },
-            updatedAt: new Date().toISOString(),
-            message: 'Préférences de consentement mises à jour avec succès'
+            message: 'Consent preferences updated successfully'
           }
         });
       } catch (error) {
