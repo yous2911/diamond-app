@@ -1,16 +1,20 @@
 import { FastifyInstance } from 'fastify';
 import { enhancedDatabaseService as databaseService } from '../services/enhanced-database.service.js';
 import { competenciesService } from '../services/competencies.service.js';
+import {
+  GetCompetenciesSchema,
+  GetCompetenceSchema,
+  GetPrerequisitesSchema,
+  GetProgressSchema,
+} from '../schemas/competence.schema.js';
 
 export default async function competencesRoutes(fastify: FastifyInstance) {
   // GET /api/competences - List all competencies with optional filtering
-  fastify.get('/', async (request, reply) => {
+  fastify.get('/', { schema: GetCompetenciesSchema }, async (request, reply) => {
     try {
-      const { level, subject, limit = 100, offset = 0 } = request.query as any;
-      const filters = { level, subject, limit, offset };
+      const filters = request.query;
       const cacheKey = competenciesService.generateListCacheKey(filters);
-      
-      // Try Redis cache first
+
       let competencies;
       try {
         const cached = await fastify.redis.get(cacheKey);
@@ -22,10 +26,8 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
         fastify.log.warn('Redis cache miss or error');
       }
 
-      // Get competencies using service
       competencies = await competenciesService.getCompetenciesList(fastify.db, filters);
 
-      // Cache for 5 minutes
       try {
         await fastify.redis.setex(cacheKey, 300, JSON.stringify(competencies));
       } catch (redisError) {
@@ -43,21 +45,11 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
   });
 
   // GET /api/competences/:code - Get specific competency with JSON content
-  fastify.get('/:code', async (request, reply) => {
+  fastify.get('/:code', { schema: GetCompetenceSchema }, async (request, reply) => {
     try {
-      const { code } = request.params as { code: string };
-      
-      // Validate competency code format
-      if (!competenciesService.validateCompetencyCode(code)) {
-        return reply.status(400).send({
-          success: false,
-          error: { message: 'Invalid competency code format', code: 'INVALID_CODE_FORMAT' }
-        });
-      }
-
+      const { code } = request.params;
       const cacheKey = competenciesService.generateItemCacheKey(code);
-      
-      // Try Redis cache first
+
       let competency;
       try {
         const cached = await fastify.redis.get(cacheKey);
@@ -69,7 +61,6 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
         fastify.log.warn('Redis cache miss or error');
       }
 
-      // Get competency using service
       competency = await competenciesService.getCompetencyWithContent(fastify.db, code);
 
       if (!competency) {
@@ -79,7 +70,6 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
         });
       }
 
-      // Cache for 5 minutes
       try {
         await fastify.redis.setex(cacheKey, 300, JSON.stringify(competency));
       } catch (redisError) {
@@ -95,31 +85,13 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
       });
     }
   });
-  // GET /api/competences/:code/prerequisites - Get prerequisites for a competence
-  fastify.get('/:code/prerequisites', {
-    schema: {
-      params: {
-        type: 'object',
-        required: ['code'],
-        properties: {
-          code: { type: 'string' }
-        }
-      },
-      querystring: {
-        type: 'object',
-        properties: {
-          includePrerequisiteDetails: { type: 'boolean', default: true },
-          studentId: { type: 'number' },
-          depth: { type: 'number', default: 1, minimum: 1, maximum: 5 }
-        }
-      }
-    }
-  }, async (request, reply) => {
-    try {
-      const { code: competenceCode } = request.params as { code: string };
-      const { includePrerequisiteDetails = true, studentId, depth = 1 } = request.query as any;
 
-      // Get direct prerequisites
+  // GET /api/competences/:code/prerequisites - Get prerequisites for a competence
+  fastify.get('/:code/prerequisites', { schema: GetPrerequisitesSchema }, async (request, reply) => {
+    try {
+      const { code: competenceCode } = request.params;
+      const { includePrerequisiteDetails, studentId, depth } = request.query;
+
       const prerequisites = await databaseService.getCompetencePrerequisites(competenceCode, {
         includeDetails: includePrerequisiteDetails,
         depth
@@ -127,14 +99,12 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
 
       let studentProgressData = null;
       if (studentId) {
-        // Get student's progress on prerequisites if studentId provided
         const prerequisiteCodes = prerequisites.map(p => p.prerequisiteCode);
         studentProgressData = await databaseService.getStudentCompetenceProgress(studentId, {
           competenceCodes: prerequisiteCodes
         });
       }
 
-      // Build prerequisite tree with student progress
       const prerequisiteTree = await Promise.all(prerequisites.map(async prereq => {
         const studentProgress = studentProgressData?.find(
           sp => sp.competenceCode === prereq.prerequisiteCode
@@ -144,11 +114,9 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
           id: prereq.id,
           competenceCode: competenceCode,
           prerequisiteCode: prereq.prerequisiteCode,
-          isRequired: true, // Default to required
-          weight: 1, // Default weight
+          isRequired: true,
+          weight: 1,
           minimumLevel: prereq.minimumLevel,
-          
-          // Student progress info (if available)
           studentProgress: studentProgress ? {
             masteryLevel: studentProgress.masteryLevel,
             currentScore: parseFloat(studentProgress.currentScore.toString()),
@@ -159,22 +127,16 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
         };
       }));
 
-      // Calculate overall readiness
       const readinessAnalysis = {
         totalPrerequisites: prerequisites.length,
-        requiredPrerequisites: prerequisites.length, // All are required by default
-        
-        // Student readiness (if student data available)
+        requiredPrerequisites: prerequisites.length,
         studentReadiness: studentProgressData ? {
-          requiredMet: prerequisites
-            // All prerequisites treated as required
-            .every(p => {
+          requiredMet: prerequisites.every(p => {
               const progress = studentProgressData.find(sp => sp.competenceCode === p.prerequisiteCode);
               return progress && progress.masteryLevel !== 'decouverte';
             }),
           readinessScore: calculateReadinessScore(prerequisites, studentProgressData),
           blockers: prerequisites
-            // All prerequisites treated as required
             .filter(p => {
               const progress = studentProgressData.find(sp => sp.competenceCode === p.prerequisiteCode);
               return !progress || progress.masteryLevel === 'decouverte';
@@ -198,7 +160,7 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
       });
 
     } catch (error) {
-      (fastify.log as any).error('Error getting competence prerequisites:', error);
+      fastify.log.error('Error getting competence prerequisites:', error);
       reply.status(500).send({
         success: false,
         error: {
@@ -209,32 +171,13 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // GET /api/competences/:code/progress - Get competence progress for all students or specific student
-  fastify.get('/:code/progress', {
-    schema: {
-      params: {
-        type: 'object',
-        required: ['code'],
-        properties: {
-          code: { type: 'string' }
-        }
-      },
-      querystring: {
-        type: 'object',
-        properties: {
-          studentId: { type: 'number' },
-          limit: { type: 'number', default: 50 },
-          offset: { type: 'number', default: 0 }
-        }
-      }
-    }
-  }, async (request, reply) => {
+  // GET /api/competences/:code/progress - Get competence progress
+  fastify.get('/:code/progress', { schema: GetProgressSchema }, async (request, reply) => {
     try {
-      const { code: competenceCode } = request.params as { code: string };
-      const { studentId, limit = 50, offset = 0 } = request.query as any;
+      const { code: competenceCode } = request.params;
+      const { studentId } = request.query;
 
       if (studentId) {
-        // Get specific student's progress
         const progress = await databaseService.getStudentCompetenceProgress(studentId, {
           competenceCodes: [competenceCode]
         });
@@ -242,7 +185,7 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
         const studentProgress = progress.find(p => p.competenceCode === competenceCode);
 
         if (!studentProgress) {
-          reply.status(404).send({
+          return reply.status(404).send({
             success: false,
             error: {
               message: 'No progress found for this competence',
@@ -268,8 +211,6 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
           }
         });
       } else {
-        // Get all students' progress for this competence
-        // This would require a different query - simplified for now
         reply.send({
           success: true,
           data: {
@@ -280,7 +221,7 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
       }
 
     } catch (error) {
-      (fastify.log as any).error('Error getting competence progress:', error);
+      fastify.log.error('Error getting competence progress:', error);
       reply.status(500).send({
         success: false,
         error: {
