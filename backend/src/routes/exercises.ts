@@ -20,6 +20,7 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
   // Create module with competence mapping
   fastify.post('/modules', {
     preHandler: fastify.authenticate,
+    preValidation: fastify.csrfProtection,
     schema: CreateModuleSchema,
   }, async (request, reply) => {
     try {
@@ -41,6 +42,7 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
   // Generate exercises from competence codes
   fastify.post('/generate', {
     preHandler: fastify.authenticate,
+    preValidation: fastify.csrfProtection,
     schema: GenerateExercisesSchema,
   }, async (request, reply) => {
     try {
@@ -104,6 +106,7 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
   // Create exercise
   fastify.post('/', {
     preHandler: fastify.authenticate,
+    preValidation: fastify.csrfProtection,
     schema: CreateExerciseSchema,
   }, async (request, reply) => {
     try {
@@ -125,6 +128,7 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
   // Update exercise
   fastify.put('/:id', {
     preHandler: fastify.authenticate,
+    preValidation: fastify.csrfProtection,
     schema: UpdateExerciseSchema,
   }, async (request, reply) => {
     try {
@@ -147,6 +151,7 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
   // Delete exercise
   fastify.delete('/:id', {
     preHandler: fastify.authenticate,
+    preValidation: fastify.csrfProtection,
     schema: { params: CommonIdParams },
   }, async (request, reply) => {
     try {
@@ -201,6 +206,7 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
   // Submit exercise attempt
   fastify.post('/attempt', {
     preHandler: fastify.authenticate,
+    preValidation: fastify.csrfProtection,
     schema: AttemptExerciseSchema,
   }, async (request, reply) => {
     try {

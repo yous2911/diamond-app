@@ -42,6 +42,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
     schema: {
       body: loginSchema,
     },
+    preValidation: fastify.csrfProtection,
     handler: async (
       request: FastifyRequest<{ Body: LoginRequestBody }>,
       reply: FastifyReply
@@ -85,6 +86,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
           maxAge: sevenDaysInSeconds,
         });
 
+      const csrfToken = await reply.generateCsrf();
       return reply.send({
         success: true,
         data: {
@@ -93,6 +95,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
             email: student.email,
             role: student.role,
           },
+          csrfToken,
           message: 'Connexion réussie',
         },
       });
@@ -104,6 +107,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
     schema: {
       body: registerSchema,
     },
+    preValidation: fastify.csrfProtection,
     handler: async (
       request: FastifyRequest<{ Body: RegisterRequestBody }>,
       reply: FastifyReply
@@ -154,6 +158,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
         name: student.prenom,
       });
 
+      const csrfToken = await reply.generateCsrf();
       return reply.status(201).send({
         success: true,
         data: {
@@ -162,6 +167,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
             email: student.email,
             role: student.role,
           },
+          csrfToken,
           message: 'Compte créé avec succès',
         },
       });
@@ -170,6 +176,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
 
   // Refresh access token
   fastify.post('/refresh', {
+    preValidation: fastify.csrfProtection,
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const refreshToken = request.cookies['refresh-token'];
@@ -227,6 +234,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
   // Password reset request
   fastify.post('/password-reset', {
     schema: authSchemas.passwordReset,
+    preValidation: fastify.csrfProtection,
     handler: async (
       request: FastifyRequest<{ Body: PasswordResetBody }>,
       reply: FastifyReply
@@ -263,6 +271,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
   // Password reset confirmation
   fastify.post('/password-reset/confirm', {
     schema: authSchemas.passwordResetConfirm,
+    preValidation: fastify.csrfProtection,
     handler: async (
       request: FastifyRequest<{ Body: PasswordResetConfirmBody }>,
       reply: FastifyReply
@@ -304,6 +313,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
 
   // Logout endpoint
   fastify.post('/logout', {
+    preValidation: fastify.csrfProtection,
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         const { 'refresh-token': refreshToken } = request.cookies;
@@ -345,6 +355,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
     ) => {
       // The user object is decorated by the authenticate middleware
       const user = (request as AuthenticatedRequest).user;
+      const csrfToken = await reply.generateCsrf();
 
       return reply.send({
         success: true,
@@ -353,7 +364,8 @@ export default async function authRoutes(fastify: FastifyInstance) {
             id: user.studentId,
             email: user.email
             // Add other safe user data from a dedicated user service
-          }
+          },
+          csrfToken,
         },
       });
     }

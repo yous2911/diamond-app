@@ -15,16 +15,6 @@ const csrfPlugin: FastifyPluginAsync = async (fastify) => {
       sameSite: 'strict',
       path: '/',
     },
-    getToken: (req) => {
-      // Get token from standard 'x-csrf-token' header
-      return req.headers['x-csrf-token'] as string;
-    },
-  });
-
-  // Optional: Create a dedicated route for the frontend to get the CSRF token
-  fastify.get('/api/csrf-token', (request, reply) => {
-    const token = reply.generateCsrf();
-    reply.send({ token });
   });
 
   fastify.log.info('✅ CSRF Protection plugin registered successfully.');

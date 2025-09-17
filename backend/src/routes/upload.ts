@@ -137,6 +137,7 @@ const uploadRoutes: FastifyPluginAsync = async (fastify) => {
    * Upload files endpoint
    */
   fastify.post('/upload', {
+    preValidation: fastify.csrfProtection,
     schema: {
       description: 'Upload files with metadata and processing options',
       tags: ['Upload'],
@@ -349,6 +350,7 @@ const uploadRoutes: FastifyPluginAsync = async (fastify) => {
    * Delete file
    */
   fastify.delete('/files/:fileId', {
+    preValidation: fastify.csrfProtection,
     schema: {
       description: 'Delete file by ID',
       tags: ['Upload'],
@@ -491,6 +493,7 @@ const uploadRoutes: FastifyPluginAsync = async (fastify) => {
    * Process image (resize, compress, convert)
    */
   fastify.post('/images/:fileId/process', {
+    preValidation: fastify.csrfProtection,
     schema: {
       description: 'Process image file with various operations',
       tags: ['Upload'],

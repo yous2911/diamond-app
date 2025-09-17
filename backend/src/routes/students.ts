@@ -72,6 +72,7 @@ export default async function studentRoutes(fastify: FastifyInstance) {
   // Student exercise attempts endpoint
   fastify.post('/:id/attempts', {
     preHandler: fastify.authenticate,
+    preValidation: fastify.csrfProtection,
     schema: AttemptSchema
   }, async (request, reply) => {
     const { id: studentId } = request.params;
@@ -162,6 +163,7 @@ export default async function studentRoutes(fastify: FastifyInstance) {
   // Update student profile (uses the authenticated user's ID)
   fastify.put('/profile', {
     preHandler: fastify.authenticate,
+    preValidation: fastify.csrfProtection,
     schema: UpdateProfileSchema
   }, async (request, reply) => {
     try {
@@ -204,6 +206,7 @@ export default async function studentRoutes(fastify: FastifyInstance) {
   // POST /api/students/:id/record-progress
   fastify.post('/:id/record-progress', {
     preHandler: fastify.authenticate,
+    preValidation: fastify.csrfProtection,
     schema: RecordProgressSchema
   }, async (request, reply) => {
     const { id: studentId } = request.params as FromSchema<typeof RecordProgressSchema.params>;
