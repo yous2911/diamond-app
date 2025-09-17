@@ -115,7 +115,7 @@ describe('CSRF Protection', () => {
   });
 
   it('should accept a multipart/form-data POST request with a valid CSRF token in the body', async () => {
-    const FormData = require('form-data');
+    const { default: FormData } = await import('form-data');
     const form = new FormData();
     form.append('_csrf', csrfToken);
     form.append('file', Buffer.from('test file content'), 'test.txt');

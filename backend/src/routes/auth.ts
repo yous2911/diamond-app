@@ -10,10 +10,6 @@ import { serviceContainer } from '../container/service.container';
 type LoginRequestBody = z.infer<typeof loginSchema>;
 type RegisterRequestBody = z.infer<typeof registerSchema>;
 
-interface RefreshTokenBody {
-  refreshToken: string;
-}
-
 interface PasswordResetBody {
   email: string;
 }
@@ -65,7 +61,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
       const accessToken = await reply.jwtSign(accessTokenPayload, {
         expiresIn: '15m',
       });
-      const refreshToken = await (fastify as any).refreshJwt.sign(
+      const refreshToken = await (fastify as { refreshJwt: { sign: (payload: any, options: any) => Promise<string> } }).refreshJwt.sign(
         refreshTokenPayload,
         { expiresIn: '7d' }
       );
@@ -131,7 +127,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
       const accessToken = await reply.jwtSign(accessTokenPayload, {
         expiresIn: '15m',
       });
-      const refreshToken = await (fastify as any).refreshJwt.sign(
+      const refreshToken = await (fastify as { refreshJwt: { sign: (payload: any, options: any) => Promise<string> } }).refreshJwt.sign(
         refreshTokenPayload,
         { expiresIn: '7d' }
       );
@@ -187,7 +183,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
             .send({ error: 'Token de rafraîchissement manquant' });
         }
 
-        const decoded = await (fastify as any).refreshJwt.verify(refreshToken);
+        const decoded = await (fastify as { refreshJwt: { verify: (token: string) => Promise<any> } }).refreshJwt.verify(refreshToken);
 
         // CRITICAL: Check if token is revoked
         const isRevoked = await fastify.cache.get(`denylist:${decoded.jti}`);
@@ -319,7 +315,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
         const { 'refresh-token': refreshToken } = request.cookies;
 
         if (refreshToken) {
-          const decoded = await (fastify as any).refreshJwt.verify(
+          const decoded = await (fastify as { refreshJwt: { verify: (token: string) => Promise<any> } }).refreshJwt.verify(
             refreshToken
           );
           // Add token JTI to denylist to invalidate it
@@ -388,7 +384,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
 
   // This endpoint seems for testing/verification, should be secured or removed
   fastify.get('/verify/:studentId', {
-    preHandler: [(fastify as any).authenticateAdmin], // Secure this endpoint
+    preHandler: [(fastify as { authenticateAdmin: any }).authenticateAdmin], // Secure this endpoint
     handler: async (
       request: FastifyRequest<{ Params: { studentId: string } }>,
       reply: FastifyReply
