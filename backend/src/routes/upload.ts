@@ -177,7 +177,7 @@ const uploadRoutes: FastifyPluginAsync = async (fastify) => {
       }
     },
     preHandler: [fastify.authenticate], // Require authentication
-    handler: async (request: FastifyRequest<{ Body: Record<string, any> }>, reply) => {
+    handler: async (request: FastifyRequest<{ Body: Record<string, { value?: string; data?: Buffer; filename?: string; mimetype?: string; encoding?: string }> }>, reply) => {
         const studentId = (request as AuthenticatedRequest).user?.studentId || 'anonymous';
         const data = request.body;
 
