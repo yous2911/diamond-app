@@ -64,6 +64,11 @@ const configSchema = z.object({
   DB_NAME: z.string().default('reved_kids'),
   DB_CONNECTION_LIMIT: z.coerce.number().default(20),
   
+  // SSL Configuration for Production
+  DB_SSL_CA: z.string().optional(),
+  DB_SSL_KEY: z.string().optional(),
+  DB_SSL_CERT: z.string().optional(),
+  
   // Redis Configuration (optional)
   REDIS_HOST: z.string().default('localhost'),
   REDIS_PORT: z.coerce.number().default(6379),
@@ -383,7 +388,12 @@ export function validateEnvironment(): void {
     }
     
     if (!config.DB_PASSWORD) {
-      warnings.push('Database password is empty in production');
+      errors.push('Database password is required in production');
+    }
+    
+    // SSL Certificate validation for production
+    if (!config.DB_SSL_CA) {
+      errors.push('DB_SSL_CA is required in production for secure database connections');
     }
     
     if (!config.HTTPS_ONLY) {

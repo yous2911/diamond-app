@@ -6,16 +6,30 @@ import { logger } from '../utils/logger';
 // Re-export config for other modules
 export { config } from '../config/config';
 
+// Input sanitization for database credentials
+function sanitizeDatabaseConfig(config: any) {
+  return {
+    host: config.host?.replace(/[^a-zA-Z0-9.-]/g, '') || 'localhost',
+    port: Math.max(1, Math.min(65535, parseInt(config.port) || 3306)),
+    user: config.user?.replace(/[^a-zA-Z0-9_]/g, '') || 'root',
+    password: config.password || '',
+    database: config.database?.replace(/[^a-zA-Z0-9_]/g, '') || 'reved_kids',
+    connectionLimit: Math.max(1, Math.min(100, parseInt(config.connectionLimit) || 20))
+  };
+}
+
 // Enhanced MySQL connection pool configuration
+const sanitizedConfig = sanitizeDatabaseConfig(dbConfig);
+
 const poolConfig = {
-  host: dbConfig.host,
-  port: dbConfig.port,
-  user: dbConfig.user,
-  password: dbConfig.password,
-  database: dbConfig.database,
+  host: sanitizedConfig.host,
+  port: sanitizedConfig.port,
+  user: sanitizedConfig.user,
+  password: sanitizedConfig.password,
+  database: sanitizedConfig.database,
   
   // Connection pool settings
-  connectionLimit: dbConfig.connectionLimit,
+  connectionLimit: sanitizedConfig.connectionLimit,
   
   // Performance optimizations
   multipleStatements: false,    // Security: prevent SQL injection via multiple statements
@@ -23,15 +37,14 @@ const poolConfig = {
   supportBigNumbers: true,      // Support for big integers
   bigNumberStrings: true,      // Return big numbers as strings
   
-  // Production optimizations
-  ...(isProduction && {
-    ssl: dbConfig.ssl ? {
-      rejectUnauthorized: false, // Allow self-signed certificates in production
-      ca: process.env.DB_SSL_CA,
-      key: process.env.DB_SSL_KEY,
-      cert: process.env.DB_SSL_CERT
-    } : undefined,
-  }),
+  // Secure SSL configuration for production
+  ssl: dbConfig.ssl ? {
+    // Enforce SSL certificate validation in production for security
+    rejectUnauthorized: true, 
+    ca: process.env.DB_SSL_CA,
+    key: process.env.DB_SSL_KEY,
+    cert: process.env.DB_SSL_CERT
+  } : undefined,
   
   // Development settings
   ...(!isProduction && {
@@ -90,9 +103,30 @@ connection.on('release', (conn: any) => {
   });
 });
 
-// Handle pool errors
-(connection as any).on('error', (error: Error) => {
-  logger.error('Database pool error', { error: error.message });
+// Handle pool errors with enhanced security logging
+(connection as any).on('error', (error: any) => {
+  const errorInfo = {
+    message: error.message,
+    code: error.code,
+    errno: error.errno,
+    sqlState: error.sqlState,
+    sqlMessage: error.sqlMessage
+  };
+
+  // Enhanced error categorization for security monitoring
+  if (error.code === 'ER_ACCESS_DENIED_ERROR') {
+    logger.error('Database access denied - check credentials', errorInfo);
+  } else if (error.code === 'ECONNREFUSED') {
+    logger.error('Database connection refused - check host/port', errorInfo);
+  } else if (error.code === 'ER_BAD_DB_ERROR') {
+    logger.error('Database does not exist', errorInfo);
+  } else if (error.code === 'ER_DUP_ENTRY') {
+    logger.warn('Database duplicate entry error', errorInfo);
+  } else if (error.code === 'ER_LOCK_WAIT_TIMEOUT') {
+    logger.warn('Database lock wait timeout', errorInfo);
+  } else {
+    logger.error('Database pool error', errorInfo);
+  }
 });
 
 // Get connection pool statistics
@@ -246,12 +280,21 @@ export async function connectDatabase(): Promise<void> {
   }
 
   try {
+    // Validate SSL configuration for production
+    if (isProduction && dbConfig.ssl) {
+      if (!process.env.DB_SSL_CA) {
+        throw new Error('DB_SSL_CA is required in production for secure database connections');
+      }
+      logger.info('SSL certificate validation enabled for production');
+    }
+
     logger.info('Initializing database connection...', {
-      host: dbConfig.host,
-      port: dbConfig.port,
-      database: dbConfig.database,
-      connectionLimit: dbConfig.connectionLimit,
-      environment: config.NODE_ENV
+      host: sanitizedConfig.host,
+      port: sanitizedConfig.port,
+      database: sanitizedConfig.database,
+      connectionLimit: sanitizedConfig.connectionLimit,
+      environment: config.NODE_ENV,
+      sslEnabled: !!dbConfig.ssl
     });
 
     // Test initial connection
