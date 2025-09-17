@@ -37,7 +37,7 @@ describe('ErrorBoundary', () => {
       </ErrorBoundary>
     );
 
-    expect(screen.getByText('Oups ! Quelque chose s\'est mal passé')).toBeInTheDocument();
+    expect(screen.getByText("Oups ! Quelque chose s'est mal passé")).toBeInTheDocument();
     expect(screen.getByText(/Ne t'inquiète pas/)).toBeInTheDocument();
   });
 
@@ -70,19 +70,31 @@ describe('ErrorBoundary', () => {
     );
   });
 
-  it('shows retry button and handles retry', () => {
-    const { rerender } = render(
+  it('successfully retries and renders children', () => {
+    let shouldThrow = true;
+    const VolatileComponent = () => {
+      if (shouldThrow) {
+        throw new Error('I will only throw once');
+      }
+      return <div>I am back!</div>;
+    };
+
+    render(
       <ErrorBoundary>
-        <ProblematicComponent shouldThrow={true} />
+        <VolatileComponent />
       </ErrorBoundary>
     );
 
-    expect(screen.getByText('🔄 Réessayer')).toBeInTheDocument();
+    // Initially, the error boundary shows the fallback UI
+    expect(screen.getByText("Oups ! Quelque chose s'est mal passé")).toBeInTheDocument();
 
+    // After clicking retry, the component should no longer throw
+    shouldThrow = false;
     fireEvent.click(screen.getByText('🔄 Réessayer'));
 
-    // The component should attempt to render children again
-    expect(screen.getByText('🔄 Réessayer')).toBeInTheDocument();
+    // The ErrorBoundary should now render the children component
+    expect(screen.getByText('I am back!')).toBeInTheDocument();
+    expect(screen.queryByText("Oups ! Quelque chose s'est mal passé")).not.toBeInTheDocument();
   });
 
   it('shows home button and handles navigation', () => {

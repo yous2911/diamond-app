@@ -12,6 +12,7 @@ const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({ type, className = '' })
       case 'mascot':
         return (
           <motion.div 
+            data-testid={`skeleton-${type}`}
             className={`w-64 h-64 bg-gradient-to-br from-diamond-200 to-diamond-300 rounded-full ${className}`}
             animate={{ 
               opacity: [0.5, 1, 0.5],
@@ -28,6 +29,7 @@ const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({ type, className = '' })
       case 'xp-bar':
         return (
           <motion.div 
+            data-testid={`skeleton-${type}`}
             className={`h-8 bg-gradient-to-r from-diamond-100 to-diamond-200 rounded-full overflow-hidden ${className}`}
             animate={{ 
               background: [
@@ -44,7 +46,7 @@ const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({ type, className = '' })
 
       case 'wardrobe':
         return (
-          <div className={`grid grid-cols-3 gap-4 ${className}`}>
+          <div data-testid={`skeleton-${type}`} className={`grid grid-cols-3 gap-4 ${className}`}>
             {[1, 2, 3, 4, 5, 6].map((item) => (
               <motion.div
                 key={item}
@@ -67,6 +69,7 @@ const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({ type, className = '' })
       case 'exercise':
         return (
           <motion.div 
+            data-testid={`skeleton-${type}`}
             className={`p-6 bg-white/80 rounded-2xl backdrop-blur-sm ${className}`}
             animate={{ 
               opacity: [0.7, 1, 0.7],
@@ -88,6 +91,7 @@ const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({ type, className = '' })
       case 'card':
         return (
           <motion.div 
+            data-testid={`skeleton-${type}`}
             className={`p-4 bg-white/60 rounded-xl backdrop-blur-sm ${className}`}
             animate={{ 
               opacity: [0.8, 1, 0.8],
@@ -104,6 +108,7 @@ const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({ type, className = '' })
       default:
         return (
           <motion.div 
+            data-testid="skeleton-default"
             className={`w-32 h-32 bg-gradient-to-br from-diamond-200 to-diamond-300 rounded-lg ${className}`}
             animate={{ 
               opacity: [0.5, 1, 0.5],
