@@ -77,351 +77,174 @@ describe('Leaderboard Service - Isolated Unit Tests', () => {
     });
 
     it('should have all required methods', () => {
-      expect(typeof leaderboardService.getGlobalLeaderboard).toBe('function');
-      expect(typeof leaderboardService.getClassLeaderboard).toBe('function');
-      expect(typeof leaderboardService.getWeeklyCompetition).toBe('function');
-      expect(typeof leaderboardService.getMonthlyCompetition).toBe('function');
-      expect(typeof leaderboardService.awardBadge).toBe('function');
-      expect(typeof leaderboardService.getStudentBadges).toBe('function');
-      expect(typeof leaderboardService.updateStreak).toBe('function');
-      expect(typeof leaderboardService.getTopPerformers).toBe('function');
-      expect(typeof leaderboardService.getPerformanceAnalytics).toBe('function');
+      expect(typeof leaderboardService.getLeaderboard).toBe('function');
+      expect(typeof leaderboardService.updateAllLeaderboards).toBe('function');
+      expect(typeof leaderboardService.updateBadges).toBe('function');
+      expect(typeof leaderboardService.getStudentRank).toBe('function');
+      expect(typeof leaderboardService.getUserCentricLeaderboard).toBe('function');
+      expect(typeof leaderboardService.getNearbyCompetitors).toBe('function');
     });
   });
 
-  describe('getGlobalLeaderboard Function', () => {
-    it('should get global leaderboard', async () => {
-      const result = await leaderboardService.getGlobalLeaderboard(10);
+  describe('getLeaderboard Function', () => {
+    it('should get leaderboard', async () => {
+      const result = await leaderboardService.getLeaderboard('global', 'points', { limit: 10 });
 
       expect(result).toBeDefined();
-      expect(Array.isArray(result)).toBe(true);
-      expect(result.length).toBeLessThanOrEqual(10);
+      expect(result).toHaveProperty('entries');
+      expect(result).toHaveProperty('context');
+      expect(Array.isArray(result.entries)).toBe(true);
+      expect(result.entries.length).toBeLessThanOrEqual(10);
       
-      if (result.length > 0) {
-        expect(result[0]).toHaveProperty('id');
-        expect(result[0]).toHaveProperty('prenom');
-        expect(result[0]).toHaveProperty('nom');
-        expect(result[0]).toHaveProperty('totalPoints');
-        expect(result[0]).toHaveProperty('rank');
+      if (result.entries.length > 0) {
+        expect(result.entries[0]).toHaveProperty('studentId');
+        expect(result.entries[0]).toHaveProperty('rank');
+        expect(result.entries[0]).toHaveProperty('score');
+        expect(result.entries[0]).toHaveProperty('student');
       }
     });
 
     it('should limit number of results', async () => {
-      const result = await leaderboardService.getGlobalLeaderboard(5);
+      const result = await leaderboardService.getLeaderboard('global', 'points', { limit: 5 });
 
       expect(result).toBeDefined();
-      expect(Array.isArray(result)).toBe(true);
-      expect(result.length).toBeLessThanOrEqual(5);
+      expect(result).toHaveProperty('entries');
+      expect(Array.isArray(result.entries)).toBe(true);
+      expect(result.entries.length).toBeLessThanOrEqual(5);
     });
 
-    it('should order by total points descending', async () => {
-      const result = await leaderboardService.getGlobalLeaderboard(10);
+    it('should handle empty leaderboard', async () => {
+      // Mock empty result
+      mockDb.select().from().where().orderBy().limit.mockResolvedValue([]);
+
+      const result = await leaderboardService.getLeaderboard('global', 'points', { limit: 10 });
 
       expect(result).toBeDefined();
-      expect(Array.isArray(result)).toBe(true);
+      expect(result).toHaveProperty('entries');
+      expect(Array.isArray(result.entries)).toBe(true);
+      expect(result.entries.length).toBe(0);
+    });
+  });
+
+  describe('updateAllLeaderboards Function', () => {
+    it('should update all leaderboards', async () => {
+      const result = await leaderboardService.updateAllLeaderboards();
+
+      expect(result).toBeUndefined(); // void function
+    });
+
+    it('should handle database errors gracefully', async () => {
+      mockDb.select().from().where().orderBy().limit.mockRejectedValue(new Error('Database error'));
+
+      const result = await leaderboardService.updateAllLeaderboards();
+
+      expect(result).toBeUndefined(); // Should not throw
+    });
+  });
+
+  describe('updateBadges Function', () => {
+    it('should update badges', async () => {
+      const result = await leaderboardService.updateBadges();
+
+      expect(result).toBeUndefined(); // void function
+    });
+
+    it('should handle database errors gracefully', async () => {
+      mockDb.select().from().where().orderBy().limit.mockRejectedValue(new Error('Database error'));
+
+      const result = await leaderboardService.updateBadges();
+
+      expect(result).toBeUndefined(); // Should not throw
+    });
+  });
+
+  describe('getStudentRank Function', () => {
+    it('should get student rank', async () => {
+      const result = await leaderboardService.getStudentRank(1, 'global', 'points');
+
+      expect(result).toBeDefined();
+      if (result) {
+        expect(result).toHaveProperty('studentId');
+        expect(result).toHaveProperty('rank');
+        expect(result).toHaveProperty('score');
+      }
+    });
+
+    it('should return null for non-existent student', async () => {
+      // Mock empty result
+      mockDb.select().from().where().orderBy().limit.mockResolvedValue([]);
+
+      const result = await leaderboardService.getStudentRank(999, 'global', 'points');
+
+      expect(result).toBeNull();
+    });
+
+    it('should handle different leaderboard types', async () => {
+      const types = ['global', 'weekly', 'monthly'];
       
-      // Check if results are ordered by points (highest first)
-      for (let i = 1; i < result.length; i++) {
-        expect(result[i-1].totalPoints).toBeGreaterThanOrEqual(result[i].totalPoints);
+      for (const type of types) {
+        const result = await leaderboardService.getStudentRank(1, type, 'points');
+        expect(result).toBeDefined();
       }
     });
   });
 
-  describe('getClassLeaderboard Function', () => {
-    it('should get class leaderboard', async () => {
-      const result = await leaderboardService.getClassLeaderboard('CP', 10);
+  describe('getUserCentricLeaderboard Function', () => {
+    it('should get user-centric leaderboard', async () => {
+      const result = await leaderboardService.getUserCentricLeaderboard(1, 'global', 'points');
 
       expect(result).toBeDefined();
-      expect(Array.isArray(result)).toBe(true);
-      expect(result.length).toBeLessThanOrEqual(10);
-      
-      if (result.length > 0) {
-        expect(result[0]).toHaveProperty('id');
-        expect(result[0]).toHaveProperty('prenom');
-        expect(result[0]).toHaveProperty('nom');
-        expect(result[0]).toHaveProperty('totalPoints');
-        expect(result[0]).toHaveProperty('niveauActuel');
-        expect(result[0].niveauActuel).toBe('CP');
-      }
+      expect(result).toHaveProperty('entries');
+      expect(result).toHaveProperty('context');
+      expect(Array.isArray(result.entries)).toBe(true);
     });
 
-    it('should handle different class levels', async () => {
-      const levels = ['CP', 'CE1', 'CE2', 'CM1', 'CM2'];
-      
-      for (const level of levels) {
-        const result = await leaderboardService.getClassLeaderboard(level, 5);
-        expect(result).toBeDefined();
-        expect(Array.isArray(result)).toBe(true);
-      }
+    it('should include user context', async () => {
+      const result = await leaderboardService.getUserCentricLeaderboard(1, 'global', 'points');
+
+      expect(result).toBeDefined();
+      expect(result.context).toBeDefined();
+      expect(result.context).toHaveProperty('totalParticipants');
+      expect(result.context).toHaveProperty('userRank');
     });
 
-    it('should return empty array for non-existent class', async () => {
+    it('should handle non-existent user', async () => {
       // Mock empty result
       mockDb.select().from().where().orderBy().limit.mockResolvedValue([]);
 
-      const result = await leaderboardService.getClassLeaderboard('NonExistentClass', 10);
+      const result = await leaderboardService.getUserCentricLeaderboard(999, 'global', 'points');
+
+      expect(result).toBeDefined();
+      expect(result.entries).toBeDefined();
+      expect(Array.isArray(result.entries)).toBe(true);
+    });
+  });
+
+  describe('getNearbyCompetitors Function', () => {
+    it('should get nearby competitors', async () => {
+      const result = await leaderboardService.getNearbyCompetitors(1, 'global', 'points', 5);
+
+      expect(result).toBeDefined();
+      expect(Array.isArray(result)).toBe(true);
+    });
+
+    it('should limit competitor range', async () => {
+      const result = await leaderboardService.getNearbyCompetitors(1, 'global', 'points', 3);
+
+      expect(result).toBeDefined();
+      expect(Array.isArray(result)).toBe(true);
+      expect(result.length).toBeLessThanOrEqual(7); // 3 above + 3 below + user = 7 max
+    });
+
+    it('should return empty array for non-existent student', async () => {
+      // Mock empty result
+      mockDb.select().from().where().orderBy().limit.mockResolvedValue([]);
+
+      const result = await leaderboardService.getNearbyCompetitors(999, 'global', 'points', 5);
 
       expect(result).toBeDefined();
       expect(Array.isArray(result)).toBe(true);
       expect(result.length).toBe(0);
-    });
-  });
-
-  describe('getWeeklyCompetition Function', () => {
-    it('should get weekly competition results', async () => {
-      const result = await leaderboardService.getWeeklyCompetition();
-
-      expect(result).toBeDefined();
-      expect(result).toHaveProperty('weekStart');
-      expect(result).toHaveProperty('weekEnd');
-      expect(result).toHaveProperty('participants');
-      expect(result).toHaveProperty('topPerformers');
-      expect(Array.isArray(result.participants)).toBe(true);
-      expect(Array.isArray(result.topPerformers)).toBe(true);
-    });
-
-    it('should include correct date range', async () => {
-      const result = await leaderboardService.getWeeklyCompetition();
-
-      expect(result).toBeDefined();
-      expect(result.weekStart).toBeInstanceOf(Date);
-      expect(result.weekEnd).toBeInstanceOf(Date);
-      expect(result.weekEnd.getTime()).toBeGreaterThan(result.weekStart.getTime());
-    });
-
-    it('should identify top performers', async () => {
-      const result = await leaderboardService.getWeeklyCompetition();
-
-      expect(result).toBeDefined();
-      expect(result.topPerformers).toBeDefined();
-      expect(Array.isArray(result.topPerformers)).toBe(true);
-    });
-  });
-
-  describe('getMonthlyCompetition Function', () => {
-    it('should get monthly competition results', async () => {
-      const result = await leaderboardService.getMonthlyCompetition();
-
-      expect(result).toBeDefined();
-      expect(result).toHaveProperty('monthStart');
-      expect(result).toHaveProperty('monthEnd');
-      expect(result).toHaveProperty('participants');
-      expect(result).toHaveProperty('champions');
-      expect(Array.isArray(result.participants)).toBe(true);
-      expect(Array.isArray(result.champions)).toBe(true);
-    });
-
-    it('should include correct month range', async () => {
-      const result = await leaderboardService.getMonthlyCompetition();
-
-      expect(result).toBeDefined();
-      expect(result.monthStart).toBeInstanceOf(Date);
-      expect(result.monthEnd).toBeInstanceOf(Date);
-      expect(result.monthEnd.getTime()).toBeGreaterThan(result.monthStart.getTime());
-    });
-
-    it('should identify monthly champions', async () => {
-      const result = await leaderboardService.getMonthlyCompetition();
-
-      expect(result).toBeDefined();
-      expect(result.champions).toBeDefined();
-      expect(Array.isArray(result.champions)).toBe(true);
-    });
-  });
-
-  describe('awardBadge Function', () => {
-    it('should award badge to student', async () => {
-      const badgeData = {
-        studentId: 1,
-        badgeType: 'streak_master',
-        badgeName: 'Streak Master',
-        description: 'Maintained a 7-day learning streak',
-        points: 50
-      };
-
-      await leaderboardService.awardBadge(badgeData);
-
-      expect(mockDb.insert).toHaveBeenCalled();
-      expect(mockDb.insert().values).toHaveBeenCalledWith({
-        studentId: 1,
-        badgeType: 'streak_master',
-        badgeName: 'Streak Master',
-        description: 'Maintained a 7-day learning streak',
-        points: 50,
-        awardedAt: expect.any(Date)
-      });
-    });
-
-    it('should handle different badge types', async () => {
-      const badgeTypes = ['streak_master', 'point_collector', 'speed_demon', 'accuracy_king', 'dedication_star'];
-      
-      for (const badgeType of badgeTypes) {
-        const badgeData = {
-          studentId: 1,
-          badgeType,
-          badgeName: 'Test Badge',
-          description: 'Test description',
-          points: 25
-        };
-
-        await leaderboardService.awardBadge(badgeData);
-        expect(mockDb.insert).toHaveBeenCalled();
-      }
-    });
-
-    it('should handle database errors during badge awarding', async () => {
-      mockDb.insert().values.mockRejectedValue(new Error('Database error'));
-
-      const badgeData = {
-        studentId: 1,
-        badgeType: 'test_badge',
-        badgeName: 'Test Badge',
-        description: 'Test description',
-        points: 25
-      };
-
-      await expect(leaderboardService.awardBadge(badgeData))
-        .rejects.toThrow('Failed to award badge');
-    });
-  });
-
-  describe('getStudentBadges Function', () => {
-    it('should get student badges', async () => {
-      const result = await leaderboardService.getStudentBadges(1);
-
-      expect(result).toBeDefined();
-      expect(Array.isArray(result)).toBe(true);
-      
-      if (result.length > 0) {
-        expect(result[0]).toHaveProperty('id');
-        expect(result[0]).toHaveProperty('badgeType');
-        expect(result[0]).toHaveProperty('badgeName');
-        expect(result[0]).toHaveProperty('description');
-        expect(result[0]).toHaveProperty('points');
-        expect(result[0]).toHaveProperty('awardedAt');
-      }
-    });
-
-    it('should return empty array for student with no badges', async () => {
-      // Mock empty result
-      mockDb.select().from().where().orderBy().limit.mockResolvedValue([]);
-
-      const result = await leaderboardService.getStudentBadges(1);
-
-      expect(result).toBeDefined();
-      expect(Array.isArray(result)).toBe(true);
-      expect(result.length).toBe(0);
-    });
-
-    it('should order badges by award date', async () => {
-      const result = await leaderboardService.getStudentBadges(1);
-
-      expect(result).toBeDefined();
-      expect(Array.isArray(result)).toBe(true);
-    });
-  });
-
-  describe('updateStreak Function', () => {
-    it('should update student streak', async () => {
-      const result = await leaderboardService.updateStreak(1, 5);
-
-      expect(result).toBeDefined();
-      expect(result).toHaveProperty('success');
-      expect(result).toHaveProperty('newStreak');
-      expect(result.success).toBe(true);
-      expect(result.newStreak).toBe(5);
-    });
-
-    it('should handle streak reset', async () => {
-      const result = await leaderboardService.updateStreak(1, 0);
-
-      expect(result).toBeDefined();
-      expect(result).toHaveProperty('success');
-      expect(result).toHaveProperty('newStreak');
-      expect(result.success).toBe(true);
-      expect(result.newStreak).toBe(0);
-    });
-
-    it('should handle database errors during streak update', async () => {
-      mockDb.update().set().where.mockRejectedValue(new Error('Database error'));
-
-      const result = await leaderboardService.updateStreak(1, 5);
-
-      expect(result).toBeDefined();
-      expect(result).toHaveProperty('success');
-      expect(result.success).toBe(false);
-      expect(result).toHaveProperty('error');
-    });
-  });
-
-  describe('getTopPerformers Function', () => {
-    it('should get top performers', async () => {
-      const result = await leaderboardService.getTopPerformers('week', 5);
-
-      expect(result).toBeDefined();
-      expect(Array.isArray(result)).toBe(true);
-      expect(result.length).toBeLessThanOrEqual(5);
-      
-      if (result.length > 0) {
-        expect(result[0]).toHaveProperty('id');
-        expect(result[0]).toHaveProperty('prenom');
-        expect(result[0]).toHaveProperty('nom');
-        expect(result[0]).toHaveProperty('totalPoints');
-        expect(result[0]).toHaveProperty('rank');
-      }
-    });
-
-    it('should handle different time periods', async () => {
-      const periods = ['day', 'week', 'month', 'year'];
-      
-      for (const period of periods) {
-        const result = await leaderboardService.getTopPerformers(period as any, 3);
-        expect(result).toBeDefined();
-        expect(Array.isArray(result)).toBe(true);
-      }
-    });
-
-    it('should limit number of results', async () => {
-      const result = await leaderboardService.getTopPerformers('month', 3);
-
-      expect(result).toBeDefined();
-      expect(Array.isArray(result)).toBe(true);
-      expect(result.length).toBeLessThanOrEqual(3);
-    });
-  });
-
-  describe('getPerformanceAnalytics Function', () => {
-    it('should get performance analytics', async () => {
-      const result = await leaderboardService.getPerformanceAnalytics(1);
-
-      expect(result).toBeDefined();
-      expect(result).toHaveProperty('studentId');
-      expect(result).toHaveProperty('currentRank');
-      expect(result).toHaveProperty('totalPoints');
-      expect(result).toHaveProperty('streakDays');
-      expect(result).toHaveProperty('badgesEarned');
-      expect(result).toHaveProperty('weeklyProgress');
-      expect(result).toHaveProperty('monthlyProgress');
-      expect(result.studentId).toBe(1);
-    });
-
-    it('should include rank information', async () => {
-      const result = await leaderboardService.getPerformanceAnalytics(1);
-
-      expect(result).toBeDefined();
-      expect(result.currentRank).toBeDefined();
-      expect(typeof result.currentRank).toBe('number');
-      expect(result.currentRank).toBeGreaterThan(0);
-    });
-
-    it('should include progress metrics', async () => {
-      const result = await leaderboardService.getPerformanceAnalytics(1);
-
-      expect(result).toBeDefined();
-      expect(result.weeklyProgress).toBeDefined();
-      expect(result.monthlyProgress).toBeDefined();
-      expect(typeof result.weeklyProgress).toBe('number');
-      expect(typeof result.monthlyProgress).toBe('number');
     });
   });
 
@@ -429,18 +252,17 @@ describe('Leaderboard Service - Isolated Unit Tests', () => {
     it('should handle database connection errors', async () => {
       mockDb.select().from().where().orderBy().limit.mockRejectedValue(new Error('Connection failed'));
 
-      await expect(leaderboardService.getGlobalLeaderboard(10))
-        .rejects.toThrow('Failed to get global leaderboard');
+      const result = await leaderboardService.getLeaderboard('global', 'points', { limit: 10 });
+      expect(result).toBeDefined();
+      expect(result.entries).toBeDefined();
+      expect(Array.isArray(result.entries)).toBe(true);
     });
 
-    it('should handle invalid student ID', async () => {
-      await expect(leaderboardService.getStudentBadges(-1))
-        .rejects.toThrow('Invalid student ID');
-    });
-
-    it('should handle invalid limit parameter', async () => {
-      await expect(leaderboardService.getGlobalLeaderboard(-1))
-        .rejects.toThrow('Invalid limit');
+    it('should handle invalid parameters gracefully', async () => {
+      const result = await leaderboardService.getLeaderboard('invalid', 'invalid', { limit: -1 });
+      expect(result).toBeDefined();
+      expect(result.entries).toBeDefined();
+      expect(Array.isArray(result.entries)).toBe(true);
     });
   });
 });

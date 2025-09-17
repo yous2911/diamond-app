@@ -24,6 +24,16 @@ import { beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import { build } from '../app-test';
 import type { FastifyInstance } from 'fastify';
 
+// Mock JWT to prevent FAST_JWT_INVALID_KEY errors
+vi.mock('@fastify/jwt', () => ({
+  default: vi.fn(() => ({
+    register: vi.fn(),
+    sign: vi.fn(() => 'mock-jwt-token'),
+    verify: vi.fn(() => ({ userId: 1, role: 'student' })),
+    decode: vi.fn(() => ({ userId: 1, role: 'student' }))
+  }))
+}));
+
 // Mock Fastify instance methods - we'll add authenticate method after app is built
 
 // Mock optimized queries

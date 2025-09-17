@@ -10,6 +10,11 @@ import { competenciesService, CompetencyContent, CompetencyListFilters } from '.
 
 // Mock fs/promises
 vi.mock('fs/promises', () => ({
+  default: {
+    readFile: vi.fn(),
+    readdir: vi.fn(),
+    access: vi.fn()
+  },
   readFile: vi.fn(),
   readdir: vi.fn(),
   access: vi.fn()

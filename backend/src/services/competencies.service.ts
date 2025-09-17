@@ -5,7 +5,8 @@
 
 import path from 'path';
 import fs from 'fs/promises';
-import { sql } from 'drizzle-orm';
+import { sql, and, eq, like } from 'drizzle-orm';
+import { competences } from '../db/schema';
 // Using console for logging since logger was moved to job-specific logger
 const logger = {
   info: console.log,
@@ -94,6 +95,7 @@ class CompetenciesService {
 
   /**
    * Get competencies list from database with optional filtering
+   * SECURITY FIX: Uses Drizzle ORM query builder to prevent SQL injection
    */
   async getCompetenciesList(
     db: any,
@@ -102,27 +104,45 @@ class CompetenciesService {
     try {
       const { level, subject, limit = 100, offset = 0 } = filters;
       
-      const conditions = ['est_actif = 1'];
+      // Build conditions using Drizzle ORM query builder (SECURE)
+      let conditions = [eq(competences.est_actif, 1)];
       
       if (level) {
-        conditions.push(`code LIKE '${level}.%'`);
+        // Validate level input to prevent injection
+        const validLevels = ['CP', 'CE1', 'CE2'];
+        if (!validLevels.includes(level)) {
+          throw new Error('Invalid level parameter');
+        }
+        conditions.push(like(competences.code, `${level}.%`));
       }
       
       if (subject) {
-        conditions.push(`matiere = '${subject}'`);
+        // Validate subject input to prevent injection
+        const validSubjects = ['FR', 'MA'];
+        if (!validSubjects.includes(subject)) {
+          throw new Error('Invalid subject parameter');
+        }
+        conditions.push(eq(competences.matiere, subject));
       }
 
-      const whereClause = `WHERE ${conditions.join(' AND ')}`;
-      const query = `
-        SELECT code, titre as nom, matiere, domaine, description, 0 as xp_reward
-        FROM competences
-        ${whereClause}
-        ORDER BY code
-        LIMIT ${limit} OFFSET ${offset}
-      `;
+      // Use Drizzle ORM query builder (SECURE)
+      const query = db
+        .select({
+          code: competences.code,
+          nom: competences.titre,
+          matiere: competences.matiere,
+          domaine: competences.domaine,
+          description: competences.description,
+          xp_reward: sql<number>`0`
+        })
+        .from(competences)
+        .where(and(...conditions))
+        .orderBy(competences.code)
+        .limit(limit)
+        .offset(offset);
 
-      const [rows] = await db.execute(query);
-      return rows as any[];
+      const rows = await query;
+      return rows;
     } catch (error) {
       logger.error('Error fetching competencies list:', error);
       throw new Error('Failed to fetch competencies list');
@@ -131,17 +151,34 @@ class CompetenciesService {
 
   /**
    * Get a single competency with content
+   * SECURITY FIX: Uses Drizzle ORM query builder to prevent SQL injection
    */
   async getCompetencyWithContent(
     db: any,
     competencyCode: string
   ): Promise<CachedCompetency | null> {
     try {
-      // Get basic competency info from database
-      const [rows] = await db.execute(
-        'SELECT code, titre as nom, matiere, domaine, description, 0 as xp_reward FROM competences WHERE code = ? AND est_actif = 1',
-        [competencyCode]
-      );
+      // Validate competency code format first
+      if (!this.validateCompetencyCode(competencyCode)) {
+        throw new Error('Invalid competency code format');
+      }
+
+      // Use Drizzle ORM query builder (SECURE)
+      const rows = await db
+        .select({
+          code: competences.code,
+          nom: competences.titre,
+          matiere: competences.matiere,
+          domaine: competences.domaine,
+          description: competences.description,
+          xp_reward: sql<number>`0`
+        })
+        .from(competences)
+        .where(and(
+          eq(competences.code, competencyCode),
+          eq(competences.est_actif, 1)
+        ))
+        .limit(1);
 
       if (!rows || rows.length === 0) {
         return null;

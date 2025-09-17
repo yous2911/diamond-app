@@ -7,6 +7,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { leaderboardService } from '../services/leaderboard.service';
 import { z } from 'zod';
+import { addLeaderboardUpdateJob, scheduleRecurringLeaderboardUpdate } from '../jobs/producers/leaderboard.producer';
 
 // Request schemas
 const LeaderboardQuerySchema = z.object({
@@ -358,11 +359,12 @@ export default async function leaderboardRoutes(fastify: FastifyInstance): Promi
       description: 'Manually update all leaderboards',
       tags: ['Leaderboards', 'Admin'],
       response: {
-        200: {
+        202: {
           type: 'object',
           properties: {
             success: { type: 'boolean' },
-            message: { type: 'string' }
+            message: { type: 'string' },
+            jobId: { type: 'string' }
           }
         }
       }
@@ -372,11 +374,13 @@ export default async function leaderboardRoutes(fastify: FastifyInstance): Promi
       // In a real app, you'd check for admin permissions here
       // await checkAdminPermission(request);
 
-      await leaderboardService.updateAllLeaderboards();
+      const job = await addLeaderboardUpdateJob();
 
-      reply.send({
+      // Return 202 Accepted to indicate the job has been queued
+      reply.code(202).send({
         success: true,
-        message: 'All leaderboards updated successfully'
+        message: 'Leaderboard update job has been queued.',
+        jobId: job?.id
       });
 
     } catch (error) {
@@ -526,18 +530,9 @@ export default async function leaderboardRoutes(fastify: FastifyInstance): Promi
     }
   });
 
-  // Register leaderboard update as a recurring job (if needed)
-  // This would typically be done with a cron job or scheduler
-  if (process.env.NODE_ENV !== 'test') {
-    // Update leaderboards every hour
-    setInterval(async () => {
-      try {
-        await leaderboardService.updateAllLeaderboards();
-        (fastify.log as any).info('🔄 Scheduled leaderboard update completed');
-      } catch (error) {
-        (fastify.log as any).error('❌ Scheduled leaderboard update failed:', error);
-      }
-    }, 60 * 60 * 1000); // 1 hour
+  // Schedule the recurring job when the plugin is loaded (only in production)
+  if (process.env.NODE_ENV === 'production') {
+    scheduleRecurringLeaderboardUpdate();
   }
 
   (fastify.log as any).info('✅ Leaderboard routes registered successfully');
