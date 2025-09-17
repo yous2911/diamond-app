@@ -1,7 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import * as prometheus from 'prom-client';
 import * as Sentry from '@sentry/node';
-import { logger } from './logger';
+import { logger } from '../jobs/logger';
 
 // Prometheus metrics
 const register = prometheus.register;

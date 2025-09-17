@@ -26,7 +26,78 @@ import type { FastifyInstance } from 'fastify';
 
 // Mock Fastify instance methods - we'll add authenticate method after app is built
 
+// Mock optimized queries
+vi.mock('../db/optimized-queries', () => ({
+  getStudentWithProgress: vi.fn((studentId) => {
+    if (studentId === 1) {
+      return Promise.resolve({
+        id: 1,
+        prenom: 'Alice',
+        nom: 'Dupont',
+        email: 'alice.dupont@test.com',
+        dateNaissance: '2015-05-15',
+        niveauActuel: 'CP',
+        progress: [
+          {
+            exerciseId: 1,
+            score: 90,
+            completedAt: new Date(),
+            timeSpent: 120
+          }
+        ]
+      });
+    }
+    return Promise.resolve(null);
+  }),
+  getRecommendedExercises: vi.fn((studentId, limit = 10) => {
+    return Promise.resolve([
+      {
+        id: 1,
+        title: 'Test Exercise',
+        difficulty: 'facile',
+        points: 10,
+        subject: 'FR'
+      }
+    ]);
+  })
+}));
+
+// Mock authentication middleware
+vi.mock('../middleware/auth.middleware', () => ({
+  authenticateMiddleware: vi.fn(async (request: any, reply: any) => {
+    const authHeader = request.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return reply.status(401).send({
+        success: false,
+        error: {
+          message: 'Token manquant',
+          code: 'MISSING_TOKEN'
+        }
+      });
+    }
+    
+    const token = authHeader.substring(7);
+    if (token.startsWith('mock-jwt-token-') || token.startsWith('refreshed-token-')) {
+      request.user = { studentId: 1, role: 'student' };
+      return;
+    }
+    
+    return reply.status(401).send({
+      success: false,
+      error: {
+        message: 'Token invalide',
+        code: 'INVALID_TOKEN'
+      }
+    });
+  }),
+  optionalAuthMiddleware: vi.fn(),
+  authenticateAdminMiddleware: vi.fn(),
+  authRateLimitMiddleware: vi.fn()
+}));
+
 // Mock database modules at the top level
+// Mock database connection for unit tests
 vi.mock('../db/connection', () => {
   // Mock student data
   const mockStudents = [
@@ -123,6 +194,13 @@ vi.mock('../db/connection', () => {
       responseTime: 5
     })),
     disconnectDatabase: vi.fn(() => Promise.resolve()),
+    reconnectDatabase: vi.fn(() => Promise.resolve(true)),
+    getPoolStats: vi.fn(() => Promise.resolve({
+      activeConnections: 0,
+      totalConnections: 10,
+      idleConnections: 10,
+      queuedRequests: 0
+    })),
     db: mockDb,
     connection: {
       execute: vi.fn(() => Promise.resolve([{ test: 1 }])),
@@ -169,6 +247,8 @@ vi.mock('../utils/logger', () => ({
 }));
 
 // Mock EmailService with both class and instance
+// REMOVED: Mock Email Service - Testing real code now
+/*
 vi.mock('../services/email.service', () => {
   const mockEmailService = {
     sendEmail: vi.fn(() => Promise.resolve()),
@@ -240,6 +320,7 @@ vi.mock('../services/email.service', () => {
     default: mockEmailService
   };
 });
+*/
 
 // Mock Data Anonymization Service with both class and instance
 vi.mock('../services/data-anonymization.service', () => {
@@ -344,20 +425,7 @@ vi.mock('fs/promises', () => ({
   pathExists: vi.fn().mockResolvedValue(true),
 }));
 
-// Mock GDPR Service with expanded functionality
-vi.mock('../services/gdpr.service', () => ({
-  gdprService: {
-    logDataProcessing: vi.fn(() => Promise.resolve({ id: 1 })),
-    getComplianceStatus: vi.fn(() => Promise.resolve({ 
-      status: 'healthy',
-      gdprEnabled: true,
-      message: 'Service GDPR opérationnel',
-      parentalConsentRequired: true,
-      encryptionEnabled: true,
-      dataRetentionDays: 365
-    }))
-  }
-}));
+// Note: GDPR Service is not mocked here to allow real service testing
 
 // Mock Consent Service with comprehensive functionality
 vi.mock('../services/consent.service', () => {
@@ -541,6 +609,8 @@ vi.mock('../services/data-retention.service', () => {
 });
 
 // Mock Encryption Service
+// REMOVED: Mock Encryption Service - Testing real code now
+/*
 vi.mock('../services/encryption.service', () => {
   const mockEncryptionService: any = {
     encrypt: vi.fn((data) => Promise.resolve({
@@ -675,6 +745,7 @@ vi.mock('../services/encryption.service', () => {
     default: mockEncryptionService
   };
 });
+*/
 
 // Mock File Upload Service
 const mockFileUploadService = vi.hoisted(() => {
@@ -1040,7 +1111,8 @@ vi.mock('../services/exercise-generator.service', () => {
   };
 });
 
-// Mock Auth Service
+// REMOVED: Mock Auth Service - Testing real code now
+/*
 vi.mock('../services/auth.service', () => {
   const mockAuthService = {
     login: vi.fn((email, password) => {
@@ -1145,6 +1217,7 @@ vi.mock('../services/auth.service', () => {
     default: mockAuthService
   };
 });
+*/
 
 // Mock Input Sanitization Service
 vi.mock('../services/input-sanitization.service', () => {
@@ -2067,33 +2140,6 @@ beforeAll(async () => {
     if (!app) {
       app = await build();
       
-      // Add authenticate method to the app instance
-      (app as any).authenticate = vi.fn(async (request: any, reply: any) => {
-        const authHeader = request.headers.authorization;
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-          return reply.status(401).send({
-            success: false,
-            error: {
-              message: 'Token manquant',
-              code: 'MISSING_TOKEN'
-            }
-          });
-        }
-        
-        const token = authHeader.substring(7);
-        if (token.startsWith('mock-jwt-token-') || token.startsWith('refreshed-token-')) {
-          request.user = { studentId: 1, role: 'student' };
-          return;
-        }
-        
-        return reply.status(401).send({
-          success: false,
-          error: {
-            message: 'Token invalide',
-            code: 'INVALID_TOKEN'
-          }
-        });
-      });
       
       await app.ready();
     }
@@ -2112,6 +2158,8 @@ beforeEach(() => {
 });
 
 // Mock Database Service
+// REMOVED: Mock Database Service - Testing real code now
+/*
 vi.mock('../services/database.service', () => {
   const mockDatabaseService = {
     getStudentById: vi.fn((studentId) => {
@@ -2200,6 +2248,7 @@ vi.mock('../services/database.service', () => {
     default: mockDatabaseService
   };
 });
+*/
 
 // Mock Enhanced Database Service
 vi.mock('../services/enhanced-database.service', () => {
@@ -2260,27 +2309,20 @@ vi.mock('../services/enhanced-database.service', () => {
     }),
     
     getStudentProgress: vi.fn((studentId, _exerciseIds) => {
-      return Promise.resolve({
-        studentId: studentId,
-        totalExercises: 10,
-        completedExercises: 5,
-        totalPoints: 50,
-        averageScore: 80,
-        progress: [
-          {
-            exerciseId: 1,
-            score: 90,
-            completedAt: new Date(),
-            timeSpent: 120
-          },
-          {
-            exerciseId: 2,
-            score: 70,
-            completedAt: new Date(),
-            timeSpent: 150
-          }
-        ]
-      });
+      return Promise.resolve([
+        {
+          exerciseId: 1,
+          score: 90,
+          completedAt: new Date(),
+          timeSpent: 120
+        },
+        {
+          exerciseId: 2,
+          score: 70,
+          completedAt: new Date(),
+          timeSpent: 150
+        }
+      ]);
     }),
     
     getCompetencePrerequisites: vi.fn((competenceCode) => {
@@ -2292,6 +2334,19 @@ vi.mock('../services/enhanced-database.service', () => {
           minimumLevel: 'maitrise'
         }
       ]);
+    }),
+    
+    recordStudentProgress: vi.fn((studentId, attemptData) => {
+      return Promise.resolve({
+        id: 1,
+        studentId: studentId,
+        exerciseId: attemptData.exerciseId,
+        score: attemptData.attempt.reussi ? 100 : 0,
+        timeSpent: attemptData.attempt.tempsSecondes,
+        completedAt: new Date(),
+        attempt: attemptData.attempt,
+        pointsGagnes: attemptData.attempt.reussi ? 10 : 0
+      });
     })
   };
 

@@ -43,6 +43,7 @@ export async function build() {
     await fastify.register(import('./routes/auth'), { prefix: '/api/auth' });
     await fastify.register(import('./routes/students'), { prefix: '/api/students' });
     await fastify.register(import('./routes/exercises'), { prefix: '/api/exercises' });
+    await fastify.register(import('./routes/competences'), { prefix: '/api/competences' });
     await fastify.register(import('./routes/gdpr'), { prefix: '/api/gdpr' });
     await fastify.register(import('./routes/upload'), { prefix: '/api' });
   } catch (error) {

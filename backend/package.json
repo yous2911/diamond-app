@@ -48,7 +48,11 @@
     "pm2:logs": "pm2 logs",
     "jobs:worker": "tsx src/jobs/workers/email.worker.ts",
     "prepare": "echo 'Skipping husky install in development'",
-    "precommit": "lint-staged"
+    "precommit": "lint-staged",
+    "start:staging": "cross-env NODE_ENV=staging node dist/server.js",
+    "dev:staging": "cross-env NODE_ENV=staging nodemon src/server.ts",
+    "test:staging": "cross-env NODE_ENV=staging vitest run",
+    "build:staging": "cross-env NODE_ENV=staging npm run build"
   },
   "keywords": [
     "fastify",
