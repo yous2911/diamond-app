@@ -29,8 +29,8 @@ vi.mock('@fastify/jwt', () => ({
   default: vi.fn(() => ({
     register: vi.fn(),
     sign: vi.fn(() => 'mock-jwt-token'),
-    verify: vi.fn(() => ({ userId: 1, role: 'student' })),
-    decode: vi.fn(() => ({ userId: 1, role: 'student' }))
+    verify: vi.fn(() => ({ studentId: 1, role: 'student' })),
+    decode: vi.fn(() => ({ studentId: 1, role: 'student' }))
   }))
 }));
 
@@ -774,7 +774,7 @@ const mockFileUploadService = vi.hoisted(() => {
         uploadedAt: new Date()
       });
     }),
-    processUpload: vi.fn((uploadRequest, userId) => {
+    processUpload: vi.fn((uploadRequest, studentId) => {
       const file = uploadRequest.files[0];
       const fileId = fileIdCounter++;
       const dangerousExtensions = ['.exe', '.bat', '.cmd', '.scr', '.pif'];
@@ -801,7 +801,7 @@ const mockFileUploadService = vi.hoisted(() => {
           size: file.size,
           mimetype: file.mimetype,
           category: 'image',
-          uploadedBy: userId,
+          uploadedBy: studentId,
           status: 'ready',
           checksum: checksum,
           uploadedAt: new Date()
@@ -1924,7 +1924,7 @@ const mockImageProcessingService = vi.hoisted(() => ({
     for (const size of sizes) {
       const path = `/thumbnails/${size.width}x${size.height}/image.jpg`;
       // Mock file creation
-      await fs.ensureFile(path);
+      // Mock file creation - fs is mocked elsewhere
       results.push({
         type: size.width < 200 ? 'small' : 'medium',
         path: path,
@@ -2406,7 +2406,7 @@ vi.mock('../utils/errorResponseFormatter', () => ({
 vi.mock('../utils/requestContextExtractor', () => ({
   RequestContextExtractor: {
     extract: vi.fn(() => ({
-      userId: 'test-user',
+      studentId: 'test-student',
       sessionId: 'test-session',
       requestId: 'test-request'
     }))

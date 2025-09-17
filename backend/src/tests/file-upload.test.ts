@@ -174,14 +174,14 @@ describe('File Upload System Tests', () => {
         generateThumbnails: true
       };
 
-      const result = await uploadService.processUpload(uploadRequest, 'test-user-123');
+      const result = await uploadService.processUpload(uploadRequest, 'test-student-123');
 
       expect(result.success).toBe(true);
       expect(result.files).toHaveLength(1);
       expect(result.files[0].originalName).toBe('test-image.jpg');
       expect(result.files[0].mimetype).toBe('image/jpeg');
       expect(result.files[0].category).toBe('image');
-      expect(result.files[0].uploadedBy).toBe('test-user-123');
+      expect(result.files[0].uploadedBy).toBe('test-student-123');
       expect(result.files[0].status).toBe('ready');
       expect(result.files[0].checksum).toBeTruthy();
     });
@@ -203,7 +203,7 @@ describe('File Upload System Tests', () => {
         category: 'document' as any
       };
 
-      const result = await uploadService.processUpload(uploadRequest, 'test-user-123');
+      const result = await uploadService.processUpload(uploadRequest, 'test-student-123');
 
       expect(result.success).toBe(false);
       expect(result.errors).toContain('File type not allowed');
@@ -226,7 +226,7 @@ describe('File Upload System Tests', () => {
         category: 'image' as any
       };
 
-      const result = await uploadService.processUpload(uploadRequest, 'test-user-123');
+      const result = await uploadService.processUpload(uploadRequest, 'test-student-123');
 
       expect(result.success).toBe(false);
       expect(result.errors).toContain('File exceeds maximum size');
@@ -250,8 +250,8 @@ describe('File Upload System Tests', () => {
       };
 
       // Upload same file twice
-      const result1 = await uploadService.processUpload(uploadRequest, 'test-user-123');
-      const result2 = await uploadService.processUpload(uploadRequest, 'test-user-123');
+      const result1 = await uploadService.processUpload(uploadRequest, 'test-student-123');
+      const result2 = await uploadService.processUpload(uploadRequest, 'test-student-123');
 
       expect(result1.success).toBe(true);
       expect(result2.success).toBe(true);
@@ -483,7 +483,7 @@ describe('File Upload System Tests', () => {
         path: '/uploads/test.jpg',
         url: '/uploads/test.jpg',
         metadata: { width: 800, height: 600 },
-        uploadedBy: 'user-123',
+        uploadedBy: 'student-123',
         uploadedAt: new Date(),
         category: 'image' as any,
         isPublic: false,
@@ -497,7 +497,7 @@ describe('File Upload System Tests', () => {
 
       expect(retrieved).toBeTruthy();
       expect(retrieved?.originalName).toBe('test.jpg');
-      expect(retrieved?.uploadedBy).toBe('user-123');
+      expect(retrieved?.uploadedBy).toBe('student-123');
     });
 
     it('should find files by checksum for duplicate detection', async () => {
@@ -548,12 +548,13 @@ describe('File Upload System Tests', () => {
       formData.append('category', 'image');
       formData.append('isPublic', 'false');
 
-      // Mock authentication
+      // Mock authentication with proper user structure
       const response = await app.inject({
         method: 'POST',
         url: '/api/upload',
         headers: {
-          'authorization': 'Bearer mock-token'
+          'authorization': 'Bearer mock-token',
+          'x-user-id': 'test-student-123'
         },
         payload: formData
       });
@@ -579,7 +580,8 @@ describe('File Upload System Tests', () => {
         method: 'GET',
         url: '/api/files/test-file-id',
         headers: {
-          'authorization': 'Bearer mock-token'
+          'authorization': 'Bearer mock-token',
+          'x-user-id': 'test-student-123'
         }
       });
 
@@ -592,7 +594,8 @@ describe('File Upload System Tests', () => {
         method: 'GET',
         url: '/api/files?limit=10&offset=0',
         headers: {
-          'authorization': 'Bearer mock-token'
+          'authorization': 'Bearer mock-token',
+          'x-user-id': 'test-student-123'
         }
       });
 
@@ -609,7 +612,8 @@ describe('File Upload System Tests', () => {
         method: 'GET',
         url: '/api/storage/stats',
         headers: {
-          'authorization': 'Bearer mock-token'
+          'authorization': 'Bearer mock-token',
+          'x-user-id': 'test-student-123'
         }
       });
 
@@ -642,6 +646,7 @@ describe('File Upload System Tests', () => {
         url: '/api/images/test-file-id/process',
         headers: {
           'authorization': 'Bearer mock-token',
+          'x-user-id': 'test-student-123',
           'content-type': 'application/json'
         },
         payload: JSON.stringify({
@@ -754,7 +759,7 @@ describe('File Upload System Tests', () => {
         return uploadService.processUpload({
           files: [mockFile],
           category: 'image' as any
-        }, `user-${i}`);
+        }, `student-${i}`);
       });
 
       const results = await Promise.all(uploadPromises);
