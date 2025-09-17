@@ -203,7 +203,7 @@ export const dbConfig = {
   password: config.DB_PASSWORD,
   database: config.DB_NAME,
   connectionLimit: config.DB_CONNECTION_LIMIT,
-  ssl: isProduction ? { rejectUnauthorized: false } : undefined,
+  ssl: isProduction ? { rejectUnauthorized: true } : undefined,
 };
 
 // Redis configuration

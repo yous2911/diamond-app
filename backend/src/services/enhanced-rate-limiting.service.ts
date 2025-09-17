@@ -1,6 +1,7 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import * as geoip from 'geoip-lite';
 import ipRangeCheck from 'ip-range-check';
+import { Redis } from 'ioredis';
 import { logger } from '../utils/logger';
 
 export interface RateLimitConfig {
@@ -73,7 +74,6 @@ export interface RateLimitOptions {
   suspiciousThreshold?: number;
   
   // Storage
-  useRedis?: boolean;
   redisPrefix?: string;
   
   // Response options
@@ -88,17 +88,26 @@ export interface RateLimitOptions {
 }
 
 export class EnhancedRateLimitingService {
+  public storageType: 'redis' | 'in-memory';
   private options: RateLimitOptions;
+
+  // In-memory stores (fallback)
   private store: Map<string, RateLimitEntry> = new Map();
   private penalties: Map<string, number> = new Map(); // IP -> penalty end time
   private suspiciousIPs: Map<string, number> = new Map(); // IP -> suspicious score
-  private cleanupInterval: NodeJS.Timeout;
 
-  constructor(options: RateLimitOptions) {
+  // Redis prefixes
+  private storePrefix: string;
+  private penaltiesPrefix: string;
+  private suspiciousIPsPrefix: string;
+
+  private cleanupInterval?: NodeJS.Timeout;
+
+  constructor(options: RateLimitOptions, private redis?: Redis) {
     this.options = {
       global: {
-        windowMs: 15 * 60 * 1000, // 15 minutes
-        max: 1000 // 1000 requests per 15 minutes globally
+        windowMs: 15 * 60 * 1000,
+        max: 1000
       },
       perUser: {
         windowMs: 15 * 60 * 1000,
@@ -117,16 +126,27 @@ export class EnhancedRateLimitingService {
       suspiciousThreshold: 50,
       enablePenalties: true,
       penaltyMultiplier: 2,
-      maxPenaltyTime: 24 * 60 * 60 * 1000, // 24 hours
+      maxPenaltyTime: 24 * 60 * 60 * 1000,
       headers: true,
       retryAfterHeader: true,
+      redisPrefix: 'rl',
       ...options
     };
 
-    // Start cleanup interval
-    this.cleanupInterval = setInterval(() => {
-      this.cleanup();
-    }, 60 * 1000); // Every minute
+    this.storageType = this.redis ? 'redis' : 'in-memory';
+
+    // Setup Redis prefixes
+    const prefix = this.options.redisPrefix;
+    this.storePrefix = `${prefix}:store`;
+    this.penaltiesPrefix = `${prefix}:penalties`;
+    this.suspiciousIPsPrefix = `${prefix}:suspicious`;
+
+    // Only run cleanup for in-memory store
+    if (this.storageType === 'in-memory') {
+      this.cleanupInterval = setInterval(() => {
+        this.cleanup();
+      }, 60 * 1000);
+    }
   }
 
   /**
@@ -146,15 +166,15 @@ export class EnhancedRateLimitingService {
         }
 
         // Check penalties first
-        if (this.isUnderPenalty(ip)) {
-          const penaltyEnd = this.penalties.get(ip)!;
-          const retryAfter = Math.ceil((penaltyEnd - Date.now()) / 1000);
+        if (await this.isUnderPenalty(ip)) {
+          const penaltyEnd = await this.getPenaltyEndTime(ip);
+          const retryAfter = penaltyEnd ? Math.ceil((penaltyEnd - Date.now()) / 1000) : 0;
           
           logger.warn('Request blocked due to penalty', {
             ip,
             userId,
             route,
-            penaltyEnd: new Date(penaltyEnd),
+            penaltyEnd: penaltyEnd ? new Date(penaltyEnd) : null,
             retryAfter
           });
 
@@ -190,7 +210,7 @@ export class EnhancedRateLimitingService {
 
         // Update behavioral analysis
         if (this.options.enableBehavioralAnalysis) {
-          this.updateBehavioralAnalysis(request, ip, userId);
+          await this.updateBehavioralAnalysis(request, ip, userId);
         }
 
         // Add rate limit headers to successful requests
@@ -217,7 +237,7 @@ export class EnhancedRateLimitingService {
   private async checkGlobalLimit(request: FastifyRequest): Promise<any> {
     const key = 'global';
     const config = this.options.global;
-    const entry = this.getOrCreateEntry(key, config.windowMs);
+    const entry = await this.getOrCreateEntry(key, config.windowMs);
 
     return this.evaluateLimit(key, entry, config, 'global');
   }
@@ -228,10 +248,10 @@ export class EnhancedRateLimitingService {
   private async checkIPLimit(request: FastifyRequest, ip: string) {
     const key = `ip:${ip}`;
     const config = this.options.perIP;
-    const entry = this.getOrCreateEntry(key, config.windowMs);
+    const entry = await this.getOrCreateEntry(key, config.windowMs);
 
     // Apply penalty multiplier if IP has penalties
-    const penaltyMultiplier = this.getPenaltyMultiplier(ip);
+    const penaltyMultiplier = await this.getPenaltyMultiplier(ip);
     const adjustedConfig = {
       ...config,
       max: Math.floor(config.max / penaltyMultiplier)
@@ -260,7 +280,7 @@ export class EnhancedRateLimitingService {
       max: maxRequests
     };
 
-    const entry = this.getOrCreateEntry(key, config.windowMs);
+    const entry = await this.getOrCreateEntry(key, config.windowMs);
     return this.evaluateLimit(key, entry, adjustedConfig, 'user');
   }
 
@@ -281,7 +301,7 @@ export class EnhancedRateLimitingService {
 
     const geoConfig = this.options.geoLimits[countryCode];
     const key = `geo:${countryCode}:${ip}`;
-    const entry = this.getOrCreateEntry(key, geoConfig.windowMs);
+    const entry = await this.getOrCreateEntry(key, geoConfig.windowMs);
 
     return this.evaluateLimit(key, entry, geoConfig, 'geo');
   }
@@ -302,8 +322,8 @@ export class EnhancedRateLimitingService {
     for (const rule of sortedRules) {
       if (rule.condition(request)) {
         const key = `rule:${rule.id}:${this.getClientIP(request)}`;
-        const entry = this.getOrCreateEntry(key, rule.limit.windowMs);
-        const result = this.evaluateLimit(key, entry, rule.limit, 'custom');
+        const entry = await this.getOrCreateEntry(key, rule.limit.windowMs);
+        const result = await this.evaluateLimit(key, entry, rule.limit, 'custom');
         
         if (result.violated) {
           return {
@@ -320,7 +340,7 @@ export class EnhancedRateLimitingService {
   /**
    * Evaluate if a limit is violated
    */
-  private evaluateLimit(
+  private async evaluateLimit(
     key: string, 
     entry: RateLimitEntry, 
     config: RateLimitConfig | GeoRateLimit[string], 
@@ -346,7 +366,12 @@ export class EnhancedRateLimitingService {
     const retryAfter = violated ? Math.ceil((entry.resetTime - now) / 1000) : 0;
 
     // Update store
-    this.store.set(key, entry);
+    if (this.storageType === 'redis') {
+      const redisKey = `${this.storePrefix}:${key}`;
+      await this.redis!.hset(redisKey, 'count', entry.count, 'lastRequest', entry.lastRequest);
+    } else {
+      this.store.set(key, entry);
+    }
 
     return {
       violated,
@@ -362,15 +387,45 @@ export class EnhancedRateLimitingService {
   /**
    * Get or create rate limit entry
    */
-  private getOrCreateEntry(key: string, windowMs: number): RateLimitEntry {
-    const existing = this.store.get(key);
+  private async getOrCreateEntry(key: string, windowMs: number): Promise<RateLimitEntry> {
     const now = Date.now();
 
-    if (existing && now <= existing.resetTime) {
-      return existing;
+    if (this.storageType === 'redis') {
+      const redisKey = `${this.storePrefix}:${key}`;
+      const entryData = await this.redis!.hgetall(redisKey);
+
+      if (entryData && Object.keys(entryData).length > 0 && now <= parseInt(entryData.resetTime, 10)) {
+        return {
+          count: parseInt(entryData.count, 10),
+          resetTime: parseInt(entryData.resetTime, 10),
+          firstRequest: parseInt(entryData.firstRequest, 10),
+          lastRequest: parseInt(entryData.lastRequest, 10),
+          blocked: entryData.blocked === 'true',
+          warnings: parseInt(entryData.warnings, 10)
+        };
+      }
+
+      const newEntry: RateLimitEntry = {
+        count: 0,
+        resetTime: now + windowMs,
+        firstRequest: now,
+        lastRequest: now,
+        blocked: false,
+        warnings: 0
+      };
+
+      await this.redis!.hmset(redisKey, newEntry);
+      await this.redis!.expire(redisKey, Math.ceil(windowMs / 1000));
+      return newEntry;
+
+    } else {
+      const existing = this.store.get(key);
+      if (existing && now <= existing.resetTime) {
+        return existing;
+      }
     }
 
-    return {
+    const newEntry: RateLimitEntry = {
       count: 0,
       resetTime: now + windowMs,
       firstRequest: now,
@@ -378,6 +433,8 @@ export class EnhancedRateLimitingService {
       blocked: false,
       warnings: 0
     };
+    this.store.set(key, newEntry);
+    return newEntry;
   }
 
   /**
@@ -403,13 +460,23 @@ export class EnhancedRateLimitingService {
 
     // Update suspicious behavior score
     if (this.options.enableBehavioralAnalysis) {
-      const currentScore = this.suspiciousIPs.get(ip) || 0;
-      const newScore = currentScore + this.getRateLimitViolationScore(limit.type);
-      this.suspiciousIPs.set(ip, newScore);
+      const scoreIncrement = this.getRateLimitViolationScore(limit.type);
+      let newScore: number;
+
+      if (this.storageType === 'redis') {
+        const redisKey = `${this.suspiciousIPsPrefix}:${ip}`;
+        newScore = await this.redis!.incrby(redisKey, scoreIncrement);
+        // Set expiry for suspicious score to decay naturally
+        await this.redis!.expire(redisKey, this.options.maxPenaltyTime! / 1000);
+      } else {
+        const currentScore = this.suspiciousIPs.get(ip) || 0;
+        newScore = currentScore + scoreIncrement;
+        this.suspiciousIPs.set(ip, newScore);
+      }
 
       // Apply penalty if score exceeds threshold
       if (newScore >= this.options.suspiciousThreshold! && this.options.enablePenalties) {
-        this.applyPenalty(ip, newScore);
+        await this.applyPenalty(ip, newScore);
       }
     }
 
@@ -422,19 +489,26 @@ export class EnhancedRateLimitingService {
   /**
    * Apply penalty to IP
    */
-  private applyPenalty(ip: string, score: number) {
-    const penaltyDuration = Math.min(
-      score * this.options.penaltyMultiplier! * 60 * 1000, // Convert to milliseconds
+  private async applyPenalty(ip: string, score: number) {
+    const penaltyDurationMs = Math.min(
+      score * this.options.penaltyMultiplier! * 60 * 1000,
       this.options.maxPenaltyTime!
     );
     
-    const penaltyEnd = Date.now() + penaltyDuration;
-    this.penalties.set(ip, penaltyEnd);
+    const penaltyEnd = Date.now() + penaltyDurationMs;
+    const penaltyDurationSec = Math.ceil(penaltyDurationMs / 1000);
+
+    if (this.storageType === 'redis') {
+      const redisKey = `${this.penaltiesPrefix}:${ip}`;
+      await this.redis!.setex(redisKey, penaltyDurationSec, penaltyEnd.toString());
+    } else {
+      this.penalties.set(ip, penaltyEnd);
+    }
 
     logger.warn('IP penalty applied', {
       ip,
       score,
-      penaltyDuration: penaltyDuration / 1000, // Log in seconds
+      penaltyDuration: penaltyDurationSec,
       penaltyEnd: new Date(penaltyEnd)
     });
   }
@@ -525,23 +599,41 @@ export class EnhancedRateLimitingService {
   /**
    * Check if IP is under penalty
    */
-  private isUnderPenalty(ip: string): boolean {
-    const penaltyEnd = this.penalties.get(ip);
+  private async isUnderPenalty(ip: string): Promise<boolean> {
+    const penaltyEnd = await this.getPenaltyEndTime(ip);
     if (!penaltyEnd) return false;
     
     if (Date.now() > penaltyEnd) {
-      this.penalties.delete(ip);
+      if (this.storageType === 'redis') {
+        await this.redis!.del(`${this.penaltiesPrefix}:${ip}`);
+      } else {
+        this.penalties.delete(ip);
+      }
       return false;
     }
     
     return true;
   }
 
+  private async getPenaltyEndTime(ip: string): Promise<number | null> {
+    if (this.storageType === 'redis') {
+      const value = await this.redis!.get(`${this.penaltiesPrefix}:${ip}`);
+      return value ? parseInt(value, 10) : null;
+    }
+    return this.penalties.get(ip) || null;
+  }
+
   /**
    * Get penalty multiplier for IP
    */
-  private getPenaltyMultiplier(ip: string): number {
-    const suspiciousScore = this.suspiciousIPs.get(ip) || 0;
+  private async getPenaltyMultiplier(ip: string): Promise<number> {
+    let suspiciousScore = 0;
+    if (this.storageType === 'redis') {
+      const scoreStr = await this.redis!.get(`${this.suspiciousIPsPrefix}:${ip}`);
+      suspiciousScore = scoreStr ? parseInt(scoreStr, 10) : 0;
+    } else {
+      suspiciousScore = this.suspiciousIPs.get(ip) || 0;
+    }
     return Math.max(1, Math.floor(suspiciousScore / 20));
   }
 
@@ -562,25 +654,31 @@ export class EnhancedRateLimitingService {
   /**
    * Update behavioral analysis
    */
-  private updateBehavioralAnalysis(
+  private async updateBehavioralAnalysis(
     request: FastifyRequest,
     ip: string,
     userId?: string
   ) {
-    // This could be expanded with more sophisticated analysis
     const userAgent = request.headers['user-agent'] as string;
     const route = request.routeOptions?.url || request.url;
+    let scoreIncrement = 0;
 
-    // Detect potential bot behavior
     if (!userAgent || userAgent.length < 10) {
-      const score = this.suspiciousIPs.get(ip) || 0;
-      this.suspiciousIPs.set(ip, score + 5);
+      scoreIncrement += 5;
+    }
+    if (route.includes('/auth/') || route.includes('/admin/')) {
+      scoreIncrement += 3;
     }
 
-    // Detect rapid requests to sensitive endpoints
-    if (route.includes('/auth/') || route.includes('/admin/')) {
-      const score = this.suspiciousIPs.get(ip) || 0;
-      this.suspiciousIPs.set(ip, score + 3);
+    if (scoreIncrement > 0) {
+      if (this.storageType === 'redis') {
+        const redisKey = `${this.suspiciousIPsPrefix}:${ip}`;
+        await this.redis!.incrby(redisKey, scoreIncrement);
+        await this.redis!.expire(redisKey, this.options.maxPenaltyTime! / 1000);
+      } else {
+        const score = this.suspiciousIPs.get(ip) || 0;
+        this.suspiciousIPs.set(ip, score + scoreIncrement);
+      }
     }
   }
 
@@ -588,12 +686,14 @@ export class EnhancedRateLimitingService {
    * Cleanup expired entries and penalties
    */
   private cleanup() {
+    // This method is only for the in-memory store. Redis handles its own expirations.
+    if (this.storageType === 'redis') return;
+
     const now = Date.now();
     let cleanedEntries = 0;
     let cleanedPenalties = 0;
     let cleanedSuspicious = 0;
 
-    // Cleanup rate limit entries
     for (const [key, entry] of this.store.entries()) {
       if (now > entry.resetTime) {
         this.store.delete(key);
@@ -601,7 +701,6 @@ export class EnhancedRateLimitingService {
       }
     }
 
-    // Cleanup expired penalties
     for (const [ip, penaltyEnd] of this.penalties.entries()) {
       if (now > penaltyEnd) {
         this.penalties.delete(ip);
@@ -609,9 +708,8 @@ export class EnhancedRateLimitingService {
       }
     }
 
-    // Cleanup old suspicious IPs (decay scores)
     for (const [ip, score] of this.suspiciousIPs.entries()) {
-      const newScore = Math.max(0, score - 1); // Decay by 1 point per cleanup cycle
+      const newScore = Math.max(0, score - 1);
       if (newScore === 0) {
         this.suspiciousIPs.delete(ip);
         cleanedSuspicious++;
@@ -635,36 +733,79 @@ export class EnhancedRateLimitingService {
   /**
    * Get rate limiting statistics
    */
-  getStats() {
-    const now = Date.now();
-    const activeEntries = Array.from(this.store.values()).filter(entry => now <= entry.resetTime);
-    const activePenalties = Array.from(this.penalties.values()).filter(end => now < end);
+  async getStats() {
+    if (this.storageType === 'redis') {
+      const [
+        totalEntries,
+        penaltyKeys,
+        suspiciousKeys
+      ] = await Promise.all([
+        this.redis!.keys(`${this.storePrefix}:*`).then(k => k.length),
+        this.redis!.keys(`${this.penaltiesPrefix}:*`),
+        this.redis!.keys(`${this.suspiciousIPsPrefix}:*`),
+      ]);
 
-    return {
-      activeEntries: activeEntries.length,
-      totalEntries: this.store.size,
-      activePenalties: activePenalties.length,
-      suspiciousIPs: this.suspiciousIPs.size,
-      topSuspiciousIPs: Array.from(this.suspiciousIPs.entries())
-        .sort(([,a], [,b]) => b - a)
-        .slice(0, 10)
-    };
+      const suspiciousScores = suspiciousKeys.length > 0
+        ? await this.redis!.mget(...suspiciousKeys)
+        : [];
+
+      const topSuspiciousIPs = suspiciousKeys
+        .map((key, i) => ({ ip: key.split(':').pop(), score: parseInt(suspiciousScores[i]!, 10) }))
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 10);
+
+      return {
+        storage: 'redis',
+        totalEntries,
+        activePenalties: penaltyKeys.length,
+        suspiciousIPs: suspiciousKeys.length,
+        topSuspiciousIPs
+      };
+
+    } else {
+      // In-memory stats
+      const now = Date.now();
+      const activeEntries = Array.from(this.store.values()).filter(entry => now <= entry.resetTime);
+      const activePenalties = Array.from(this.penalties.values()).filter(end => now < end);
+
+      return {
+        storage: 'in-memory',
+        activeEntries: activeEntries.length,
+        totalEntries: this.store.size,
+        activePenalties: activePenalties.length,
+        suspiciousIPs: this.suspiciousIPs.size,
+        topSuspiciousIPs: Array.from(this.suspiciousIPs.entries())
+          .sort(([,a], [,b]) => b - a)
+          .slice(0, 10)
+      };
+    }
   }
 
   /**
    * Manually block IP
    */
-  blockIP(ip: string, duration: number = 24 * 60 * 60 * 1000) {
-    this.penalties.set(ip, Date.now() + duration);
-    logger.info('IP manually blocked', { ip, duration: duration / 1000 });
+  async blockIP(ip: string, durationMs: number = 24 * 60 * 60 * 1000) {
+    if (this.storageType === 'redis') {
+      const redisKey = `${this.penaltiesPrefix}:${ip}`;
+      const durationSec = Math.ceil(durationMs / 1000);
+      await this.redis!.setex(redisKey, durationSec, (Date.now() + durationMs).toString());
+    } else {
+      this.penalties.set(ip, Date.now() + durationMs);
+    }
+    logger.info('IP manually blocked', { ip, duration: durationMs / 1000 });
   }
 
   /**
    * Manually unblock IP
    */
-  unblockIP(ip: string) {
-    this.penalties.delete(ip);
-    this.suspiciousIPs.delete(ip);
+  async unblockIP(ip: string) {
+    if (this.storageType === 'redis') {
+      await this.redis!.del(`${this.penaltiesPrefix}:${ip}`);
+      await this.redis!.del(`${this.suspiciousIPsPrefix}:${ip}`);
+    } else {
+      this.penalties.delete(ip);
+      this.suspiciousIPs.delete(ip);
+    }
     logger.info('IP manually unblocked', { ip });
   }
 
@@ -675,9 +816,13 @@ export class EnhancedRateLimitingService {
     if (this.cleanupInterval) {
       clearInterval(this.cleanupInterval);
     }
-    this.store.clear();
-    this.penalties.clear();
-    this.suspiciousIPs.clear();
+    // For in-memory, clear maps
+    if (this.storageType === 'in-memory') {
+      this.store.clear();
+      this.penalties.clear();
+      this.suspiciousIPs.clear();
+    }
+    // Redis connection is managed by the plugin, so no need to close it here.
     logger.info('Enhanced rate limiting service shutdown');
   }
 }
