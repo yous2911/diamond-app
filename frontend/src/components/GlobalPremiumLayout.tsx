@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import AdvancedParticleEngine from './AdvancedParticleEngine';
-import HybridMascotSystem from './HybridMascotSystem';
+import MascotSystem from './MascotSystem'; // <-- UPDATED to use new MascotSystem
 import XPCrystalsPremium from './XPCrystalsPremium';
 import { usePremiumFeatures } from '../contexts/PremiumFeaturesContext';
 
@@ -9,14 +9,21 @@ import { usePremiumFeatures } from '../contexts/PremiumFeaturesContext';
 // =============================================================================
 interface GlobalPremiumLayoutProps {
   children: React.ReactNode;
+  locale?: 'en' | 'fr'; // <-- ADDED locale prop
   showXPBar?: boolean;
   xpPosition?: 'top' | 'bottom' | 'floating';
+  // ADDED props to make component more testable and less hardcoded
+  studentStreak?: number;
+  equippedMascotItems?: string[];
 }
 
 const GlobalPremiumLayout: React.FC<GlobalPremiumLayoutProps> = ({
   children,
+  locale = 'fr', // Default to French
   showXPBar = true,
-  xpPosition = 'floating'
+  xpPosition = 'floating',
+  studentStreak = 0,
+  equippedMascotItems = [],
 }) => {
   const {
     showParticles,
@@ -26,12 +33,10 @@ const GlobalPremiumLayout: React.FC<GlobalPremiumLayoutProps> = ({
     maxXP,
     level,
     onLevelUp,
-    setMascotEmotion
+    setMascotEmotion,
   } = usePremiumFeatures();
 
-  const [mascotMessage, setMascotMessage] = useState<string>('');
-
-  // Convert particle types for AdvancedParticleEngine
+  // Helper to convert particle types for the engine
   const getAdvancedParticleType = (type: 'success' | 'levelup' | 'magic') => {
     switch (type) {
       case 'success': return 'sparkle';
@@ -41,40 +46,37 @@ const GlobalPremiumLayout: React.FC<GlobalPremiumLayoutProps> = ({
     }
   };
 
-  // Convert mascot emotions to activities
+  // Helper to convert mascot emotions to activities
   const getMascotActivity = (emotion: string) => {
     switch (emotion) {
-      case 'excited': return 'achievement';
+      case 'excited': case 'celebrating': return 'achievement';
       case 'thinking': return 'exercise';
       case 'happy': return 'learning';
-      case 'sleepy': return 'idle';
-      case 'celebrating': return 'achievement';
       default: return 'idle';
     }
   };
 
   const handleLevelUp = (newLevel: number) => {
     setMascotEmotion('excited');
-    setMascotMessage('NIVEAU SUPÉRIEUR ! 🎉');
     onLevelUp?.(newLevel);
   };
 
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 relative overflow-hidden">
-      {/* Advanced Sparkly Particle Effects */}
-      <AdvancedParticleEngine
-        width={window.innerWidth}
-        height={window.innerHeight}
-        particleType={getAdvancedParticleType(particleType)}
-        behavior="explosion"
-        intensity={4}
-        isActive={showParticles}
-        enablePhysics={true}
-        enableTrails={true}
-        enableCollisions={true}
-        className="fixed inset-0 pointer-events-none z-10"
-      />
+      {/* Advanced Particle Effects */}
+      {showParticles && (
+        <AdvancedParticleEngine
+          width={window.innerWidth}
+          height={window.innerHeight}
+          particleType={getAdvancedParticleType(particleType)}
+          behavior="explosion"
+          intensity={4}
+          isActive={showParticles}
+          enablePhysics={true}
+          enableTrails={true}
+          className="fixed inset-0 pointer-events-none z-10"
+        />
+      )}
 
       {/* Main Content */}
       <div className="relative z-10">
@@ -97,26 +99,22 @@ const GlobalPremiumLayout: React.FC<GlobalPremiumLayoutProps> = ({
         </div>
       )}
 
-      {/* Advanced Hybrid Mascot System */}
+      {/* UPDATED to use new MascotSystem */}
       <div className="fixed bottom-6 right-6 z-40">
-        <HybridMascotSystem
+        <MascotSystem
+          locale={locale}
           mascotType="dragon"
           studentData={{
             level: level,
             xp: currentXP,
-            currentStreak: 5,
+            currentStreak: studentStreak,
             timeOfDay: 'afternoon',
             recentPerformance: 'excellent'
           }}
           currentActivity={getMascotActivity(mascotEmotion)}
-          equippedItems={['golden_crown', 'magic_cape']}
-          onMascotInteraction={(interaction) => {
-            // Mascot interaction handled
-            setMascotMessage('Interaction avec le mascot ! 🐉');
-          }}
-          onEmotionalStateChange={(state) => {
-            // Mascot emotional state updated
-          }}
+          equippedItems={equippedMascotItems}
+          onMascotInteraction={() => {}}
+          onEmotionalStateChange={() => {}}
         />
       </div>
     </div>
