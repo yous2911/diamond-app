@@ -2,9 +2,9 @@
 import fp from 'fastify-plugin';
 import { rateLimitConfig, authRateLimitConfig, globalRateLimitConfig, ddosConfig, config } from '../config/config';
 import { EnhancedRateLimitingService } from '../services/enhanced-rate-limiting.service';
-import { FastifyPluginAsync } from 'fastify';
+import { FastifyPluginAsync, FastifyRequest, FastifyReply } from 'fastify';
 
-const rateLimitPlugin: FastifyPluginAsync = async (fastify) => {
+const rateLimitPlugin: FastifyPluginAsync = async (fastify: any) => {
   // Skip rate limiting entirely in test environment
   if (process.env.NODE_ENV === 'test') {
     fastify.log.info('Rate limiting disabled for test environment');
@@ -75,7 +75,7 @@ const rateLimitPlugin: FastifyPluginAsync = async (fastify) => {
         enabled: true
       }
     ]
-  });
+  }, fastify.redis);
 
   // Register the single rate limiting middleware globally
   fastify.addHook('preHandler', enhancedRateLimit.createMiddleware());
@@ -83,12 +83,21 @@ const rateLimitPlugin: FastifyPluginAsync = async (fastify) => {
   // Decorate the fastify instance with the service for potential manual use (e.g., in admin panels)
   fastify.decorate('enhancedRateLimit', enhancedRateLimit);
 
+  // Add admin route to get rate limit stats
+  fastify.get('/api/admin/ratelimit-stats', {
+    preHandler: [fastify.authenticateAdmin],
+    handler: async (request: FastifyRequest, reply: FastifyReply) => {
+      const stats = await enhancedRateLimit.getStats();
+      return reply.send(stats);
+    }
+  });
+
   // Graceful shutdown
   fastify.addHook('onClose', async () => {
     enhancedRateLimit.shutdown();
   });
 
-  fastify.log.info('✅ Consolidated enhanced rate limit plugin registered globally.');
+  fastify.log.info(`✅ Enhanced rate limit plugin registered globally (Storage: ${enhancedRateLimit.storageType})`);
 };
 
 export default fp(rateLimitPlugin, { name: 'rateLimit' });
