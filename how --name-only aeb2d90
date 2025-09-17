@@ -1,0 +1,35 @@
+[33mcommit aeb2d90ceafd877d859b9a04bb6d705c5d8fe406[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Merge: 8e4cdc9 01fe127
+Author: yous2911 <youssefbgh@gmail.com>
+Date:   Sat Sep 13 10:04:50 2025 +0100
+
+    Merge remote-tracking branch 'origin/feat/mobile-app-completion'
+
+ mobile/App.tsx                                     |   8 [32m+[m[31m-[m
+ mobile/__mocks__/useMagicalSounds.js               |   5 [32m+[m
+ mobile/__tests__/navigation/AppNavigator.test.tsx  |  49 [32m+++++[m[31m----[m
+ .../screens/student/ExerciseScreen.test.tsx        |  31 [31m------[m
+ .../screens/student/StudentExerciseScreen.test.tsx |  60 [32m+++++++++++[m
+ .../screens/student/StudentHomeScreen.test.tsx     |  39 [32m++++++[m[31m--[m
+ mobile/jest.config.js                              |   3 [32m+[m
+ mobile/jest.setup.js                               |   4 [32m+[m
+ mobile/package-lock.json                           |   7 [32m++[m
+ mobile/package.json                                |   1 [32m+[m
+ mobile/src/components/DiamondMobileInterface.tsx   |  76 [32m+++++++++++++[m[31m-[m
+ mobile/src/components/MascotMobile3D.tsx           |  84 [32m+++++++++++++++[m[31m-[m
+ mobile/src/contexts/AuthContext.tsx                |  79 [32m+++++++++++++++[m
+ mobile/src/contexts/PremiumFeaturesContext.tsx     |  44 [32m+++++++++[m
+ mobile/src/hooks/useApiData.ts                     | 110 [32m+++++++++++++++++++++[m
+ mobile/src/hooks/useMagicalSounds.ts               |  15 [32m+++[m
+ mobile/src/navigation/AppNavigator.tsx             |   8 [32m+[m[31m-[m
+ mobile/src/screens/parent/ChildProgressScreen.tsx  | 102 [32m+++++++++++++++++[m[31m--[m
+ mobile/src/screens/parent/SettingsScreen.tsx       |  36 [32m++++++[m[31m-[m
+ mobile/src/screens/student/LeaderboardScreen.tsx   |  64 [32m+++++++++++[m[31m-[m
+ mobile/src/screens/student/ProfileScreen.tsx       |  78 [32m++++++++++++++[m[31m-[m
+ mobile/src/screens/student/StudentHomeScreen.tsx   |  79 [32m+++++[m[31m----------[m
+ mobile/src/services/api.ts                         |  16 [32m+[m[31m--[m
+ mobile/src/services/auth.ts                        |  20 [32m++[m[31m--[m
+ mobile/src/services/exerciseService.ts             |  26 [32m++[m[31m---[m
+ mobile/src/services/leaderboardService.ts          |  14 [32m+++[m
+ mobile/src/services/studentService.ts              |  28 [32m++++++[m
+ 27 files changed, 911 insertions(+), 175 deletions(-)

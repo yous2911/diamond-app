@@ -47,11 +47,11 @@ Object.defineProperty(window, 'innerHeight', { writable: true, value: 768 });
 const mockWebSocket = {
   send: jest.fn(),
   close: jest.fn(),
-  onopen: null as ((event: Event) => void) | null,
-  onmessage: null as ((event: MessageEvent) => void) | null,
-  onclose: null as ((event: Event) => void) | null,
-  onerror: null as ((event: Event) => void) | null,
-  readyState: WebSocket.OPEN,
+  onopen: jest.fn(),
+  onmessage: jest.fn(),
+  onclose: jest.fn(),
+  onerror: jest.fn(),
+  readyState: 1, // WebSocket.OPEN
 };
 
 // Mock WebSocket constructor
@@ -129,10 +129,6 @@ const mockWebSocketMessages = {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  
-  // Set environment variable for consistent URL
-  process.env.REACT_APP_API_URL = 'http://localhost:3004';
-  
   // Reset WebSocket mock
   mockWebSocket.send.mockClear();
   mockWebSocket.close.mockClear();
@@ -649,3 +645,4 @@ describe('RealTimeNotifications', () => {
     });
   });
 });
+

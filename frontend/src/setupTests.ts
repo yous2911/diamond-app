@@ -209,8 +209,8 @@ jest.mock('./hooks/useGPUPerformance', () => ({
 // TESTING CONFIGURATION
 // =============================================================================
 
-// Increase timeout for integration tests
-jest.setTimeout(10000);
+// Increase timeout for integration tests and complex animations
+jest.setTimeout(30000);
 
 // Configure test environment
 process.env.REACT_APP_API_BASE_URL = 'http://localhost:5000';

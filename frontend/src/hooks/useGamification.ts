@@ -437,12 +437,15 @@ export const useProgressAnimation = (currentXp: number, targetXp: number) => {
 
   const animateToTarget = useCallback(() => {
     const difference = targetXp - displayXp;
-    if (Math.abs(difference) < 1) return;
+    if (Math.abs(difference) < 1) {
+      setDisplayXp(targetXp);
+      return;
+    }
 
     const step = difference * 0.1;
     const newXp = displayXp + step;
     
-    setDisplayXp(Math.abs(difference) < 1 ? targetXp : newXp);
+    setDisplayXp(newXp);
   }, [displayXp, targetXp]);
 
   return { displayXp, animateToTarget };

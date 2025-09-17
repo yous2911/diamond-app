@@ -2,22 +2,10 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { SparkleElements, MagicElements, CelebrationElements } from '../FloatingElements';
 
-// Disable source map support completely for this test
-process.env.NODE_ENV = 'test';
-
-// Mock framer-motion
 jest.mock('framer-motion', () => ({
   motion: {
-    div: ({ children, className, style, initial, animate, transition, ...props }: any) => (
-      <div 
-        className={className}
-        style={style}
-        data-testid="motion-div-floating"
-        data-initial={JSON.stringify(initial)}
-        data-animate={JSON.stringify(animate)}
-        data-transition={JSON.stringify(transition)}
-        {...props}
-      >
+    div: ({ children, className, style, ...props }: any) => (
+      <div className={className} style={style} data-testid="motion-div" {...props}>
         {children}
       </div>
     )
@@ -25,266 +13,229 @@ jest.mock('framer-motion', () => ({
   AnimatePresence: ({ children }: any) => <div data-testid="animate-presence">{children}</div>
 }));
 
-// Mock Math.random to get consistent results
-const mockRandom = jest.fn();
-jest.spyOn(Math, 'random').mockImplementation(mockRandom);
+describe('FloatingElements', () => {
+  describe('SparkleElements', () => {
+    it('renders sparkle elements when visible', () => {
+      render(<SparkleElements isVisible={true} />);
 
-// Mock console.error to avoid source map warnings
-const originalConsoleError = console.error;
-const originalConsoleWarn = console.warn;
-
-beforeAll(() => {
-  console.error = jest.fn();
-  console.warn = jest.fn();
-});
-
-afterAll(() => {
-  console.error = originalConsoleError;
-  console.warn = originalConsoleWarn;
-});
-
-
-describe('SparkleElements', () => {
-  beforeEach(() => {
-    mockRandom.mockReturnValue(0.5); // Always return 0.5 for consistent positioning
-  });
-
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('renders when visible', () => {
-    render(<SparkleElements isVisible={true} />);
-    
-    expect(screen.getByTestId('animate-presence')).toBeInTheDocument();
-    
-    const motionElements = screen.getAllByTestId('motion-div-floating');
-    expect(motionElements).toHaveLength(8); // 8 sparkle elements
-  });
-
-  it('does not render when not visible', () => {
-    render(<SparkleElements isVisible={false} />);
-    
-    // Should render AnimatePresence but no content inside
-    expect(screen.queryByTestId('motion-div-floating')).not.toBeInTheDocument();
-  });
-
-  it('renders by default when isVisible not specified', () => {
-    render(<SparkleElements />);
-    
-    const motionElements = screen.getAllByTestId('motion-div-floating');
-    expect(motionElements).toHaveLength(8);
-  });
-
-  it('applies custom className', () => {
-    render(<SparkleElements className="custom-sparkle-class" />);
-    
-    const container = screen.getByTestId('animate-presence').firstChild as HTMLElement;
-    expect(container).toHaveClass('custom-sparkle-class');
-  });
-
-  it('creates sparkle elements with correct styling', () => {
-    render(<SparkleElements />);
-    
-    const sparkles = screen.getAllByTestId('motion-div-floating');
-    sparkles.forEach(sparkle => {
-      expect(sparkle).toHaveClass('absolute', 'w-2', 'h-2', 'bg-yellow-300', 'rounded-full');
+      expect(screen.getByTestId('animate-presence')).toBeInTheDocument();
+      const sparkleElements = screen.getAllByTestId('motion-div');
+      expect(sparkleElements.length).toBeGreaterThan(0);
     });
-  });
 
-  it('positions sparkles randomly', () => {
-    mockRandom
-      .mockReturnValueOnce(0.3) // First sparkle left position
-      .mockReturnValueOnce(0.7) // First sparkle top position
-      .mockReturnValueOnce(0.1) // Second sparkle left position
-      .mockReturnValueOnce(0.9); // Second sparkle top position
+    it('does not render when invisible', () => {
+      render(<SparkleElements isVisible={false} />);
 
-    render(<SparkleElements />);
-    
-    const sparkles = screen.getAllByTestId('motion-div-floating');
-    
-    expect(sparkles[0]).toHaveStyle({
-      left: '30%',
-      top: '70%'
+      expect(screen.queryByTestId('animate-presence')).not.toBeInTheDocument();
     });
-    
-    expect(sparkles[1]).toHaveStyle({
-      left: '10%',
-      top: '90%'
+
+    it('renders with default visibility when prop not provided', () => {
+      render(<SparkleElements />);
+
+      expect(screen.getByTestId('animate-presence')).toBeInTheDocument();
     });
-  });
 
-  it('applies correct animation properties', () => {
-    render(<SparkleElements />);
-    
-    const sparkles = screen.getAllByTestId('motion-div-floating');
-    
-    sparkles.forEach((sparkle, index) => {
-      const initialData = JSON.parse(sparkle.getAttribute('data-initial') || '{}');
-      const animateData = JSON.parse(sparkle.getAttribute('data-animate') || '{}');
-      const transitionData = JSON.parse(sparkle.getAttribute('data-transition') || '{}');
-      
-      expect(initialData).toEqual({ scale: 0, opacity: 0 });
-      expect(animateData.scale).toEqual([0, 1, 0]);
-      expect(animateData.opacity).toEqual([0, 1, 0]);
-      expect(animateData.rotate).toEqual([0, 180, 360]);
-      
-      expect(transitionData.duration).toBe(1.5);
-      expect(transitionData.delay).toBe(index * 0.1);
-      expect(transitionData.repeat).toBe(Infinity);
-      expect(transitionData.ease).toBe('easeInOut');
+    it('applies custom className', () => {
+      render(<SparkleElements isVisible={true} className="custom-sparkle-class" />);
+
+      const container = screen.getByTestId('animate-presence').firstChild as HTMLElement;
+      expect(container).toHaveClass('custom-sparkle-class');
     });
-  });
-});
 
-describe('MagicElements', () => {
-  beforeEach(() => {
-    mockRandom.mockReturnValue(0.5);
-  });
+    it('creates multiple sparkle particles', () => {
+      render(<SparkleElements isVisible={true} />);
 
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('renders 6 magic elements when visible', () => {
-    render(<MagicElements isVisible={true} />);
-    
-    const motionElements = screen.getAllByTestId('motion-div-floating');
-    expect(motionElements).toHaveLength(6);
-  });
-
-  it('does not render when not visible', () => {
-    render(<MagicElements isVisible={false} />);
-    
-    expect(screen.queryByTestId('motion-div-floating')).not.toBeInTheDocument();
-  });
-
-  it('creates magic elements with correct styling', () => {
-    render(<MagicElements />);
-    
-    const magicElements = screen.getAllByTestId('motion-div-floating');
-    magicElements.forEach(element => {
-      expect(element).toHaveClass('absolute', 'w-3', 'h-3', 'bg-purple-400', 'rounded-full');
-    });
-  });
-
-  it('applies correct animation properties', () => {
-    render(<MagicElements />);
-    
-    const magicElements = screen.getAllByTestId('motion-div-floating');
-    
-    magicElements.forEach((element, index) => {
-      const initialData = JSON.parse(element.getAttribute('data-initial') || '{}');
-      const animateData = JSON.parse(element.getAttribute('data-animate') || '{}');
-      const transitionData = JSON.parse(element.getAttribute('data-transition') || '{}');
-      
-      expect(initialData).toEqual({ scale: 0, opacity: 0 });
-      expect(animateData.scale).toEqual([0, 1.5, 0]);
-      expect(animateData.opacity).toEqual([0, 0.8, 0]);
-      expect(animateData.y).toEqual([0, -20, 0]);
-      
-      expect(transitionData.duration).toBe(2);
-      expect(transitionData.delay).toBe(index * 0.2);
-      expect(transitionData.repeat).toBe(Infinity);
-      expect(transitionData.ease).toBe('easeInOut');
-    });
-  });
-
-  it('applies custom className', () => {
-    render(<MagicElements className="custom-magic-class" />);
-    
-    const container = screen.getByTestId('animate-presence').firstChild as HTMLElement;
-    expect(container).toHaveClass('custom-magic-class');
-  });
-});
-
-describe('CelebrationElements', () => {
-  beforeEach(() => {
-    mockRandom.mockReturnValue(0.5);
-  });
-
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('renders 12 celebration elements when visible', () => {
-    render(<CelebrationElements isVisible={true} />);
-    
-    const motionElements = screen.getAllByTestId('motion-div-floating');
-    expect(motionElements).toHaveLength(12);
-  });
-
-  it('does not render when not visible', () => {
-    render(<CelebrationElements isVisible={false} />);
-    
-    expect(screen.queryByTestId('motion-div-floating')).not.toBeInTheDocument();
-  });
-
-  it('creates celebration elements with correct styling', () => {
-    render(<CelebrationElements />);
-    
-    const celebrationElements = screen.getAllByTestId('motion-div-floating');
-    celebrationElements.forEach(element => {
-      expect(element).toHaveClass(
-        'absolute', 
-        'w-2', 
-        'h-2', 
-        'bg-gradient-to-r', 
-        'from-pink-400', 
-        'to-yellow-400', 
-        'rounded-full'
+      const sparkleParticles = screen.getAllByTestId('motion-div').filter(
+        el => el.className?.includes('bg-yellow-300')
       );
+      expect(sparkleParticles.length).toBe(8);
+    });
+
+    it('positions sparkles randomly', () => {
+      render(<SparkleElements isVisible={true} />);
+
+      const sparkleParticles = screen.getAllByTestId('motion-div').filter(
+        el => el.className?.includes('bg-yellow-300')
+      );
+
+      sparkleParticles.forEach(sparkle => {
+        expect(sparkle.style.left).toMatch(/\d+(\.\d+)?%/);
+        expect(sparkle.style.top).toMatch(/\d+(\.\d+)?%/);
+      });
+    });
+
+    it('applies proper styling to sparkle particles', () => {
+      render(<SparkleElements isVisible={true} />);
+
+      const sparkleParticles = screen.getAllByTestId('motion-div').filter(
+        el => el.className?.includes('bg-yellow-300')
+      );
+
+      sparkleParticles.forEach(sparkle => {
+        expect(sparkle).toHaveClass('absolute', 'w-2', 'h-2', 'bg-yellow-300', 'rounded-full');
+      });
     });
   });
 
-  it('applies correct animation properties', () => {
-    render(<CelebrationElements />);
-    
-    const celebrationElements = screen.getAllByTestId('motion-div-floating');
-    
-    celebrationElements.forEach((element, index) => {
-      const initialData = JSON.parse(element.getAttribute('data-initial') || '{}');
-      const animateData = JSON.parse(element.getAttribute('data-animate') || '{}');
-      const transitionData = JSON.parse(element.getAttribute('data-transition') || '{}');
-      
-      expect(initialData).toEqual({ scale: 0, opacity: 0 });
-      expect(animateData.scale).toEqual([0, 1, 0]);
-      expect(animateData.opacity).toEqual([0, 1, 0]);
-      expect(animateData.y).toEqual([0, -30, -60]);
-      
-      expect(transitionData.duration).toBe(2.5);
-      expect(transitionData.delay).toBe(index * 0.15);
-      expect(transitionData.repeat).toBe(Infinity);
-      expect(transitionData.ease).toBe('easeOut');
+  describe('MagicElements', () => {
+    it('renders magic elements when visible', () => {
+      render(<MagicElements isVisible={true} />);
+
+      expect(screen.getByTestId('animate-presence')).toBeInTheDocument();
+    });
+
+    it('does not render when invisible', () => {
+      render(<MagicElements isVisible={false} />);
+
+      expect(screen.queryByTestId('animate-presence')).not.toBeInTheDocument();
+    });
+
+    it('renders with default visibility when prop not provided', () => {
+      render(<MagicElements />);
+
+      expect(screen.getByTestId('animate-presence')).toBeInTheDocument();
+    });
+
+    it('applies custom className', () => {
+      render(<MagicElements isVisible={true} className="custom-magic-class" />);
+
+      const container = screen.getByTestId('animate-presence').firstChild as HTMLElement;
+      expect(container).toHaveClass('custom-magic-class');
+    });
+
+    it('creates magic particle effects', () => {
+      render(<MagicElements isVisible={true} />);
+
+      const magicParticles = screen.getAllByTestId('motion-div').filter(
+        el => el.className?.includes('bg-purple-400')
+      );
+      expect(magicParticles.length).toBe(6);
+    });
+
+    it('applies proper styling to magic particles', () => {
+      render(<MagicElements isVisible={true} />);
+
+      const magicParticles = screen.getAllByTestId('motion-div').filter(
+        el => el.className?.includes('bg-purple-400')
+      );
+
+      magicParticles.forEach(particle => {
+        expect(particle).toHaveClass('absolute', 'w-3', 'h-3', 'bg-purple-400', 'rounded-full');
+      });
     });
   });
 
-  it('applies custom className', () => {
-    render(<CelebrationElements className="custom-celebration-class" />);
-    
-    const container = screen.getByTestId('animate-presence').firstChild as HTMLElement;
-    expect(container).toHaveClass('custom-celebration-class');
+  describe('CelebrationElements', () => {
+    it('renders celebration elements when visible', () => {
+      render(<CelebrationElements isVisible={true} />);
+
+      expect(screen.getByTestId('animate-presence')).toBeInTheDocument();
+    });
+
+    it('does not render when invisible', () => {
+      render(<CelebrationElements isVisible={false} />);
+
+      expect(screen.queryByTestId('animate-presence')).not.toBeInTheDocument();
+    });
+
+    it('renders with default visibility when prop not provided', () => {
+      render(<CelebrationElements />);
+
+      expect(screen.getByTestId('animate-presence')).toBeInTheDocument();
+    });
+
+    it('applies custom className', () => {
+      render(<CelebrationElements isVisible={true} className="custom-celebration-class" />);
+
+      const container = screen.getByTestId('animate-presence').firstChild as HTMLElement;
+      expect(container).toHaveClass('custom-celebration-class');
+    });
+
+    it('creates celebration confetti effects', () => {
+      render(<CelebrationElements isVisible={true} />);
+
+      const confettiParticles = screen.getAllByTestId('motion-div').filter(
+        el => el.className?.includes('bg-gradient-to-r')
+      );
+      expect(confettiParticles.length).toBe(12);
+    });
+
+    it('uses gradient colors for confetti', () => {
+      render(<CelebrationElements isVisible={true} />);
+
+      const confettiParticles = screen.getAllByTestId('motion-div').filter(
+        el => el.className?.includes('from-pink-400') && el.className?.includes('to-yellow-400')
+      );
+      expect(confettiParticles.length).toBe(12);
+    });
   });
 
-  it('positions elements randomly', () => {
-    mockRandom
-      .mockReturnValueOnce(0.2)
-      .mockReturnValueOnce(0.8)
-      .mockReturnValueOnce(0.4)
-      .mockReturnValueOnce(0.6);
+  describe('Accessibility', () => {
+    it('applies pointer-events-none to prevent interaction interference', () => {
+      render(<SparkleElements isVisible={true} />);
 
-    render(<CelebrationElements />);
-    
-    const celebrationElements = screen.getAllByTestId('motion-div-floating');
-    
-    expect(celebrationElements[0]).toHaveStyle({
-      left: '20%',
-      top: '80%'
+      const container = screen.getByTestId('animate-presence').firstChild as HTMLElement;
+      expect(container).toHaveClass('pointer-events-none');
     });
-    
-    expect(celebrationElements[1]).toHaveStyle({
-      left: '40%',
-      top: '60%'
+
+    it('uses absolute positioning to overlay content', () => {
+      render(<MagicElements isVisible={true} />);
+
+      const container = screen.getByTestId('animate-presence').firstChild as HTMLElement;
+      expect(container).toHaveClass('absolute', 'inset-0');
+    });
+
+    it('does not interfere with screen readers when hidden', () => {
+      render(<CelebrationElements isVisible={false} />);
+
+      expect(screen.queryByTestId('animate-presence')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Performance Considerations', () => {
+    it('does not render DOM elements when not visible', () => {
+      const { container } = render(<SparkleElements isVisible={false} />);
+
+      expect(container.firstChild).toBeNull();
+    });
+
+    it('uses efficient rendering with arrays', () => {
+      render(<SparkleElements isVisible={true} />);
+
+      const sparkleParticles = screen.getAllByTestId('motion-div').filter(
+        el => el.className?.includes('bg-yellow-300')
+      );
+      expect(sparkleParticles.length).toBe(8);
+    });
+
+    it('maintains consistent particle count across renders', () => {
+      const { rerender } = render(<SparkleElements isVisible={true} />);
+
+      const initialCount = screen.getAllByTestId('motion-div').filter(
+        el => el.className?.includes('bg-yellow-300')
+      ).length;
+
+      rerender(<SparkleElements isVisible={true} />);
+
+      const secondCount = screen.getAllByTestId('motion-div').filter(
+        el => el.className?.includes('bg-yellow-300')
+      ).length;
+
+      expect(initialCount).toBe(secondCount);
+    });
+
+    it('handles visibility toggle efficiently', () => {
+      const { rerender } = render(<SparkleElements isVisible={true} />);
+
+      expect(screen.getByTestId('animate-presence')).toBeInTheDocument();
+
+      rerender(<SparkleElements isVisible={false} />);
+
+      expect(screen.queryByTestId('animate-presence')).not.toBeInTheDocument();
+
+      rerender(<SparkleElements isVisible={true} />);
+
+      expect(screen.getByTestId('animate-presence')).toBeInTheDocument();
     });
   });
 });

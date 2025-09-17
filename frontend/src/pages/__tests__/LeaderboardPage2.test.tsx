@@ -12,16 +12,13 @@ jest.mock('react-router-dom', () => ({
 }));
 
 // Mock AuthContext
-const mockAuthContext = {
-  student: { id: 123, name: 'Test Student' },
-  isAuthenticated: true,
-  login: jest.fn(),
-  logout: jest.fn()
-};
-
-const mockUseAuth = jest.fn().mockReturnValue(mockAuthContext);
 jest.mock('../../contexts/AuthContext', () => ({
-  useAuth: mockUseAuth
+  useAuth: jest.fn().mockReturnValue({
+    student: { id: 123, name: 'Test Student' },
+    isAuthenticated: true,
+    login: jest.fn(),
+    logout: jest.fn()
+  })
 }));
 
 // Mock framer-motion

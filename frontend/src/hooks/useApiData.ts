@@ -44,13 +44,16 @@ export const useApiData = <T>(
   const isMountedRef = useRef(true);
   const { isAuthenticated } = useAuth();
 
+  const fetchFunctionRef = useRef(fetchFunction);
+  fetchFunctionRef.current = fetchFunction;
+
   const fetch = useCallback(async () => {
     if (!isAuthenticated) return;
 
     setState(prev => ({ ...prev, isLoading: true, error: null }));
 
     try {
-      const response = await fetchFunction();
+      const response = await fetchFunctionRef.current();
       
       if (!isMountedRef.current) return;
 
@@ -77,7 +80,7 @@ export const useApiData = <T>(
         error: error instanceof Error ? error.message : 'Network error',
       }));
     }
-  }, [fetchFunction, isAuthenticated]);
+  }, [isAuthenticated]);
 
   const refetch = useCallback(() => {
     fetch();

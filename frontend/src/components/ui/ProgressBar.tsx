@@ -147,7 +147,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = React.memo(({
       )}
     </div>
   );
-};
+});
 
 // Preset variants for educational contexts
 export const LevelProgressBar: React.FC<Omit<ProgressBarProps, 'color' | 'glow'>> = (props) => (
@@ -186,4 +186,4 @@ export const AchievementProgressBar: React.FC<Omit<ProgressBarProps, 'color'>> =
     striped={true}
     animated={true}
   />
-));
+);
