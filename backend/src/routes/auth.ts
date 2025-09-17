@@ -1,9 +1,10 @@
-
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
+import { v4 as uuidv4 } from 'uuid';
 import { authSchemas, loginSchema, registerSchema } from '../schemas/auth.schema';
 import { AuthService } from '../services/auth.service';
 import { addSendWelcomeEmailJob } from '../jobs/producers/email.producer';
+import { serviceContainer } from '../container/service.container';
 
 // Types will be inferred from Zod schemas, removing manual interfaces
 type LoginRequestBody = z.infer<typeof loginSchema>;
@@ -22,8 +23,19 @@ interface PasswordResetConfirmBody {
   newPassword: string;
 }
 
+// Type definitions for better type safety
+interface AuthenticatedRequest extends FastifyRequest {
+  user: {
+    studentId: number;
+    email: string;
+    role: string;
+  };
+}
+
 export default async function authRoutes(fastify: FastifyInstance) {
-  const authService = new AuthService();
+  // Use dependency injection instead of manual instantiation
+  const authService = serviceContainer.get('authService') || new AuthService();
+  const sevenDaysInSeconds = 7 * 24 * 60 * 60;
 
   // Secure login endpoint
   fastify.post('/login', {
@@ -34,19 +46,57 @@ export default async function authRoutes(fastify: FastifyInstance) {
       request: FastifyRequest<{ Body: LoginRequestBody }>,
       reply: FastifyReply
     ) => {
-      const student = await authService.authenticateStudent(request.body, request.log);
-      const payload = { studentId: student.id, email: student.email, role: student.role };
+      const student = await authService.authenticateStudent(
+        request.body,
+        request.log
+      );
 
-      const accessToken = await reply.jwtSign(payload);
+      const accessTokenPayload = {
+        studentId: student.id,
+        email: student.email,
+        role: student.role,
+      };
+      const refreshTokenPayload = {
+        ...accessTokenPayload,
+        jti: uuidv4(),
+      };
+
+      const accessToken = await reply.jwtSign(accessTokenPayload, {
+        expiresIn: '15m',
+      });
+      const refreshToken = await (fastify as any).refreshJwt.sign(
+        refreshTokenPayload,
+        { expiresIn: '7d' }
+      );
+
+      reply
+        .setCookie('access-token', accessToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+          path: '/',
+          maxAge: 15 * 60, // 15 minutes in seconds
+        })
+        .setCookie('refresh-token', refreshToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+          path: '/api/auth/refresh',
+          maxAge: sevenDaysInSeconds,
+        });
 
       return reply.send({
         success: true,
         data: {
-          token: accessToken,
-          student,
+          student: {
+            id: student.id,
+            email: student.email,
+            role: student.role,
+          },
+          message: 'Connexion réussie',
         },
       });
-    }
+    },
   });
 
   // Register new student
@@ -58,69 +108,120 @@ export default async function authRoutes(fastify: FastifyInstance) {
       request: FastifyRequest<{ Body: RegisterRequestBody }>,
       reply: FastifyReply
     ) => {
-      const student = await authService.registerStudent(request.body, request.log);
-      const payload = { studentId: student.id, email: student.email, role: student.role };
-      const accessToken = await reply.jwtSign(payload);
+      const student = await authService.registerStudent(
+        request.body,
+        request.log
+      );
+
+      // Automatically log in the user after registration
+      const accessTokenPayload = {
+        studentId: student.id,
+        email: student.email,
+        role: student.role,
+      };
+      const refreshTokenPayload = {
+        ...accessTokenPayload,
+        jti: uuidv4(),
+      };
+
+      const accessToken = await reply.jwtSign(accessTokenPayload, {
+        expiresIn: '15m',
+      });
+      const refreshToken = await (fastify as any).refreshJwt.sign(
+        refreshTokenPayload,
+        { expiresIn: '7d' }
+      );
+
+      reply
+        .setCookie('access-token', accessToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+          path: '/',
+          maxAge: 15 * 60,
+        })
+        .setCookie('refresh-token', refreshToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+          path: '/api/auth/refresh',
+          maxAge: sevenDaysInSeconds,
+        });
 
       // Offload welcome email to the background queue
-      addSendWelcomeEmailJob({ email: student.email, name: student.prenom });
+      addSendWelcomeEmailJob({
+        email: student.email,
+        name: student.prenom,
+      });
 
       return reply.status(201).send({
         success: true,
         data: {
-          student,
-          token: accessToken,
-          message: 'Compte créé avec succès'
+          student: {
+            id: student.id,
+            email: student.email,
+            role: student.role,
+          },
+          message: 'Compte créé avec succès',
         },
       });
-    }
+    },
   });
 
   // Refresh access token
   fastify.post('/refresh', {
-    schema: authSchemas.refresh,
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        // The cookie plugin unsigns the cookie automatically
         const refreshToken = request.cookies['refresh-token'];
 
         if (!refreshToken) {
-          return reply.status(401).send({
-            success: false,
-            error: {
-              message: 'Token de rafraîchissement manquant',
-              code: 'MISSING_REFRESH_TOKEN',
-            },
-          });
+          return reply
+            .status(401)
+            .send({ error: 'Token de rafraîchissement manquant' });
         }
-        
-        const decoded = await (fastify as any).refreshJwt.verify(refreshToken);
-        const payload = { studentId: decoded.studentId, email: decoded.email };
-        const newAccessToken = await reply.jwtSign(payload);
 
-        // Only set the access token cookie
-        (reply as any).setAuthCookies(newAccessToken, refreshToken);
+        const decoded = await (fastify as any).refreshJwt.verify(refreshToken);
+
+        // CRITICAL: Check if token is revoked
+        const isRevoked = await fastify.cache.get(`denylist:${decoded.jti}`);
+        if (isRevoked) {
+          // Clear cookies if a revoked token is used
+          reply
+            .clearCookie('access-token', { path: '/' })
+            .clearCookie('refresh-token', { path: '/api/auth/refresh' });
+          return reply.status(401).send({ error: 'Token révoqué' });
+        }
+
+        const payload = {
+          studentId: decoded.studentId,
+          email: decoded.email,
+          role: decoded.role, // Ensure role is included in the new token
+        };
+        const newAccessToken = await reply.jwtSign(payload, {
+          expiresIn: '15m',
+        });
+
+        reply.setCookie('access-token', newAccessToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+          path: '/',
+          maxAge: 15 * 60,
+        });
 
         return reply.send({
           success: true,
-          data: {
-            token: newAccessToken,
-            message: 'Token rafraîchi avec succès',
-          },
+          message: 'Token rafraîchi avec succès',
         });
-
       } catch (error) {
-        (fastify.log as any).error('Token refresh error:', error);
+        fastify.log.error('Token refresh error:', error);
+        // Clear potentially invalid cookie
         reply.clearCookie('refresh-token', { path: '/api/auth/refresh' });
-        return reply.status(401).send({
-          success: false,
-          error: {
-            message: 'Token de rafraîchissement invalide ou expiré',
-            code: 'INVALID_REFRESH_TOKEN',
-          },
-        });
+        return reply
+          .status(401)
+          .send({ error: 'Token de rafraîchissement invalide ou expiré' });
       }
-    }
+    },
   });
 
   // Password reset request
@@ -147,7 +248,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
         // await emailService.sendPasswordReset(email, resetToken);
 
       } catch (error) {
-        (fastify.log as any).error('Password reset error:', error);
+        fastify.log.error('Password reset error:', error);
         // Do not send 500 to prevent leaking information
         return reply.send({
           success: true,
@@ -189,7 +290,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
         });
 
       } catch (error) {
-        (fastify.log as any).error('Password reset confirm error:', error);
+        fastify.log.error('Password reset confirm error:', error);
         return reply.status(500).send({
           success: false,
           error: {
@@ -203,35 +304,36 @@ export default async function authRoutes(fastify: FastifyInstance) {
 
   // Logout endpoint
   fastify.post('/logout', {
-    preHandler: [fastify.authenticate],
-    handler: async (
-      request: FastifyRequest,
-      reply: FastifyReply
-    ) => {
+    handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const studentId = (request.user as any).studentId;
-        await authService.logoutStudent(studentId);
+        const { 'refresh-token': refreshToken } = request.cookies;
 
-        (reply as any).clearAuthCookies();
-
-        return reply.send({
-          success: true,
-          data: {
-            message: 'Déconnexion réussie'
-          },
-        });
-
+        if (refreshToken) {
+          const decoded = await (fastify as any).refreshJwt.verify(
+            refreshToken
+          );
+          // Add token JTI to denylist to invalidate it
+          await fastify.cache.set(
+            `denylist:${decoded.jti}`,
+            '1',
+            sevenDaysInSeconds
+          );
+        }
       } catch (error) {
-        (fastify.log as any).error('Logout error:', error);
-        return reply.status(500).send({
-          success: false,
-          error: {
-            message: 'Erreur lors de la déconnexion',
-            code: 'INTERNAL_ERROR',
-          },
-        });
+        // Log the error but proceed to clear cookies anyway
+        fastify.log.warn('Error processing refresh token on logout:', error);
       }
-    }
+
+      // Always clear cookies
+      reply
+        .clearCookie('access-token', { path: '/' })
+        .clearCookie('refresh-token', { path: '/api/auth/refresh' });
+
+      return reply.send({
+        success: true,
+        message: 'Déconnexion réussie',
+      });
+    },
   });
 
   // Get current user info
@@ -242,7 +344,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
       reply: FastifyReply
     ) => {
       // The user object is decorated by the authenticate middleware
-      const user = request.user as any;
+      const user = (request as AuthenticatedRequest).user;
 
       return reply.send({
         success: true,
