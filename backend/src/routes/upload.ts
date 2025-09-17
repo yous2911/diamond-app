@@ -1,5 +1,9 @@
-import { FastifyPluginAsync } from 'fastify';
+import { FastifyPluginAsync, FastifyRequest } from 'fastify';
+import { MultipartFile } from '@fastify/multipart';
+import * as path from 'path';
+import * as fs from 'fs/promises';
 import { z } from 'zod';
+import { config } from '../config/config';
 import { FileUploadService } from '../services/file-upload.service';
 import { ImageProcessingService } from '../services/image-processing.service';
 import { StorageService } from '../services/storage.service';
@@ -37,10 +41,83 @@ const fileIdSchema = z.object({
   fileId: z.string().uuid()
 });
 
+const downloadQuerySchema = z.object({
+    variant: z.enum(['original', 'thumbnail', 'small', 'medium', 'large']).default('original'),
+});
+
+const listFilesQuerySchema = z.object({
+    category: z.enum(['image', 'video', 'audio', 'document', 'exercise', 'curriculum', 'assessment', 'resource']).optional(),
+    limit: z.number().min(1).max(100).default(20),
+    offset: z.number().min(0).default(0),
+    includePublic: z.boolean().default(false),
+});
+
+const processImageBodySchema = z.object({
+    operation: z.enum(['resize', 'compress', 'convert', 'watermark']),
+    options: z.object({
+        width: z.number().optional(),
+        height: z.number().optional(),
+        quality: z.number().min(1).max(100).optional(),
+        format: z.enum(['jpeg', 'png', 'webp', 'avif']).optional(),
+        watermarkText: z.string().optional(),
+        watermarkPosition: z.enum(['top-left', 'top-right', 'bottom-left', 'bottom-right', 'center']).optional(),
+    }).optional(),
+});
+
+// Define stricter types to replace 'any'
+type UploadParams = z.infer<typeof uploadParamsSchema>;
+type EducationalMetadata = z.infer<typeof educationalMetadataSchema>;
+type FileIdParams = z.infer<typeof fileIdSchema>;
+type DownloadQuery = z.infer<typeof downloadQuerySchema>;
+type ListFilesQuery = z.infer<typeof listFilesQuerySchema>;
+type ProcessImageBody = z.infer<typeof processImageBodySchema>;
+
+interface AuthenticatedUser {
+  studentId: number;
+  email: string;
+  role: string;
+}
+
+interface AuthenticatedRequest extends FastifyRequest {
+  user: AuthenticatedUser;
+}
+
 const uploadRoutes: FastifyPluginAsync = async (fastify) => {
   const uploadService = new FileUploadService();
   const imageProcessor = new ImageProcessingService();
   const storageService = new StorageService();
+
+  /**
+   * Secure path validation helper
+   */
+  const getValidatedFilePath = async (
+    fileId: string,
+    filename: string,
+    userId?: string
+  ): Promise<string | null> => {
+    // Centralized validation to prevent path traversal
+    if (!filename || filename.includes('..') || filename.includes('/') || filename.includes('\\') || filename.includes('\0')) {
+      logger.warn('Invalid filename detected', { userId, fileId, filename });
+      return null;
+    }
+
+    const safeFilePath = path.join(config.upload.path, filename);
+    const resolvedBase = path.resolve(config.upload.path);
+    const resolvedPath = path.resolve(safeFilePath);
+
+    if (!resolvedPath.startsWith(resolvedBase)) {
+      logger.warn('Path traversal attempt detected', { userId, fileId, requestedPath: safeFilePath });
+      return null;
+    }
+
+    try {
+      await fs.access(resolvedPath);
+      return resolvedPath;
+    } catch (error) {
+      logger.warn('File not found at validated path', { userId, fileId, path: resolvedPath });
+      return null;
+    }
+  };
 
   // Register multipart support
   await fastify.register(import('@fastify/multipart'), {
@@ -100,123 +177,60 @@ const uploadRoutes: FastifyPluginAsync = async (fastify) => {
       }
     },
     preHandler: [fastify.authenticate], // Require authentication
-    handler: async (request, reply) => {
-      try {
-        // Parse multipart data
-        const data = request.body as any;
-        
-        // Extract and validate parameters
-        const params = uploadParamsSchema.parse({
-          category: data.category?.value,
-          generateThumbnails: data.generateThumbnails?.value === 'true',
-          isPublic: data.isPublic?.value === 'true',
-          compressionLevel: data.compressionLevel?.value ? parseInt(data.compressionLevel.value) : undefined
+    handler: async (request: FastifyRequest<{ Body: Record<string, any> }>, reply) => {
+        const studentId = (request as AuthenticatedRequest).user?.studentId || 'anonymous';
+        const data = request.body;
+
+        const params: UploadParams = uploadParamsSchema.parse({
+            category: data.category?.value,
+            generateThumbnails: data.generateThumbnails?.value === 'true',
+            isPublic: data.isPublic?.value === 'true',
+            compressionLevel: data.compressionLevel?.value ? parseInt(data.compressionLevel.value, 10) : undefined,
         });
 
-        // Parse educational metadata if provided
-        let educationalMetadata;
+        let educationalMetadata: EducationalMetadata | undefined;
         if (data.educationalMetadata?.value) {
-          try {
-            const metadata = JSON.parse(data.educationalMetadata.value);
-            educationalMetadata = educationalMetadataSchema.parse(metadata);
-          } catch (error) {
-            return reply.status(400).send({
-              success: false,
-              errors: ['Invalid educational metadata format']
-            });
-          }
+            educationalMetadata = educationalMetadataSchema.parse(JSON.parse(data.educationalMetadata.value));
         }
 
-        // Extract files from multipart data
-        const files: any[] = [];
+        const files: MultipartFile[] = [];
         const validationErrors: string[] = [];
+
+        for await (const part of request.parts()) {
+            if (part.type === 'file') {
+                const buffer = await part.toBuffer();
+                const validationResult = FileValidationService.validateFile(
+                    buffer,
+                    part.filename,
+                    part.mimetype,
+                    DEFAULT_UPLOAD_CONFIG.maxFileSize
+                );
+
+                if (!validationResult.isValid) {
+                    validationErrors.push(`${part.filename}: ${validationResult.errors.join(', ')}`);
+                    continue;
+                }
+                
+                // Reconstruct a multipart file object after validation
+                files.push({ ...part, data: buffer, toBuffer: async () => buffer } as MultipartFile);
+            }
+        }
         
-        for (const [key, value] of Object.entries(data)) {
-          if (key.startsWith('file') && value && typeof value === 'object' && 'data' in value) {
-            const file = value as any;
-            
-            // Validation sécurisée avec magic bytes
-            const validationResult = FileValidationService.validateFile(
-              file.data,
-              file.filename,
-              file.mimetype,
-              DEFAULT_UPLOAD_CONFIG.maxFileSize
-            );
-            
-            if (!validationResult.isValid) {
-              validationErrors.push(`${file.filename}: ${validationResult.errors.join(', ')}`);
-              logger.warn('File validation failed', {
-                filename: file.filename,
-                declaredType: file.mimetype,
-                errors: validationResult.errors,
-                ip: request.ip
-              });
-              continue;
-            }
-            
-            if (validationResult.warnings.length > 0) {
-              logger.warn('File validation warnings', {
-                filename: file.filename,
-                warnings: validationResult.warnings
-              });
-            }
-
-            files.push({
-              fieldname: key,
-              originalname: file.filename,
-              encoding: file.encoding,
-              mimetype: validationResult.detectedType || file.mimetype, // Utiliser le type détecté
-              buffer: file.data,
-              size: file.data.length
-            });
-          }
-        }
-
         if (validationErrors.length > 0) {
-          return reply.status(400).send({
-            success: false,
-            errors: validationErrors
-          });
+            return reply.status(400).send({ success: false, errors: validationErrors });
         }
 
-        if (files.length === 0) {
-          return reply.status(400).send({
-            success: false,
-            errors: ['No valid files provided']
-          });
-        }
-
-        // Get user ID from authentication
-        const userId = (request as any).user?.id || 'anonymous';
-
-        // Create upload request
         const uploadRequest: UploadRequest = {
-          files,
-          category: params.category || 'resource',
-          isPublic: params.isPublic,
-          educationalMetadata,
-          generateThumbnails: params.generateThumbnails,
-          compressionLevel: params.compressionLevel
+            files,
+            category: params.category || 'resource',
+            isPublic: params.isPublic,
+            educationalMetadata,
+            generateThumbnails: params.generateThumbnails,
+            compressionLevel: params.compressionLevel,
         };
 
-        // Process upload
-        const result = await uploadService.processUpload(uploadRequest, userId);
-
-        logger.info('Files uploaded successfully', {
-          userId,
-          fileCount: result.files.length,
-          category: params.category
-        });
-
+        const result = await uploadService.processUpload(uploadRequest, studentId);
         return reply.send(result);
-
-      } catch (error) {
-        logger.error('Upload error:', error);
-        return reply.status(500).send({
-          success: false,
-          errors: ['Internal server error during upload']
-        });
-      }
     }
   });
 
@@ -261,40 +275,21 @@ const uploadRoutes: FastifyPluginAsync = async (fastify) => {
       }
     },
     preHandler: [fastify.authenticate],
-    handler: async (request, reply) => {
-      try {
-        const { fileId } = request.params as any;
-        const file = await uploadService.getFile(fileId);
+    handler: async (request: FastifyRequest<{ Params: FileIdParams }>, reply) => {
+      const { fileId } = request.params;
+      const file = await uploadService.getFile(fileId);
 
-        if (!file) {
-          return reply.status(404).send({
-            success: false,
-            error: 'File not found'
-          });
-        }
-
-        // Check permissions
-        const userId = (request as any).user?.id;
-        if (!file.isPublic && file.uploadedBy !== userId) {
-          return reply.status(403).send({
-            success: false,
-            error: 'Access denied'
-          });
-        }
-
-        return reply.send({
-          success: true,
-          file
-        });
-
-      } catch (error) {
-        logger.error('Error getting file:', error);
-        return reply.status(500).send({
-          success: false,
-          error: 'Internal server error'
-        });
+      if (!file) {
+        return reply.status(404).send({ success: false, error: 'File not found' });
       }
-    }
+
+      const studentId = (request as AuthenticatedRequest).user?.studentId;
+      if (!file.isPublic && file.uploadedBy !== studentId) {
+        return reply.status(403).send({ success: false, error: 'Access denied' });
+      }
+
+      return reply.send({ success: true, file });
+    },
   });
 
   /**
@@ -313,60 +308,41 @@ const uploadRoutes: FastifyPluginAsync = async (fastify) => {
       }
     },
     preHandler: [fastify.authenticate],
-    handler: async (request, reply) => {
-      try {
-        const { fileId } = request.params as any;
-        const { variant = 'original' } = request.query as any;
-        
+    handler: async (request: FastifyRequest<{ Params: FileIdParams, Querystring: DownloadQuery }>, reply) => {
+        const { fileId } = request.params;
+        const { variant } = request.query;
+        const studentId = (request as AuthenticatedRequest).user?.studentId;
+
         const file = await uploadService.getFile(fileId);
-
         if (!file) {
-          return reply.status(404).send({
-            success: false,
-            error: 'File not found'
-          });
+            return reply.status(404).send({ success: false, error: 'File not found' });
         }
 
-        // Check permissions
-        const userId = (request as any).user?.id;
-        if (!file.isPublic && file.uploadedBy !== userId) {
-          return reply.status(403).send({
-            success: false,
-            error: 'Access denied'
-          });
+        if (!file.isPublic && file.uploadedBy !== studentId) {
+            return reply.status(403).send({ success: false, error: 'Access denied' });
         }
 
-        // Determine file path
-        let filePath = file.path;
         let filename = file.filename;
         let mimetype = file.mimetype;
 
         if (variant !== 'original' && file.processedVariants) {
-          const requestedVariant = file.processedVariants.find(v => v.type === variant);
-          if (requestedVariant) {
-            filePath = requestedVariant.path;
-            filename = requestedVariant.filename;
-            mimetype = requestedVariant.mimetype;
-          }
+            const requestedVariant = file.processedVariants.find(v => v.type === variant);
+            if (requestedVariant) {
+                filename = requestedVariant.filename;
+                mimetype = requestedVariant.mimetype;
+            }
         }
 
-        // Set headers for file download
+        const resolvedPath = await getValidatedFilePath(fileId, filename, studentId);
+        if (!resolvedPath) {
+            return reply.status(400).send({ success: false, error: 'Invalid or non-existent file path' });
+        }
+        
         reply.header('Content-Type', mimetype);
         reply.header('Content-Disposition', `attachment; filename="${filename}"`);
-        reply.header('Cache-Control', 'public, max-age=31536000'); // 1 year cache
-
-        // Stream file
-        const stream = fastify.fs.createReadStream(filePath);
+        const stream = fastify.fs.createReadStream(resolvedPath);
         return reply.send(stream);
-
-      } catch (error) {
-        logger.error('Error downloading file:', error);
-        return reply.status(500).send({
-          success: false,
-          error: 'Internal server error'
-        });
-      }
-    }
+    },
   });
 
   /**
@@ -388,33 +364,21 @@ const uploadRoutes: FastifyPluginAsync = async (fastify) => {
       }
     },
     preHandler: [fastify.authenticate],
-    handler: async (request, reply) => {
-      try {
-        const { fileId } = request.params as any;
-        const userId = (request as any).user?.id;
+    handler: async (request: FastifyRequest<{ Params: FileIdParams }>, reply) => {
+      const { fileId } = request.params;
+      const studentId = (request as AuthenticatedRequest).user?.studentId;
 
-        const success = await uploadService.deleteFile(fileId, userId);
-
-        if (success) {
-          return reply.send({
-            success: true,
-            message: 'File deleted successfully'
-          });
-        } else {
-          return reply.status(404).send({
-            success: false,
-            error: 'File not found or access denied'
-          });
-        }
-
-      } catch (error) {
-        logger.error('Error deleting file:', error);
-        return reply.status(500).send({
-          success: false,
-          error: error.message
-        });
+      if (!studentId) {
+        return reply.status(401).send({ success: false, error: 'Authentication required' });
       }
-    }
+
+      const success = await uploadService.deleteFile(fileId, studentId);
+      if (success) {
+        return reply.send({ success: true, message: 'File deleted successfully' });
+      } else {
+        return reply.status(404).send({ success: false, error: 'File not found or access denied' });
+      }
+    },
   });
 
   /**
@@ -461,34 +425,15 @@ const uploadRoutes: FastifyPluginAsync = async (fastify) => {
       }
     },
     preHandler: [fastify.authenticate],
-    handler: async (request, reply) => {
-      try {
-        const userId = (request as any).user?.id;
-        const query = request.query as any;
-
-        const result = await storageService.getFilesByUser(userId, {
-          category: query.category as FileCategory,
-          limit: query.limit,
-          offset: query.offset,
-          includePublic: query.includePublic
-        });
-
-        return reply.send({
-          success: true,
-          files: result.files,
-          total: result.total,
-          limit: query.limit,
-          offset: query.offset
-        });
-
-      } catch (error) {
-        logger.error('Error listing files:', error);
-        return reply.status(500).send({
-          success: false,
-          error: 'Internal server error'
-        });
-      }
-    }
+    handler: async (request: FastifyRequest<{ Querystring: ListFilesQuery }>, reply) => {
+        const studentId = (request as AuthenticatedRequest).user?.studentId;
+        if (!studentId) {
+            return reply.status(401).send({ success: false, error: 'Authentication required' });
+        }
+        
+        const result = await storageService.getFilesByUser(studentId, request.query);
+        return reply.send({ success: true, ...result });
+    },
   });
 
   /**
@@ -570,104 +515,53 @@ const uploadRoutes: FastifyPluginAsync = async (fastify) => {
       }
     },
     preHandler: [fastify.authenticate],
-    handler: async (request, reply) => {
-      try {
-        const { fileId } = request.params as any;
-        const { operation, options = {} } = request.body as any;
-        const userId = (request as any).user?.id;
+    handler: async (request: FastifyRequest<{ Params: FileIdParams, Body: ProcessImageBody }>, reply) => {
+        const { fileId } = request.params;
+        const { operation, options = {} } = request.body;
+        const studentId = (request as AuthenticatedRequest).user?.studentId;
 
         const file = await uploadService.getFile(fileId);
-
         if (!file) {
-          return reply.status(404).send({
-            success: false,
-            error: 'File not found'
-          });
+            return reply.status(404).send({ success: false, error: 'File not found' });
         }
 
-        // Check permissions
-        if (file.uploadedBy !== userId) {
-          return reply.status(403).send({
-            success: false,
-            error: 'Access denied'
-          });
+        if (file.uploadedBy !== studentId) {
+            return reply.status(403).send({ success: false, error: 'Access denied' });
         }
 
-        // Verify it's an image with strict validation
-        const validationResult = FileValidationService.validateFile(
-          Buffer.from([]), // On a déjà le fichier stocké, pas besoin du buffer ici
-          file.filename,
-          file.mimetype
-        );
+        if (!file.mimetype.startsWith('image/')) {
+            return reply.status(400).send({ success: false, error: 'File is not an image' });
+        }
         
-        if (!file.mimetype.startsWith('image/') || !FileValidationService.isAllowedMimeType(file.mimetype)) {
-          return reply.status(400).send({
-            success: false,
-            error: 'File type not allowed for image processing'
-          });
+        const resolvedPath = await getValidatedFilePath(fileId, file.filename, studentId);
+        if (!resolvedPath) {
+            return reply.status(400).send({ success: false, error: 'Invalid or non-existent file path for processing' });
         }
 
         let result: Buffer;
-        
         switch (operation) {
-          case 'resize':
-            result = await imageProcessor.resizeImage(file.path, {
-              width: options.width,
-              height: options.height,
-              fit: 'cover'
-            }, {
-              quality: options.quality || 85
-            });
-            break;
-            
-          case 'compress':
-            result = await imageProcessor.compressImage(file.path, {
-              quality: options.quality || 85
-            });
-            break;
-            
-          case 'convert':
-            result = await imageProcessor.convertFormat(file.path, options.format || 'webp', options.quality || 85);
-            break;
-            
-          case 'watermark':
-            if (!options.watermarkText) {
-              return reply.status(400).send({
-                success: false,
-                error: 'Watermark text is required'
-              });
-            }
-            result = await imageProcessor.addWatermark(file.path, {
-              text: options.watermarkText,
-              position: options.watermarkPosition || 'bottom-right',
-              opacity: 0.7,
-              fontSize: 24,
-              color: '#ffffff'
-            });
-            break;
-            
-          default:
-            return reply.status(400).send({
-              success: false,
-              error: 'Invalid operation'
-            });
+            case 'resize':
+                result = await imageProcessor.resizeImage(resolvedPath, { width: options.width, height: options.height, fit: 'cover' }, { quality: options.quality });
+                break;
+            case 'compress':
+                result = await imageProcessor.compressImage(resolvedPath, { quality: options.quality });
+                break;
+            case 'convert':
+                result = await imageProcessor.convertFormat(resolvedPath, options.format || 'webp', options.quality);
+                break;
+            case 'watermark':
+                 if (!options.watermarkText) {
+                    return reply.status(400).send({ success: false, error: 'Watermark text is required' });
+                }
+                result = await imageProcessor.addWatermark(resolvedPath, { text: options.watermarkText, position: options.watermarkPosition });
+                break;
+            default:
+                return reply.status(400).send({ success: false, error: 'Invalid operation' });
         }
 
-        // Return processed image
-        const format = options.format || 'jpeg';
-        reply.header('Content-Type', `image/${format}`);
-        reply.header('Content-Disposition', `attachment; filename="processed_${file.filename}"`);
-        
+        reply.header('Content-Type', `image/${options.format || 'jpeg'}`);
         return reply.send(result);
-
-      } catch (error) {
-        logger.error('Error processing image:', error);
-        return reply.status(500).send({
-          success: false,
-          error: error.message
-        });
-      }
-    }
+    },
   });
 
   /**
