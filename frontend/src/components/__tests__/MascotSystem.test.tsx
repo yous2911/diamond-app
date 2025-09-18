@@ -4,12 +4,13 @@ import MascotSystem from '../MascotSystem';
 import * as THREE from 'three';
 
 // Mock the WardrobeData module
+const mockCreateItemMesh = jest.fn();
 jest.mock('../WardrobeData', () => ({
   WARDROBE_ITEMS: [
     { id: 'wizard_hat', name: 'Wizard Hat' },
     { id: 'superhero_cape', name: 'Superhero Cape' },
   ],
-  createItemMesh: jest.fn(() => new THREE.Object3D()),
+  createItemMesh: mockCreateItemMesh,
 }));
 
 // Mock Three.js renderer
@@ -145,11 +146,13 @@ describe('MascotSystem', () => {
   });
 
   it('renders equipped wardrobe items', () => {
-    const { createItemMesh } = require('../WardrobeData');
+    // Set up the mock to return a THREE.Object3D
+    mockCreateItemMesh.mockReturnValue(new THREE.Object3D());
+
     render(<MascotSystem {...defaultProps} equippedItems={['wizard_hat']} />);
 
     // Check if the factory function was called for the equipped item
-    expect(createItemMesh).toHaveBeenCalledWith(expect.objectContaining({ id: 'wizard_hat' }));
+    expect(mockCreateItemMesh).toHaveBeenCalledWith(expect.objectContaining({ id: 'wizard_hat' }));
   });
 
   it('does not render 3D scene in test environment', () => {
