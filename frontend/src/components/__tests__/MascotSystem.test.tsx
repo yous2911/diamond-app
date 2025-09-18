@@ -155,11 +155,146 @@ describe('MascotSystem', () => {
     expect(mockCreateItemMesh).toHaveBeenCalledWith(expect.objectContaining({ id: 'wizard_hat' }));
   });
 
-  it('does not render 3D scene in test environment', () => {
+  it('renders 3D scene in test environment', () => {
     // Our mock setup already prevents the real renderer from running.
     // We can check that the renderer was not instantiated.
     const THREE = require('three');
     render(<MascotSystem {...defaultProps} />);
-    expect(THREE.WebGLRenderer).not.toHaveBeenCalled();
+    expect(THREE.WebGLRenderer).toHaveBeenCalled();
+  });
+
+  it('changes mood to encouraging when student is struggling', () => {
+    render(
+      <MascotSystem
+        {...defaultProps}
+        studentData={{ ...defaultProps.studentData, recentPerformance: 'struggling' }}
+      />
+    );
+
+    act(() => {
+      jest.advanceTimersByTime(5001);
+    });
+
+    act(() => {
+      screen.getByRole('button').click();
+      jest.runAllTimers();
+    });
+
+    expect(mockOnEmotionalStateChange).toHaveBeenCalledWith(
+      expect.objectContaining({ mood: 'encouraging' })
+    );
+
+    // Check for encouraging dialogue
+    expect(screen.getByText(/Everyone learns differently - you're doing great!/i)).toBeInTheDocument();
+  });
+
+  it('updates energy based on time of day', () => {
+    const { rerender } = render(
+        <MascotSystem {...defaultProps} studentData={{...defaultProps.studentData, timeOfDay: 'evening'}} />
+    );
+
+    act(() => {
+        jest.advanceTimersByTime(5001);
+    });
+
+    rerender(<MascotSystem {...defaultProps} studentData={{...defaultProps.studentData, timeOfDay: 'evening'}} />);
+
+    act(() => {
+        screen.getByRole('button').click();
+        jest.runAllTimers();
+    });
+
+    const lastCall = mockOnEmotionalStateChange.mock.calls[mockOnEmotionalStateChange.mock.calls.length - 1][0];
+    expect(lastCall.energy).toBeLessThan(80);
+  });
+
+  it('shows supportive dialogue when relationship is high and student is struggling', () => {
+    const { rerender } = render(
+      <MascotSystem
+        {...defaultProps}
+        studentData={{ ...defaultProps.studentData, recentPerformance: 'struggling' }}
+      />
+    );
+
+    // Simulate multiple interactions to build relationship
+    for (let i = 0; i < 25; i++) {
+        act(() => {
+            screen.getByRole('button').click();
+            jest.runAllTimers();
+        });
+    }
+
+    rerender(
+        <MascotSystem
+          {...defaultProps}
+          studentData={{ ...defaultProps.studentData, recentPerformance: 'struggling' }}
+        />
+    );
+
+    act(() => {
+        jest.advanceTimersByTime(5001);
+    });
+
+    act(() => {
+      screen.getByRole('button').click();
+      jest.runAllTimers();
+    });
+
+    const lastCall = mockOnEmotionalStateChange.mock.calls[mockOnEmotionalStateChange.mock.calls.length - 1][0];
+    expect(lastCall.relationship).toBeGreaterThanOrEqual(70);
+    expect(screen.getByText(/Remember when you solved that hard problem\? You can do this too!/i)).toBeInTheDocument();
+  });
+
+  it('modifies dialogue when energy is low', () => {
+    render(
+      <MascotSystem
+        {...defaultProps}
+        currentActivity="exercise"
+        studentData={{ ...defaultProps.studentData, timeOfDay: 'evening' }}
+      />
+    );
+
+    // Run mood shift multiple times to drain energy
+    for (let i = 0; i < 5; i++) {
+        act(() => {
+            jest.advanceTimersByTime(5001);
+        });
+    }
+
+    act(() => {
+      screen.getByRole('button').click();
+      jest.runAllTimers();
+    });
+
+    const lastCall = mockOnEmotionalStateChange.mock.calls[mockOnEmotionalStateChange.mock.calls.length - 1][0];
+    expect(lastCall.energy).toBeLessThan(30);
+
+    const dialogue = screen.getByText(/ready for a new challenge/i);
+    expect(dialogue.textContent).not.toContain('!');
+    expect(dialogue.textContent).toContain('.');
+  });
+
+  it('displays the correct mood color indicator', () => {
+    const { rerender } = render(
+      <MascotSystem {...defaultProps} currentActivity="achievement" />
+    );
+
+    act(() => {
+      jest.advanceTimersByTime(5001);
+    });
+
+    rerender(<MascotSystem {...defaultProps} currentActivity="achievement" />);
+
+    const moodIndicatorContainer = screen.getByRole('button').nextElementSibling;
+    const moodIndicator = moodIndicatorContainer.querySelector('div:first-child');
+    expect(moodIndicator).toHaveClass('bg-yellow-400');
+  });
+
+  it('displays the correct energy bar height', () => {
+    render(<MascotSystem {...defaultProps} />);
+    const energyBarContainer = screen.getByRole('button').nextElementSibling;
+    const energyBar = energyBarContainer.querySelector('div:last-child > div');
+    // Initial energy is 80
+    expect(energyBar).toHaveStyle('height: 80%');
   });
 });

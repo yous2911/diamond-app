@@ -51,7 +51,7 @@ const TestComponent: React.FC = () => {
       <div data-testid="particles-active">{showParticles.toString()}</div>
       <div data-testid="particle-type">{particleType}</div>
       <div data-testid="mascot-emotion">{mascotEmotion}</div>
-      
+
       <button data-testid="add-xp-btn" onClick={() => addXP(10, 'exercise')}>
         Add XP
       </button>
@@ -132,9 +132,9 @@ describe('Premium Components - Fast Tests', () => {
 
     it('handles level up when XP reaches max', () => {
       const mockOnLevelUp = jest.fn();
-      
+
       render(
-        <PremiumFeaturesProvider initialXP={90} initialLevel={1} onLevelUp={mockOnLevelUp}>
+        <PremiumFeaturesProvider initialXP={110} initialLevel={1} onLevelUp={mockOnLevelUp}>
           <TestComponent />
         </PremiumFeaturesProvider>
       );
@@ -148,9 +148,9 @@ describe('Premium Components - Fast Tests', () => {
 
     it('resets XP after level up', () => {
       const mockOnLevelUp = jest.fn();
-      
+
       render(
-        <PremiumFeaturesProvider initialXP={90} initialLevel={1} onLevelUp={mockOnLevelUp}>
+        <PremiumFeaturesProvider initialXP={110} initialLevel={1} onLevelUp={mockOnLevelUp}>
           <TestComponent />
         </PremiumFeaturesProvider>
       );
@@ -158,7 +158,7 @@ describe('Premium Components - Fast Tests', () => {
       const addButton = screen.getByTestId('add-xp-btn');
       fireEvent.click(addButton);
 
-      // XP should reset to 0 after level up (100 - 120 = -20, but we reset to 0)
+      // XP should reset to 0 after level up (120 - 120 = 0)
       expect(screen.getByTestId('xp-display')).toHaveTextContent('0/140');
     });
 
@@ -170,7 +170,7 @@ describe('Premium Components - Fast Tests', () => {
       );
 
       const addButton = screen.getByTestId('add-xp-btn');
-      
+
       fireEvent.click(addButton);
       fireEvent.click(addButton);
       fireEvent.click(addButton);
@@ -270,11 +270,11 @@ describe('Premium Components - Fast Tests', () => {
   describe('Error Handling', () => {
     it('throws error when used outside provider', () => {
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-      
+
       expect(() => {
         render(<TestComponent />);
       }).toThrow('usePremiumFeatures must be used within a PremiumFeaturesProvider');
-      
+
       consoleSpy.mockRestore();
     });
   });
@@ -312,6 +312,3 @@ describe('Premium Components - Fast Tests', () => {
     });
   });
 });
-
-
-

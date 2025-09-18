@@ -250,6 +250,46 @@ describe('LazyComponents', () => {
 
       expect(screen.getByText(/Achievement Badges.*testProp.*achievement-test/)).toBeInTheDocument();
     });
+
+    it('loads SmartParticleEngine component after skeleton', async () => {
+      render(<SmartParticleEngine testProp="particle-test" />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('advanced-particle-engine')).toBeInTheDocument();
+      });
+
+      expect(screen.getByText(/Advanced Particle Engine.*testProp.*particle-test/)).toBeInTheDocument();
+    });
+
+    it('loads SmartPhonicsGame component after skeleton', async () => {
+      render(<SmartPhonicsGame testProp="phonics-test" />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('french-phonics-game')).toBeInTheDocument();
+      });
+
+      expect(screen.getByText(/French Phonics Game.*testProp.*phonics-test/)).toBeInTheDocument();
+    });
+
+    it('loads SmartMentalMath component after skeleton', async () => {
+      render(<SmartMentalMath testProp="mental-math-test" />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('mental-math-exercise')).toBeInTheDocument();
+      });
+
+      expect(screen.getByText(/Mental Math Exercise.*testProp.*mental-math-test/)).toBeInTheDocument();
+    });
+
+    it('loads SmartProgressTracker component after skeleton', async () => {
+      render(<SmartProgressTracker testProp="progress-test" />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('progress-tracker')).toBeInTheDocument();
+      });
+
+      expect(screen.getByText(/Progress Tracker.*testProp.*progress-test/)).toBeInTheDocument();
+    });
   });
 
   describe('useLazyLoadingPerformance', () => {

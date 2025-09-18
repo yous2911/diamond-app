@@ -190,10 +190,7 @@ const CelebrationSystem = memo<CelebrationProps>(({
   }, [config, mainControls, textControls, getOptimalDuration, data, onComplete]);
 
   useEffect(() => {
-    // Don't auto-start celebrations in test environment to avoid async state updates
-    if (process.env.NODE_ENV !== 'test') {
-      playCelebrationSequence();
-    }
+    playCelebrationSequence();
   }, [playCelebrationSequence]);
 
   // Contextual confetti system

@@ -41,7 +41,7 @@ jest.mock('../../hooks/useMagicalSounds', () => ({
 // Simple test component
 const TestComponent: React.FC = () => {
   const { currentXP, maxXP, level, addXP } = usePremiumFeatures();
-  
+
   return (
     <div>
       <div data-testid="xp-display">{currentXP}/{maxXP}</div>
@@ -90,7 +90,7 @@ describe('Premium Components - Simple Tests', () => {
   it('renders mocked particle engine', () => {
     const { AdvancedParticleEngine } = require('../AdvancedParticleEngine');
     const { render: renderComponent } = require('@testing-library/react');
-    
+
     const { container } = renderComponent(<AdvancedParticleEngine />);
     expect(container.querySelector('[data-testid="particle-engine"]')).toBeInTheDocument();
   });
@@ -98,7 +98,7 @@ describe('Premium Components - Simple Tests', () => {
   it('renders mocked mascot system', () => {
     const { HybridMascotSystem } = require('../HybridMascotSystem');
     const { render: renderComponent } = require('@testing-library/react');
-    
+
     const { container } = renderComponent(<HybridMascotSystem />);
     expect(container.querySelector('[data-testid="mascot-system"]')).toBeInTheDocument();
   });
@@ -106,7 +106,7 @@ describe('Premium Components - Simple Tests', () => {
   it('renders mocked XP crystals', () => {
     const { XPCrystalsPremium } = require('../XPCrystalsPremium');
     const { render: renderComponent } = require('@testing-library/react');
-    
+
     const { container } = renderComponent(
       <XPCrystalsPremium currentXP={75} maxXP={100} level={3} onLevelUp={jest.fn()} />
     );
@@ -115,9 +115,9 @@ describe('Premium Components - Simple Tests', () => {
 
   it('handles level up when XP reaches max', () => {
     const mockOnLevelUp = jest.fn();
-    
+
     render(
-      <PremiumFeaturesProvider initialXP={90} initialLevel={1} onLevelUp={mockOnLevelUp}>
+      <PremiumFeaturesProvider initialXP={110} initialLevel={1} onLevelUp={mockOnLevelUp}>
         <TestComponent />
       </PremiumFeaturesProvider>
     );
@@ -132,14 +132,14 @@ describe('Premium Components - Simple Tests', () => {
   it('calculates maxXP correctly for different levels', () => {
     const levels = [1, 5, 10];
     const expectedMaxXPs = [120, 200, 300]; // 100 + (level * 20)
-    
+
     levels.forEach((level, index) => {
       const { unmount } = render(
         <PremiumFeaturesProvider initialLevel={level}>
           <TestComponent />
         </PremiumFeaturesProvider>
       );
-      
+
       expect(screen.getByTestId('xp-display')).toHaveTextContent(`0/${expectedMaxXPs[index]}`);
       unmount();
     });
@@ -153,7 +153,7 @@ describe('Premium Components - Simple Tests', () => {
     );
 
     const addButton = screen.getByText('Add XP');
-    
+
     // Add XP multiple times
     addButton.click();
     addButton.click();
@@ -168,14 +168,14 @@ describe('Premium Components - Simple Tests', () => {
       { initialXP: 100, expected: '100/120' },
       { initialXP: 200, expected: '200/120' }
     ];
-    
+
     edgeCases.forEach(({ initialXP, expected }) => {
       const { unmount } = render(
         <PremiumFeaturesProvider initialXP={initialXP}>
           <TestComponent />
         </PremiumFeaturesProvider>
       );
-      
+
       expect(screen.getByTestId('xp-display')).toHaveTextContent(expected);
       unmount();
     });
@@ -183,14 +183,14 @@ describe('Premium Components - Simple Tests', () => {
 
   it('handles different initial levels', () => {
     const levels = [1, 5, 10, 20];
-    
+
     levels.forEach(level => {
       const { unmount } = render(
         <PremiumFeaturesProvider initialLevel={level}>
           <TestComponent />
         </PremiumFeaturesProvider>
       );
-      
+
       expect(screen.getByTestId('level-display')).toHaveTextContent(level.toString());
       unmount();
     });
@@ -199,7 +199,7 @@ describe('Premium Components - Simple Tests', () => {
   it('provides all required context values', () => {
     const TestContextComponent: React.FC = () => {
       const context = usePremiumFeatures();
-      
+
       return (
         <div>
           <div data-testid="has-current-xp">{typeof context.currentXP}</div>
@@ -228,6 +228,3 @@ describe('Premium Components - Simple Tests', () => {
     expect(screen.getByTestId('has-mascot-emotion')).toHaveTextContent('string');
   });
 });
-
-
-

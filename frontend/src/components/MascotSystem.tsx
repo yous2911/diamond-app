@@ -279,7 +279,7 @@ const MascotSystem: React.FC<MascotSystemProps> = ({
   }, [aiState, generateDialogue, onMascotInteraction, onEmotionalStateChange]);
 
   useEffect(() => {
-    if (!mountRef.current || process.env.NODE_ENV === 'test') return;
+    if (!mountRef.current) return;
 
     const scene = new THREE.Scene();
     sceneRef.current = scene;

@@ -83,7 +83,7 @@ const XPCrystalsPremium = memo<XPCrystalsPremiumProps>(({
   }, [mainControls]);
 
   return (
-    <div className="relative">
+    <div className="relative" data-testid="xp-crystals-premium">
       {/* Enhanced Level Up System */}
       {isLevelingUp && (
         <EnhancedLevelUpSystem
@@ -206,6 +206,7 @@ const XPCrystalsPremium = memo<XPCrystalsPremiumProps>(({
 
         {/* Level Badge */}
         <motion.div
+          data-testid="xp-level"
           className="absolute -top-2 -right-2 w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg border-2 border-white"
           animate={{
             scale: isLevelingUp ? [1, 1.3, 1] : 1,

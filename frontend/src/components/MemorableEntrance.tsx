@@ -201,7 +201,7 @@ const MemorableEntrance = memo<MemorableEntranceProps>(({
         animate={{ y: 0, opacity: 1 }}
         transition={{ duration: 0.6, delay: 0.2 }}
       >
-        Tu es en <span className="font-bold text-blue-600">{level}</span>
+        Tu es en <span data-testid="entrance-level" className="font-bold text-blue-600">{level}</span>
       </motion.p>
       
       <motion.div
@@ -317,6 +317,7 @@ const MemorableEntrance = memo<MemorableEntranceProps>(({
 
   return (
     <motion.div
+      data-testid="memorable-entrance"
       className="fixed inset-0 z-50 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100"
       animate={containerControls}
       initial={{ opacity: 1 }}

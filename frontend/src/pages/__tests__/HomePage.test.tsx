@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import HomePage from '../HomePage';
 import { AuthProvider } from '../../contexts/AuthContext';
@@ -309,18 +309,20 @@ describe('HomePage', () => {
       render(<HomePage />, { wrapper: TestWrapper });
 
       // Check XP Crystals component receives correct data
-      expect(screen.getByText('XP: 1250/200')).toBeInTheDocument();
-      expect(screen.getByText('Level: 5')).toBeInTheDocument();
-      expect(screen.getByText('Student: Emma')).toBeInTheDocument();
-      expect(screen.getByText('Achievements: 3')).toBeInTheDocument();
+      const xpCrystals = screen.getByTestId('xp-crystals-premium');
+      expect(within(xpCrystals).getByText('XP: 1250/200')).toBeInTheDocument();
+      expect(within(xpCrystals).getByText('Level: 5')).toBeInTheDocument();
+      expect(within(xpCrystals).getByText('Student: Emma')).toBeInTheDocument();
+      expect(within(xpCrystals).getByText('Achievements: 3')).toBeInTheDocument();
     });
 
     it('should show memorable entrance for first-time visitors', () => {
       render(<HomePage />, { wrapper: TestWrapper });
 
-      expect(screen.getByTestId('memorable-entrance')).toBeInTheDocument();
-      expect(screen.getByText('Welcome Emma!')).toBeInTheDocument();
-      expect(screen.getByText('Level: 5')).toBeInTheDocument();
+      const memorableEntrance = screen.getByTestId('memorable-entrance');
+      expect(memorableEntrance).toBeInTheDocument();
+      expect(within(memorableEntrance).getByText('Welcome Emma!')).toBeInTheDocument();
+      expect(within(memorableEntrance).getByText('Level: 5')).toBeInTheDocument();
     });
 
     it('should not show entrance for returning visitors', () => {
@@ -548,9 +550,10 @@ describe('HomePage', () => {
       render(<HomePage />, { wrapper: TestWrapper });
       
       // Verify student data is processed into correct format
-      expect(screen.getByText('Student: Emma')).toBeInTheDocument();
-      expect(screen.getByText('XP: 1250/200')).toBeInTheDocument(); // maxXP = 100 + (level * 20)
-      expect(screen.getByText('Level: 5')).toBeInTheDocument();
+      const xpCrystals = screen.getByTestId('xp-crystals-premium');
+      expect(within(xpCrystals).getByText('Student: Emma')).toBeInTheDocument();
+      expect(within(xpCrystals).getByText('XP: 1250/200')).toBeInTheDocument(); // maxXP = 100 + (level * 20)
+      expect(within(xpCrystals).getByText('Level: 5')).toBeInTheDocument();
     });
 
     it('should handle missing student data gracefully', () => {
@@ -564,8 +567,9 @@ describe('HomePage', () => {
       
       render(<HomePage />, { wrapper: TestWrapper });
       
-      expect(screen.getByText('Student: Élève')).toBeInTheDocument();
-      expect(screen.getByText('Level: 1')).toBeInTheDocument();
+      const xpCrystals = screen.getByTestId('xp-crystals-premium');
+      expect(within(xpCrystals).getByText('Student: Élève')).toBeInTheDocument();
+      expect(within(xpCrystals).getByText('Level: 1')).toBeInTheDocument();
     });
   });
 

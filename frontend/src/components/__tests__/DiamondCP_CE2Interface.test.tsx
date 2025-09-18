@@ -89,10 +89,11 @@ describe('AdvancedParticleEngineAAA (DiamondCP_CE2Interface)', () => {
   };
 
   beforeEach(() => {
+    jest.useFakeTimers();
     jest.clearAllMocks();
     mockRequestAnimationFrame.mockImplementation((callback) => {
-      setTimeout(() => callback(16), 16);
-      return 1;
+      const id = setTimeout(() => callback(Date.now()), 16);
+      return id as unknown as number;
     });
     
     // Ensure getBoundingClientRect mock is properly set up
@@ -112,6 +113,10 @@ describe('AdvancedParticleEngineAAA (DiamondCP_CE2Interface)', () => {
       value: mockGetBoundingClientRect,
       writable: true
     });
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it('renders when active', () => {
@@ -474,6 +479,53 @@ describe('AdvancedParticleEngineAAA (DiamondCP_CE2Interface)', () => {
     // Should integrate with framer-motion
     expect(document.querySelector('canvas')).toBeInTheDocument();
   });
+
+  it('spawns particles at the specified position when follow is false', async () => {
+    render(
+      <AdvancedParticleEngineAAA {...defaultProps} position={{ x: 25, y: 75 }} />
+    );
+
+    await act(async () => {
+      jest.advanceTimersByTime(100);
+    });
+
+    expect(mockCanvasContext.translate).toHaveBeenCalled();
+    const firstTranslateCall = mockCanvasContext.translate.mock.calls[0];
+    const x = firstTranslateCall[0];
+    const y = firstTranslateCall[1];
+
+    // canvas width is 800, height is 600 (from mock)
+    // position is {x: 25, y: 75}, so spawn point is {x: 200, y: 450}
+    // The spawn has a random offset of +/- 25
+    expect(x).toBeGreaterThanOrEqual(175);
+    expect(x).toBeLessThanOrEqual(225);
+    expect(y).toBeGreaterThanOrEqual(425);
+    expect(y).toBeLessThanOrEqual(475);
+  });
+
+  it('spawns particles at the mouse position when follow is true', async () => {
+      render(
+        <AdvancedParticleEngineAAA {...defaultProps} follow={true} />
+      );
+
+      fireEvent.mouseMove(window, { clientX: 300, clientY: 400 });
+
+      await act(async () => {
+        jest.advanceTimersByTime(100);
+      });
+
+      expect(mockCanvasContext.translate).toHaveBeenCalled();
+      const firstTranslateCall = mockCanvasContext.translate.mock.calls[0];
+      const x = firstTranslateCall[0];
+      const y = firstTranslateCall[1];
+
+      // Mouse position is {x: 300, y: 400}
+      // Spawn has random offset +/- 25
+      expect(x).toBeGreaterThanOrEqual(275);
+      expect(x).toBeLessThanOrEqual(325);
+      expect(y).toBeGreaterThanOrEqual(375);
+      expect(y).toBeLessThanOrEqual(425);
+    });
 });
 
 
