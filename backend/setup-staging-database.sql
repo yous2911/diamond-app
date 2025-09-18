@@ -323,3 +323,4 @@ SELECT COUNT(*) as exercise_count FROM exercises;
 SELECT COUNT(*) as progress_count FROM studentProgress;
 
 
+

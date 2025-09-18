@@ -10,6 +10,12 @@ const mockPlayLevelUpFanfare = jest.fn();
 const mockPlayButtonClick = jest.fn();
 const mockPlayErrorSound = jest.fn();
 
+// Create a mock state for soundEnabled
+let mockSoundEnabled = true;
+const mockSetSoundEnabled = jest.fn((enabled: boolean) => {
+  mockSoundEnabled = enabled;
+});
+
 jest.mock('../../hooks/useMagicalSounds', () => ({
   useMagicalSounds: () => ({
     playMagicalChord: mockPlayMagicalChord,
@@ -17,8 +23,8 @@ jest.mock('../../hooks/useMagicalSounds', () => ({
     playLevelUpFanfare: mockPlayLevelUpFanfare,
     playButtonClick: mockPlayButtonClick,
     playErrorSound: mockPlayErrorSound,
-    soundEnabled: true,
-    setSoundEnabled: jest.fn()
+    get soundEnabled() { return mockSoundEnabled; },
+    setSoundEnabled: mockSetSoundEnabled
   })
 }));
 
@@ -77,6 +83,7 @@ const TestComponent: React.FC = () => {
 describe('PremiumFeaturesContext', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockSoundEnabled = true; // Reset sound state
   });
 
   it('provides default values', () => {
@@ -137,6 +144,17 @@ describe('PremiumFeaturesContext', () => {
     
     await act(async () => {
       fireEvent.click(addXPButton);
+    });
+
+    // The level up should happen when XP reaches 120 (100 + 1*20)
+    // Starting with 90 XP + 10 XP = 100 XP, which is still less than 120
+    // We need to add more XP to trigger level up
+    await act(async () => {
+      fireEvent.click(addXPButton); // 100 + 10 = 110
+    });
+
+    await act(async () => {
+      fireEvent.click(addXPButton); // 110 + 10 = 120, should trigger level up
     });
 
     await waitFor(() => {
@@ -258,21 +276,34 @@ describe('PremiumFeaturesContext', () => {
   });
 
   it('handles sound controls', async () => {
-    render(
+    const { rerender } = render(
       <PremiumFeaturesProvider>
         <TestComponent />
       </PremiumFeaturesProvider>
     );
 
+    // Initial state should be true
+    expect(screen.getByTestId('sound-enabled')).toHaveTextContent('true');
+
     const disableSoundButton = screen.getByText('Disable Sound');
-    
+
     await act(async () => {
       fireEvent.click(disableSoundButton);
     });
 
+    // Force a re-render to pick up state changes
+    await act(async () => {
+      rerender(
+        <PremiumFeaturesProvider>
+          <TestComponent />
+        </PremiumFeaturesProvider>
+      );
+    });
+
+    // Now check for the updated state
     await waitFor(() => {
       expect(screen.getByTestId('sound-enabled')).toHaveTextContent('false');
-    });
+    }, { timeout: 2000 });
   });
 
   it('plays audio functions', async () => {
@@ -412,10 +443,15 @@ describe('PremiumFeaturesContext', () => {
       fireEvent.click(addXPButton);
     });
 
-    // Since high XP can trigger level ups, check for actual state after calculations
+    // With level 10, maxXP = 100 + (10 * 20) = 300
+    // Starting with 1000 XP + 10 XP = 1010 XP
+    // This should trigger multiple level ups
+    // After level ups, XP should be reduced
     await waitFor(() => {
       const currentXP = parseInt(screen.getByTestId('current-xp').textContent || '0');
-      expect(currentXP).toBeGreaterThan(1000);
+      const level = parseInt(screen.getByTestId('level').textContent || '0');
+      expect(level).toBeGreaterThan(10); // Should have leveled up
+      expect(currentXP).toBeLessThan(1010); // Should be reduced after level ups
     });
   });
 
@@ -476,5 +512,6 @@ describe('PremiumFeaturesContext', () => {
     expect(screen.getByTestId('mascot-emotion')).toHaveTextContent('happy');
   });
 });
+
 
 

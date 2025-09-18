@@ -59,7 +59,12 @@ Object.defineProperty(HTMLCanvasElement.prototype, 'getBoundingClientRect', {
     left: 0,
     top: 0,
     width: 800,
-    height: 600
+    height: 600,
+    right: 800,
+    bottom: 600,
+    x: 0,
+    y: 0,
+    toJSON: jest.fn()
   }))
 });
 
@@ -88,6 +93,24 @@ describe('AdvancedParticleEngineAAA (DiamondCP_CE2Interface)', () => {
     mockRequestAnimationFrame.mockImplementation((callback) => {
       setTimeout(() => callback(16), 16);
       return 1;
+    });
+    
+    // Ensure getBoundingClientRect mock is properly set up
+    const mockGetBoundingClientRect = jest.fn(() => ({
+      left: 0,
+      top: 0,
+      width: 800,
+      height: 600,
+      right: 800,
+      bottom: 600,
+      x: 0,
+      y: 0,
+      toJSON: jest.fn()
+    }));
+    
+    Object.defineProperty(HTMLCanvasElement.prototype, 'getBoundingClientRect', {
+      value: mockGetBoundingClientRect,
+      writable: true
     });
   });
 
@@ -452,5 +475,6 @@ describe('AdvancedParticleEngineAAA (DiamondCP_CE2Interface)', () => {
     expect(document.querySelector('canvas')).toBeInTheDocument();
   });
 });
+
 
 

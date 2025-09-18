@@ -50,3 +50,4 @@ The vast majority of modules in the codebase have corresponding test files. This
 1.  **Prioritize the "High Priority" list.** Start by adding tests for the `api.ts` service and the `CelebrationContext`.
 2.  **Review existing tests.** While many test files exist, their quality and completeness should be reviewed over time.
 3.  **Maintain the coverage.** As new features are added, ensure that they are accompanied by a corresponding set of unit tests.
+

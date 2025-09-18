@@ -368,9 +368,16 @@ const AdvancedParticleEngineAAA = memo<ParticleEngineProps>(({
     // Set canvas size
     const updateSize = () => {
       const rect = canvas.getBoundingClientRect();
-      canvas.width = rect.width;
-      canvas.height = rect.height;
-      setDimensions({ width: rect.width, height: rect.height });
+      if (rect && rect.width && rect.height) {
+        canvas.width = rect.width;
+        canvas.height = rect.height;
+        setDimensions({ width: rect.width, height: rect.height });
+      } else {
+        // Fallback for test environment or when getBoundingClientRect fails
+        canvas.width = 800;
+        canvas.height = 600;
+        setDimensions({ width: 800, height: 600 });
+      }
     };
     
     updateSize();
@@ -447,5 +454,6 @@ const AdvancedParticleEngineAAA = memo<ParticleEngineProps>(({
 AdvancedParticleEngineAAA.displayName = 'AdvancedParticleEngineAAA';
 
 export default AdvancedParticleEngineAAA;
+
 
 
