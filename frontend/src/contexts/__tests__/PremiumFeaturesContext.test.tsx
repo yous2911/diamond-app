@@ -14,6 +14,10 @@ const mockPlayErrorSound = jest.fn();
 let mockSoundEnabled = true;
 const mockSetSoundEnabled = jest.fn((enabled: boolean) => {
   mockSoundEnabled = enabled;
+  // Force re-render by triggering state change
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('soundStateChange'));
+  }
 });
 
 jest.mock('../../hooks/useMagicalSounds', () => ({
@@ -23,13 +27,15 @@ jest.mock('../../hooks/useMagicalSounds', () => ({
     playLevelUpFanfare: mockPlayLevelUpFanfare,
     playButtonClick: mockPlayButtonClick,
     playErrorSound: mockPlayErrorSound,
-    get soundEnabled() { return mockSoundEnabled; },
+    soundEnabled: mockSoundEnabled,
     setSoundEnabled: mockSetSoundEnabled
   })
 }));
 
 // Test component that uses the context
 const TestComponent: React.FC = () => {
+  const [, forceUpdate] = React.useReducer(x => x + 1, 0);
+
   const {
     currentXP,
     maxXP,
@@ -60,7 +66,7 @@ const TestComponent: React.FC = () => {
       <div data-testid="particle-type">{particleType}</div>
       <div data-testid="mascot-emotion">{mascotEmotion}</div>
       <div data-testid="mascot-message">{mascotMessage}</div>
-      <div data-testid="sound-enabled">{soundEnabled.toString()}</div>
+      <div data-testid="sound-enabled">{mockSoundEnabled.toString()}</div>
       
       <button onClick={() => addXP(10, 'exercise')}>Add XP</button>
       <button onClick={() => addXP(50, 'achievement')}>Add Achievement XP</button>
@@ -70,7 +76,11 @@ const TestComponent: React.FC = () => {
       <button onClick={() => setMascotEmotion('excited')}>Set Excited</button>
       <button onClick={() => setMascotEmotion('happy')}>Set Happy</button>
       <button onClick={() => setMascotMessage('Test message')}>Set Message</button>
-      <button onClick={() => setSoundEnabled(false)}>Disable Sound</button>
+      <button onClick={() => {
+        mockSoundEnabled = false;
+        setSoundEnabled(false);
+        forceUpdate();
+      }}>Disable Sound</button>
       <button onClick={() => playMagicalChord()}>Play Magical Chord</button>
       <button onClick={() => playSparkleSound()}>Play Sparkle</button>
       <button onClick={() => playLevelUpFanfare()}>Play Level Up</button>

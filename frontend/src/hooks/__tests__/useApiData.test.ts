@@ -1006,6 +1006,9 @@ describe('useApiData Hook', () => {
         expect(mockFetch).toHaveBeenCalledTimes(1);
       });
 
+      // Clear mock calls to test fresh focus behavior
+      mockFetch.mockClear();
+
       // Simulate window focus immediately (cache is fresh)
       act(() => {
         const focusHandler = mockAddEventListener.mock.calls.find(
@@ -1014,8 +1017,9 @@ describe('useApiData Hook', () => {
         if (focusHandler) focusHandler();
       });
 
-      // Should not refetch
-      expect(mockFetch).toHaveBeenCalledTimes(1);
+      // Should not refetch (0 additional calls) - wait a bit for potential async calls
+      await new Promise(resolve => setTimeout(resolve, 50));
+      expect(mockFetch).toHaveBeenCalledTimes(0);
     });
   });
 
@@ -1100,8 +1104,11 @@ describe('useApiData Hook', () => {
 
       rerender();
 
+      // Clear any previous mock calls
+      mockFetch.mockClear();
+
       // Should still handle refetch gracefully when not authenticated
-      const { result } = renderHook(() => 
+      const { result } = renderHook(() =>
         useApiData(mockFetch, { autoFetch: false })
       );
 
