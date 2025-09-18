@@ -3,6 +3,8 @@ import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import DragDropExercise from '../DragDropExercise';
 
+import { fireEvent } from '@testing-library/react';
+
 // Mock Framer Motion to avoid animation issues in tests
 jest.mock('framer-motion', () => ({
   motion: {
@@ -89,4 +91,110 @@ describe('DragDropExercise', () => {
     expect(screen.getByText('First')).toBeInTheDocument();
     expect(screen.getByText('Second')).toBeInTheDocument();
   });
-}); 
+});
+
+describe('DragDropExercise Interactions', () => {
+  const onCompleteMock = jest.fn();
+
+  const setup = (props = {}) => {
+    const defaultProps = {
+      question: 'Categorize fruits and vegetables',
+      items: [
+        { id: 'item-1', content: 'Apple', category: 'fruit' },
+        { id: 'item-2', content: 'Carrot', category: 'vegetable' },
+      ],
+      zones: [
+        { id: 'zone-fruit', label: 'Fruits', accepts: ['fruit'], items: [] },
+        { id: 'zone-veg', label: 'Vegetables', accepts: ['vegetable'], items: [] },
+      ],
+      onComplete: onCompleteMock,
+    };
+    return render(<DragDropExercise {...defaultProps} {...props} />);
+  };
+
+  beforeEach(() => {
+    onCompleteMock.mockClear();
+  });
+
+  it('allows a correct item to be dropped into a zone', () => {
+    setup();
+    const itemToDrag = screen.getByText('Apple');
+    const dropZoneContainer = screen.getByText('Fruits').parentElement;
+
+    expect(screen.getByText('Glisse les éléments :').parentElement).toHaveTextContent('Apple');
+    expect(dropZoneContainer).not.toHaveTextContent('Apple');
+
+    fireEvent.dragStart(itemToDrag);
+    fireEvent.drop(dropZoneContainer);
+
+    expect(screen.getByText('Glisse les éléments :').parentElement).not.toHaveTextContent('Apple');
+    expect(dropZoneContainer).toHaveTextContent('Apple');
+  });
+
+  it('prevents an incorrect item from being dropped into a zone', () => {
+    setup();
+    const itemToDrag = screen.getByText('Apple'); // fruit
+    const dropZoneContainer = screen.getByText('Vegetables').parentElement; // accepts vegetable
+
+    fireEvent.dragStart(itemToDrag);
+    fireEvent.drop(dropZoneContainer);
+
+    // State should not have changed
+    expect(screen.getByText('Glisse les éléments :').parentElement).toHaveTextContent('Apple');
+    expect(dropZoneContainer).not.toHaveTextContent('Apple');
+  });
+
+  it('calls onComplete with true when all items are placed correctly', () => {
+    setup();
+    const apple = screen.getByText('Apple');
+    const carrot = screen.getByText('Carrot');
+    const fruitZone = screen.getByText('Fruits').parentElement;
+    const vegZone = screen.getByText('Vegetables').parentElement;
+
+    // Drop apple in fruit zone
+    fireEvent.dragStart(apple);
+    fireEvent.drop(fruitZone);
+
+    // Drop carrot in vegetable zone
+    fireEvent.dragStart(carrot);
+    fireEvent.drop(vegZone);
+
+    expect(onCompleteMock).toHaveBeenCalledWith(true);
+  });
+
+
+  it('resets the exercise when the reset button is clicked', () => {
+    setup();
+    const itemToDrag = screen.getByText('Apple');
+    const dropZoneContainer = screen.getByText('Fruits').parentElement;
+    const resetButton = screen.getByText('🔄 Recommencer');
+
+    // Drop an item
+    fireEvent.dragStart(itemToDrag);
+    fireEvent.drop(dropZoneContainer);
+    expect(screen.getByText('Glisse les éléments :').parentElement).not.toHaveTextContent('Apple');
+
+    // Click reset
+    fireEvent.click(resetButton);
+
+    // Item should be back in the available list
+    expect(screen.getByText('Glisse les éléments :').parentElement).toHaveTextContent('Apple');
+    // Drop zone should be empty
+    expect(dropZoneContainer).not.toHaveTextContent('Apple');
+  });
+
+  it('shows visual feedback on drag over', () => {
+    setup();
+    const dropZoneContainer = screen.getByText('Fruits').parentElement;
+
+    expect(dropZoneContainer).toHaveClass('border-gray-300');
+
+    fireEvent.dragOver(dropZoneContainer);
+
+    expect(dropZoneContainer).toHaveClass('border-purple-500');
+
+    fireEvent.dragLeave(dropZoneContainer);
+
+    expect(dropZoneContainer).toHaveClass('border-gray-300');
+  });
+});

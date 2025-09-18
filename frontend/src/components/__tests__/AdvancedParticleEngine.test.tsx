@@ -78,11 +78,16 @@ describe('AdvancedParticleEngine', () => {
   };
 
   beforeEach(() => {
+    jest.useFakeTimers();
     jest.clearAllMocks();
     mockRequestAnimationFrame.mockImplementation((callback) => {
-      setTimeout(() => callback(16), 16);
-      return 1;
+      const id = setTimeout(() => callback(Date.now()), 16);
+      return id as unknown as number;
     });
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it('renders canvas element', () => {
@@ -335,4 +340,45 @@ describe('AdvancedParticleEngine', () => {
     
     expect(document.querySelector('canvas')).toBeInTheDocument();
   });
+
+  it('calls drawing functions in a loop when active', async () => {
+    render(<AdvancedParticleEngine {...defaultProps} isActive={true} />);
+
+    await act(async () => {
+      jest.advanceTimersByTime(100);
+    });
+
+    expect(mockCanvasContext.clearRect).toHaveBeenCalled();
+    expect(mockCanvasContext.clearRect.mock.calls.length).toBeGreaterThan(1);
+  });
+
+  it('stops the animation loop when isActive becomes false', () => {
+    const { rerender } = render(<AdvancedParticleEngine {...defaultProps} isActive={true} />);
+
+    expect(mockRequestAnimationFrame).toHaveBeenCalled();
+
+    rerender(<AdvancedParticleEngine {...defaultProps} isActive={false} />);
+
+    expect(mockCancelAnimationFrame).toHaveBeenCalled();
+  });
+
+  it('draws a heart shape when particleType is "heart"', async () => {
+    render(<AdvancedParticleEngine {...defaultProps} particleType="heart" isActive={true} />);
+
+    await act(async () => {
+      jest.advanceTimersByTime(50);
+    });
+
+    expect(mockCanvasContext.bezierCurveTo).toHaveBeenCalled();
+  });
+
+  it('draws trails when enableTrails is true', async () => {
+      render(<AdvancedParticleEngine {...defaultProps} enableTrails={true} isActive={true} />);
+
+      await act(async () => {
+        jest.advanceTimersByTime(50);
+      });
+
+      expect(mockCanvasContext.stroke).toHaveBeenCalled();
+    });
 });
