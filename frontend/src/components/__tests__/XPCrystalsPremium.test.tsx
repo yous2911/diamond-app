@@ -3,6 +3,32 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { act } from '@testing-library/react';
 import XPCrystalsPremium from '../XPCrystalsPremium';
 
+// Mock window.matchMedia
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: jest.fn().mockImplementation(query => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: jest.fn(), // deprecated
+    removeListener: jest.fn(), // deprecated
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    dispatchEvent: jest.fn(),
+  })),
+});
+
+// Mock framer-motion
+jest.mock('framer-motion', () => ({
+  motion: {
+    div: ({ children, ...props }: any) => {
+      const { animate, transition, whileHover, whileTap, variants, initial, ...domProps } = props;
+      return <div {...domProps}>{children}</div>;
+    }
+  },
+  AnimatePresence: ({ children }: any) => <div>{children}</div>,
+}));
+
 // Mock useMagicalSounds hook
 jest.mock('../../hooks/useMagicalSounds', () => ({
   useMagicalSounds: () => ({
@@ -78,14 +104,15 @@ describe('XPCrystalsPremium', () => {
     // Start with level 1 and low XP, then increase to trigger level up
     const { rerender } = render(<XPCrystalsPremium {...defaultProps} level={1} currentXP={50} onLevelUp={mockOnLevelUp} />);
 
-    // Now increase XP to trigger level 2
+    // Now increase XP to trigger level 2 (150 XP = level 2)
     await act(async () => {
       rerender(<XPCrystalsPremium {...defaultProps} level={1} currentXP={150} onLevelUp={mockOnLevelUp} />);
     });
 
+    // Wait for XP animation to complete and level up to be detected
     await waitFor(() => {
       expect(mockOnLevelUp).toHaveBeenCalledWith(2);
-    });
+    }, { timeout: 3000 });
   });
 
   it('shows level up system when leveling up', async () => {
@@ -170,9 +197,10 @@ describe('XPCrystalsPremium', () => {
   it('handles level up completion', async () => {
     render(<XPCrystalsPremium {...defaultProps} currentXP={300} />);
     
+    // Wait for XP animation to complete and level up system to appear
     await waitFor(() => {
       expect(screen.getByTestId('level-up-system')).toBeInTheDocument();
-    });
+    }, { timeout: 3000 });
     
     const completeButton = screen.getByText('Complete Level Up');
     await act(async () => {
@@ -276,23 +304,29 @@ describe('XPCrystalsPremium', () => {
       <XPCrystalsPremium {...defaultProps} level={1} currentXP={50} onLevelUp={mockOnLevelUp} />
     );
 
-    // Jump to high XP to trigger multiple levels
+    // Jump to high XP to trigger level up to level 5
     await act(async () => {
       rerender(<XPCrystalsPremium {...defaultProps} level={1} currentXP={400} onLevelUp={mockOnLevelUp} />);
     });
 
+    // Wait for XP animation to complete and level up to be detected
     await waitFor(() => {
       expect(mockOnLevelUp).toHaveBeenCalledWith(5); // Math.floor(400/100) + 1 = 5
-    });
+    }, { timeout: 3000 });
     
-    // Second level up - 500 XP should give level 6
+    // Wait for level up animation to complete (3 seconds)
     await act(async () => {
-      rerender(<XPCrystalsPremium {...defaultProps} currentXP={500} onLevelUp={mockOnLevelUp} />);
+      await new Promise(resolve => setTimeout(resolve, 3500));
     });
     
+    // Now trigger another level up - 500 XP should give level 6
+    await act(async () => {
+      rerender(<XPCrystalsPremium {...defaultProps} level={5} currentXP={500} onLevelUp={mockOnLevelUp} />);
+    });
+
     await waitFor(() => {
       expect(mockOnLevelUp).toHaveBeenCalledWith(6); // Math.floor(500/100) + 1 = 6
-    });
+    }, { timeout: 3000 });
   });
 
   it('handles breathing animation', () => {

@@ -228,3 +228,5 @@ describe('Premium Components - Simple Tests', () => {
     expect(screen.getByTestId('has-mascot-emotion')).toHaveTextContent('string');
   });
 });
+
+

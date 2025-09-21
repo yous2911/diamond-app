@@ -42,6 +42,9 @@ export const useApiData = <T>(
   });
 
   const isMountedRef = useRef(true);
+  const stateRef = useRef(state);
+  stateRef.current = state;
+
   const { isAuthenticated } = useAuth();
 
   const fetchFunctionRef = useRef(fetchFunction);
@@ -98,9 +101,10 @@ export const useApiData = <T>(
     if (!refetchOnWindowFocus || !isAuthenticated) return;
 
     const handleFocus = () => {
-      const { lastFetch } = state;
       const now = new Date();
-      
+      const { lastFetch } = stateRef.current;
+
+      // Only refetch if cache is stale (older than cacheTime)
       if (!lastFetch || (now.getTime() - lastFetch.getTime()) > cacheTime * 60 * 1000) {
         fetch();
       }
@@ -108,7 +112,7 @@ export const useApiData = <T>(
 
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
-  }, [refetchOnWindowFocus, cacheTime, fetch, isAuthenticated, state]);
+  }, [refetchOnWindowFocus, cacheTime, fetch, isAuthenticated]);
 
   // Cleanup on unmount
   useEffect(() => {

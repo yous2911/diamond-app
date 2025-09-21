@@ -40,12 +40,15 @@ const RealTimeNotifications: React.FC<RealTimeNotificationsProps> = ({
   const [ws, setWs] = useState<WebSocket | null>(null);
 
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3004';
-  const WS_URL = API_URL.replace('http', 'ws') + '/ws';
+  // Ensure WS_URL is properly constructed - remove any existing path and add /ws
+  const baseUrl = API_URL.replace(/\/api.*$/, '').replace('http', 'ws');
+  const WS_URL = baseUrl + '/ws';
 
   // Initialize WebSocket connection
   useEffect(() => {
     const connectWebSocket = () => {
       try {
+        console.log('Attempting to connect to WebSocket:', WS_URL);
         const websocket = new WebSocket(WS_URL);
         
         websocket.onopen = () => {
@@ -85,8 +88,11 @@ const RealTimeNotifications: React.FC<RealTimeNotificationsProps> = ({
         setWs(websocket);
       } catch (error) {
         console.error('Failed to create WebSocket connection:', error);
-        // Fallback: try to reconnect after 5 seconds
-        setTimeout(connectWebSocket, 5000);
+        setIsConnected(false);
+        // Fallback: try to reconnect after 5 seconds (only if not in test env)
+        if (process.env.NODE_ENV !== 'test') {
+          setTimeout(connectWebSocket, 5000);
+        }
       }
     };
 

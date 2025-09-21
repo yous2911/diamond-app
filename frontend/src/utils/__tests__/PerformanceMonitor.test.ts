@@ -13,21 +13,46 @@ Object.defineProperty(global, 'PerformanceObserver', {
   value: mockPerformanceObserver
 });
 
+// Create a more robust performance mock
+let mockNowCounter = 1000; // Start from a higher number
+const mockPerformance = {
+  now: jest.fn(() => {
+    mockNowCounter += 1;
+    return mockNowCounter; // Return incrementing values: 1001, 1002, 1003, etc.
+  }),
+  mark: jest.fn(),
+  measure: jest.fn(),
+  getEntriesByType: jest.fn((type: string) => {
+    if (type === 'navigation') {
+      return [{
+        transferSize: 500000,
+        loadEventEnd: 1000,
+        loadEventStart: 500
+      }];
+    }
+    return [mockPerformanceEntry];
+  }),
+  getEntriesByName: jest.fn(() => [mockPerformanceEntry]),
+  memory: {
+    usedJSHeapSize: 50000000,
+    totalJSHeapSize: 100000000,
+    jsHeapSizeLimit: 200000000
+  }
+};
+
 Object.defineProperty(global, 'performance', {
   writable: true,
-  value: {
-    now: jest.fn(() => Date.now()),
-    mark: jest.fn(),
-    measure: jest.fn(),
-    getEntriesByType: jest.fn(() => [mockPerformanceEntry]),
-    getEntriesByName: jest.fn(() => [mockPerformanceEntry]),
-    memory: {
-      usedJSHeapSize: 50000000,
-      totalJSHeapSize: 100000000,
-      jsHeapSizeLimit: 200000000
-    }
-  }
+  value: mockPerformance
 });
+
+// Mock requestAnimationFrame
+global.requestAnimationFrame = jest.fn((callback) => {
+  // Simulate animation frame by calling callback immediately
+  setTimeout(callback, 16); // ~60fps
+  return 1;
+});
+
+global.cancelAnimationFrame = jest.fn();
 
 // Mock console methods
 const mockConsoleWarn = jest.spyOn(console, 'warn').mockImplementation();
@@ -38,8 +63,11 @@ describe('PerformanceMonitor', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockNowCounter = 1000; // Reset the counter to starting value
+    mockPerformance.now.mockClear();
     performanceMonitor = new PerformanceMonitor();
     mockPerformanceObserver.mockClear();
+    mockPerformance.getEntriesByType.mockClear();
   });
 
   afterEach(() => {
@@ -221,7 +249,7 @@ describe('PerformanceMonitor', () => {
       const analysis = performanceMonitor.getPerformanceAnalysis();
 
       expect(analysis.issues.length).toBeGreaterThan(0);
-      expect(analysis.issues.some(issue => issue.includes('render time'))).toBe(true);
+      expect(analysis.issues.some(issue => issue.includes('component renders'))).toBe(true);
       expect(analysis.issues.some(issue => issue.includes('FPS'))).toBe(true);
     });
 
@@ -232,8 +260,8 @@ describe('PerformanceMonitor', () => {
       const analysis = performanceMonitor.getPerformanceAnalysis();
 
       expect(analysis.recommendations.length).toBeGreaterThan(0);
-      expect(analysis.recommendations.some(rec => rec.includes('bundle'))).toBe(true);
-      expect(analysis.recommendations.some(rec => rec.includes('memory'))).toBe(true);
+      expect(analysis.recommendations.some(rec => rec.includes('code splitting'))).toBe(true);
+      expect(analysis.recommendations.some(rec => rec.includes('Memory leak'))).toBe(true);
     });
 
     it('calculates performance score', () => {
@@ -338,11 +366,11 @@ describe('PerformanceMonitor', () => {
       expect(componentStats).toMatchObject({
         Component1: expect.objectContaining({
           renderCount: 2,
-          averageRenderTime: expect.any(Number)
+          averageTime: expect.any(Number)
         }),
         Component2: expect.objectContaining({
           renderCount: 1,
-          averageRenderTime: expect.any(Number)
+          averageTime: expect.any(Number)
         })
       });
     });

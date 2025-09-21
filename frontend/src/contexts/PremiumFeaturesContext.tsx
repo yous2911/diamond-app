@@ -33,7 +33,7 @@ interface PremiumFeaturesContextType {
   playErrorSound: () => void;
 }
 
-const PremiumFeaturesContext = createContext<PremiumFeaturesContextType | undefined>(undefined);
+export const PremiumFeaturesContext = createContext<PremiumFeaturesContextType | undefined>(undefined);
 
 interface PremiumFeaturesProviderProps {
   children: ReactNode;

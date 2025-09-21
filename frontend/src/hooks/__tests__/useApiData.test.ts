@@ -1006,6 +1006,11 @@ describe('useApiData Hook', () => {
         expect(mockFetch).toHaveBeenCalledTimes(1);
       });
 
+      // Wait a bit more to ensure the lastFetch timestamp is set
+      await act(async () => {
+        jest.advanceTimersByTime(10);
+      });
+
       // Clear mock calls to test fresh focus behavior
       mockFetch.mockClear();
 
@@ -1017,8 +1022,10 @@ describe('useApiData Hook', () => {
         if (focusHandler) focusHandler();
       });
 
-      // Should not refetch (0 additional calls) - wait a bit for potential async calls
-      await new Promise(resolve => setTimeout(resolve, 50));
+      // Should not refetch (0 additional calls) - advance timers instead of real wait
+      act(() => {
+        jest.advanceTimersByTime(50);
+      });
       expect(mockFetch).toHaveBeenCalledTimes(0);
     });
   });

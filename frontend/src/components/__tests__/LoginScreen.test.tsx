@@ -102,7 +102,7 @@ describe('LoginScreen', () => {
       // Check header elements
       expect(screen.getByText('FastRevEd Kids')).toBeInTheDocument();
       expect(screen.getByText('Interface Diamant 💎')).toBeInTheDocument();
-      expect(screen.getByText('Pour les 6-8 ans')).toBeInTheDocument();
+      expect(screen.getByText('Apprentissage Magique pour les 6-8 ans')).toBeInTheDocument();
 
       // Check form elements
       expect(screen.getByText('Connexion')).toBeInTheDocument();
@@ -122,19 +122,19 @@ describe('LoginScreen', () => {
       render(<LoginScreen />, { wrapper: TestWrapper });
 
       // Check that test accounts are displayed
-      expect(screen.getByText('Emma Martin')).toBeInTheDocument();
-      expect(screen.getByText('Lucas Dubois')).toBeInTheDocument();
-      expect(screen.getByText('Léa Bernard')).toBeInTheDocument();
-      expect(screen.getByText('Noah Garcia')).toBeInTheDocument();
-      expect(screen.getByText('Alice Rodriguez')).toBeInTheDocument();
+      expect(screen.getByText('Alice Dupont')).toBeInTheDocument();
+      expect(screen.getByText('Bob Martin')).toBeInTheDocument();
+      expect(screen.getByText('Charlie Durand')).toBeInTheDocument();
+      expect(screen.getByText('Lucas Martin')).toBeInTheDocument();
+      expect(screen.getByText('Emma Dubois')).toBeInTheDocument();
+      expect(screen.getByText('Noah Lefevre')).toBeInTheDocument();
 
       // Check level and age information
       expect(screen.getAllByText(/CP • 6-8 ans/)).toHaveLength(3);
-      expect(screen.getAllByText(/CE1 • 9-11 ans/)).toHaveLength(2);
+      expect(screen.getAllByText(/CE1 • 9-11 ans/)).toHaveLength(3);
 
       // Check password hint
-      expect(screen.getByText('Mot de passe pour tous :')).toBeInTheDocument();
-      expect(screen.getByText('password123456')).toBeInTheDocument();
+      expect(screen.getByText('Utilise tes vrais identifiants pour te connecter')).toBeInTheDocument();
     });
 
     it('should have form validation attributes', () => {
@@ -225,15 +225,15 @@ describe('LoginScreen', () => {
       const user = userEvent.setup();
       render(<LoginScreen />, { wrapper: TestWrapper });
 
-      const emmaAccount = screen.getByText('Emma Martin').closest('button');
+      const emmaAccount = screen.getByText('Emma Dubois').closest('button');
       expect(emmaAccount).toBeInTheDocument();
 
       await user.click(emmaAccount!);
 
       // Form should be auto-filled
       expect(screen.getByLabelText('Prénom')).toHaveValue('Emma');
-      expect(screen.getByLabelText('Nom de famille')).toHaveValue('Martin');
-      expect(screen.getByLabelText('Mot de passe')).toHaveValue('password123');
+      expect(screen.getByLabelText('Nom de famille')).toHaveValue('Dubois');
+      expect(screen.getByLabelText('Mot de passe')).toHaveValue('password123456');
 
       // Test accounts section should be hidden
       await waitFor(() => {
@@ -246,11 +246,12 @@ describe('LoginScreen', () => {
       render(<LoginScreen />, { wrapper: TestWrapper });
 
       const testAccounts = [
-        { name: 'Emma Martin', prenom: 'Emma', nom: 'Martin' },
-        { name: 'Lucas Dubois', prenom: 'Lucas', nom: 'Dubois' },
-        { name: 'Léa Bernard', prenom: 'Léa', nom: 'Bernard' },
-        { name: 'Noah Garcia', prenom: 'Noah', nom: 'Garcia' },
-        { name: 'Alice Rodriguez', prenom: 'Alice', nom: 'Rodriguez' },
+        { name: 'Alice Dupont', prenom: 'Alice', nom: 'Dupont' },
+        { name: 'Bob Martin', prenom: 'Bob', nom: 'Martin' },
+        { name: 'Charlie Durand', prenom: 'Charlie', nom: 'Durand' },
+        { name: 'Lucas Martin', prenom: 'Lucas', nom: 'Martin' },
+        { name: 'Emma Dubois', prenom: 'Emma', nom: 'Dubois' },
+        { name: 'Noah Lefevre', prenom: 'Noah', nom: 'Lefevre' },
       ];
 
       for (const account of testAccounts) {
@@ -261,7 +262,7 @@ describe('LoginScreen', () => {
 
         expect(screen.getByLabelText('Prénom')).toHaveValue(account.prenom);
         expect(screen.getByLabelText('Nom de famille')).toHaveValue(account.nom);
-        expect(screen.getByLabelText('Mot de passe')).toHaveValue('password123');
+        expect(screen.getByLabelText('Mot de passe')).toHaveValue('password123456');
 
         // Reset for next test by showing test accounts again
         const showTestAccountsButton = screen.getByText(/afficher les comptes de test/i);
@@ -458,8 +459,8 @@ describe('LoginScreen', () => {
       expect(screen.getByRole('button', { name: /masquer les comptes de test/i })).toBeInTheDocument();
 
       // Test account buttons
-      expect(screen.getByRole('button', { name: /Emma Martin CP • 6-8 ans/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /Lucas Dubois CP • 6-8 ans/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Alice Dupont CP • 6-8 ans/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Lucas Martin CE1 • 9-11 ans/i })).toBeInTheDocument();
     });
 
     it('should associate error messages with form', async () => {
@@ -516,8 +517,8 @@ describe('LoginScreen', () => {
       
       // Wait for test accounts to be rendered and check they exist
       await waitFor(() => {
-        expect(screen.getByText('Emma Martin')).toBeInTheDocument();
-        expect(screen.getByText('Lucas Dubois')).toBeInTheDocument();
+        expect(screen.getByText('Alice Dupont')).toBeInTheDocument();
+        expect(screen.getByText('Lucas Martin')).toBeInTheDocument();
       });
       
       // Check different age groups are indicated

@@ -1,18 +1,24 @@
+// Mock dependencies BEFORE imports
+jest.mock('../../hooks/useMagicalSounds', () => ({
+  useMagicalSounds: jest.fn(),
+}));
+
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import EnhancedLevelUpSystem from '../EnhancedLevelUpSystem';
 import { useMagicalSounds } from '../../hooks/useMagicalSounds';
 
-// Mock dependencies
-jest.mock('../../hooks/useMagicalSounds');
-
 const mockPlayLevelUpFanfare = jest.fn();
 const mockPlaySparkleSound = jest.fn();
 
-(useMagicalSounds as jest.Mock).mockReturnValue({
+// Create stable mock functions
+const mockUseMagicalSounds = jest.fn(() => ({
   playLevelUpFanfare: mockPlayLevelUpFanfare,
   playSparkleSound: mockPlaySparkleSound,
-});
+}));
+
+// Set up the mock return value
+(useMagicalSounds as jest.Mock).mockImplementation(mockUseMagicalSounds);
 
 // Mock framer-motion
 jest.mock('framer-motion', () => {
@@ -35,6 +41,9 @@ describe('EnhancedLevelUpSystem', () => {
     jest.useFakeTimers();
     mockPlayLevelUpFanfare.mockClear();
     mockPlaySparkleSound.mockClear();
+    
+    // Ensure the mock is properly set up with stable functions
+    (useMagicalSounds as jest.Mock).mockImplementation(mockUseMagicalSounds);
   });
 
   afterEach(() => {

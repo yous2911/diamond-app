@@ -1,20 +1,19 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AuthProvider, useAuth } from '../AuthContext';
 import { apiService, Student } from '../../services/api';
 
 // Mock the apiService
-vi.mock('../../services/api', () => ({
+jest.mock('../../services/api', () => ({
   apiService: {
-    login: vi.fn(),
-    logout: vi.fn(),
-    checkAuthStatus: vi.fn().mockResolvedValue(false), // Default to not authenticated
-    getStudentProfile: vi.fn(),
+    login: jest.fn(),
+    logout: jest.fn(),
+    checkAuthStatus: jest.fn().mockResolvedValue(false), // Default to not authenticated
+    getStudentProfile: jest.fn(),
   },
 }));
 
-const mockApiService = apiService as vi.Mocked<typeof apiService>;
+const mockApiService = apiService as jest.Mocked<typeof apiService>;
 
 const mockStudent: Student = {
   id: 1,
@@ -56,7 +55,7 @@ const renderWithProvider = () => {
 
 describe('AuthContext', () => {
   beforeEach(() => {
-    vi.resetAllMocks();
+    jest.resetAllMocks();
     // Since checkAuthStatus is called on mount, we need to handle its resolution
     mockApiService.checkAuthStatus.mockResolvedValue(false);
   });
@@ -110,15 +109,23 @@ describe('AuthContext', () => {
   });
 
   it('handles logout', async () => {
-    // Start in a logged-in state
-    mockApiService.checkAuthStatus.mockResolvedValue(true);
-    (apiService as any).currentStudentData = mockStudent;
+    // First login to get into authenticated state
+    mockApiService.login.mockResolvedValue({
+      success: true,
+      data: { student: mockStudent, expiresIn: 3600 }
+    });
 
     renderWithProvider();
+
+    // Login first
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: /Login/i }));
+    });
+
     await waitFor(() => expect(screen.getByTestId('isAuthenticated')).toHaveTextContent('true'));
     expect(screen.getByTestId('student')).toHaveTextContent('John');
 
-    // Trigger logout
+    // Now test logout
     act(() => {
       fireEvent.click(screen.getByRole('button', { name: /Logout/i }));
     });
@@ -152,11 +159,23 @@ describe('AuthContext', () => {
 
   it('refreshes student data when authenticated', async () => {
     const updatedStudent = { ...mockStudent, prenom: 'Johnny' };
-    mockApiService.checkAuthStatus.mockResolvedValue(true);
-    (apiService as any).currentStudentData = mockStudent;
+    
+    // First login to get into authenticated state
+    mockApiService.login.mockResolvedValue({
+      success: true,
+      data: { student: mockStudent, expiresIn: 3600 }
+    });
+    
+    // Mock the refresh call
     mockApiService.getStudentProfile.mockResolvedValue({ success: true, data: { student: updatedStudent } });
 
     renderWithProvider();
+
+    // Login first
+    act(() => {
+      fireEvent.click(screen.getByRole('button', { name: /Login/i }));
+    });
+
     await waitFor(() => expect(screen.getByTestId('isAuthenticated')).toHaveTextContent('true'));
     expect(screen.getByTestId('student')).toHaveTextContent('John');
 

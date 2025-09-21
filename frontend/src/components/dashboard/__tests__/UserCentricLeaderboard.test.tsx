@@ -6,7 +6,7 @@ import UserCentricLeaderboard from '../UserCentricLeaderboard';
 // Mock dependencies
 jest.mock('framer-motion', () => ({
   motion: {
-    div: ({ children, className, style, ...props }: any) => (
+    div: ({ children, className, style, whileHover, animate, initial, transition, ...props }: any) => (
       <div className={className} style={style} data-testid="motion-div" {...props}>
         {children}
       </div>
@@ -22,8 +22,8 @@ const mockLeaderboardData = {
     score: 1250,
     student: { prenom: 'TestStudent' },
     badges: [
-      { icon: '<Æ', rarity: 'epic', title: 'Champion' },
-      { icon: '¡', rarity: 'rare', title: 'Speed Demon' }
+      { icon: 'ðŸ†', rarity: 'epic', title: 'Champion' },
+      { icon: 'âš¡', rarity: 'rare', title: 'Speed Demon' }
     ],
     streak: 7,
     rankChange: 2
@@ -34,7 +34,7 @@ const mockLeaderboardData = {
       rank: 4,
       score: 1300,
       student: { prenom: 'Alice' },
-      badges: [{ icon: '<¯', rarity: 'common', title: 'First Steps' }],
+      badges: [{ icon: '<ï¿½', rarity: 'common', title: 'First Steps' }],
       streak: 5,
       rankChange: -1
     },
@@ -67,32 +67,59 @@ const mockHooks = {
   })),
   useMotivationMessage: jest.fn(() => () => 'Tu es en excellente forme ! Continue !'),
   useRankChangeIcon: jest.fn(() => () => ({
-    icon: '‘',
+    icon: 'ï¿½',
     color: 'text-green-500',
     bg: 'bg-green-100'
   })),
   useBadgeStyle: jest.fn(() => () => ({ bg: 'bg-blue-100' }))
 };
 
-jest.mock('../../hooks/useLeaderboard', () => mockHooks);
+jest.mock('../../../hooks/useLeaderboard');
 
-jest.mock('../ui/SkeletonLoader', () => {
+jest.mock('../../ui/SkeletonLoader', () => {
   return function MockSkeletonLoader({ type, className }: any) {
     return <div data-testid="skeleton-loader" className={className}>{type} loader</div>;
   };
 });
 
+import * as useLeaderboardModule from '../../../hooks/useLeaderboard';
+
+const mockUseUserCentricLeaderboard = jest.mocked(useLeaderboardModule.useUserCentricLeaderboard);
+const mockUseStudentBadges = jest.mocked(useLeaderboardModule.useStudentBadges);
+const mockUseMotivationMessage = jest.mocked(useLeaderboardModule.useMotivationMessage);
+const mockUseRankChangeIcon = jest.mocked(useLeaderboardModule.useRankChangeIcon);
+const mockUseBadgeStyle = jest.mocked(useLeaderboardModule.useBadgeStyle);
+
 describe('UserCentricLeaderboard', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Setup default mock returns
+    mockUseUserCentricLeaderboard.mockReturnValue({
+      data: mockLeaderboardData,
+      isLoading: false,
+      error: null,
+      refetch: jest.fn()
+    });
+
+    mockUseStudentBadges.mockReturnValue({
+      data: [],
+      isLoading: false,
+      error: null,
+      refetch: jest.fn()
+    });
+
+    mockUseMotivationMessage.mockReturnValue(jest.fn(() => 'Tu es en excellente forme ! Continue !'));
+    mockUseRankChangeIcon.mockReturnValue(jest.fn(() => ({ icon: 'â†—ï¸', color: 'text-green-500', bg: 'bg-green-100' })));
+    mockUseBadgeStyle.mockReturnValue(jest.fn(() => ({ bg: 'bg-blue-100' })));
   });
 
   describe('Component Rendering', () => {
     it('renders leaderboard with user data', () => {
       render(<UserCentricLeaderboard studentId={1} />);
 
-      expect(screen.getByText('<¯ Votre Classement')).toBeInTheDocument();
-      expect(screen.getByText('global " points')).toBeInTheDocument();
+      expect(screen.getByText('ðŸŽ¯ Votre Classement')).toBeInTheDocument();
+      expect(screen.getByText('global â€¢ points')).toBeInTheDocument();
       expect(screen.getByText('#5')).toBeInTheDocument();
       expect(screen.getByText('Top 15%')).toBeInTheDocument();
     });
@@ -114,13 +141,13 @@ describe('UserCentricLeaderboard', () => {
     it('displays correct type and category in header', () => {
       render(<UserCentricLeaderboard studentId={1} type="weekly" category="streak" />);
 
-      expect(screen.getByText('weekly " streak')).toBeInTheDocument();
+      expect(screen.getByText('weekly â€¢ streak')).toBeInTheDocument();
     });
   });
 
   describe('Loading State', () => {
     it('shows skeleton loaders when loading', () => {
-      mockHooks.useUserCentricLeaderboard.mockReturnValue({
+      mockUseUserCentricLeaderboard.mockReturnValue({
         data: null,
         isLoading: true,
         error: null,
@@ -135,7 +162,7 @@ describe('UserCentricLeaderboard', () => {
 
   describe('Error State', () => {
     it('shows error message when data is unavailable', () => {
-      mockHooks.useUserCentricLeaderboard.mockReturnValue({
+      mockUseUserCentricLeaderboard.mockReturnValue({
         data: null,
         isLoading: false,
         error: new Error('Failed to load'),
@@ -145,11 +172,11 @@ describe('UserCentricLeaderboard', () => {
       render(<UserCentricLeaderboard studentId={1} />);
 
       expect(screen.getByText('Pas encore de classement')).toBeInTheDocument();
-      expect(screen.getByText('Commencez à jouer pour apparaître dans le leaderboard !')).toBeInTheDocument();
+      expect(screen.getByText('Commencez Ã  jouer pour apparaÃ®tre dans le leaderboard !')).toBeInTheDocument();
     });
 
     it('shows error message when userEntry is null', () => {
-      mockHooks.useUserCentricLeaderboard.mockReturnValue({
+      mockUseUserCentricLeaderboard.mockReturnValue({
         data: { ...mockLeaderboardData, userEntry: null },
         isLoading: false,
         error: null,
@@ -163,7 +190,7 @@ describe('UserCentricLeaderboard', () => {
 
     it('handles refresh button click', () => {
       const mockRefetch = jest.fn();
-      mockHooks.useUserCentricLeaderboard.mockReturnValue({
+      mockUseUserCentricLeaderboard.mockReturnValue({
         data: null,
         isLoading: false,
         error: new Error('Failed to load'),
@@ -197,17 +224,16 @@ describe('UserCentricLeaderboard', () => {
     it('displays scores and streaks correctly', () => {
       render(<UserCentricLeaderboard studentId={1} />);
 
-      expect(screen.getByText('1,250 points')).toBeInTheDocument();
-      expect(screen.getByText('=% 7 jours')).toBeInTheDocument();
-      expect(screen.getByText('=% 5 jours')).toBeInTheDocument();
+      expect(screen.getByText('1250 points')).toBeInTheDocument();
+      expect(screen.getByText('ðŸ”¥ 7 jours')).toBeInTheDocument();
+      expect(screen.getByText('ðŸ”¥ 5 jours')).toBeInTheDocument();
     });
 
     it('displays badges correctly', () => {
       render(<UserCentricLeaderboard studentId={1} />);
 
-      expect(screen.getByText('<Æ')).toBeInTheDocument();
-      expect(screen.getByText('¡')).toBeInTheDocument();
-      expect(screen.getByText('<¯')).toBeInTheDocument();
+      expect(screen.getByText('ðŸ†')).toBeInTheDocument();
+      expect(screen.getByText('âš¡')).toBeInTheDocument();
     });
 
     it('shows badge count when more than 2 badges', () => {
@@ -216,15 +242,15 @@ describe('UserCentricLeaderboard', () => {
         userEntry: {
           ...mockLeaderboardData.userEntry,
           badges: [
-            { icon: '<Æ', rarity: 'epic', title: 'Champion' },
-            { icon: '¡', rarity: 'rare', title: 'Speed Demon' },
-            { icon: '<¯', rarity: 'common', title: 'First Steps' },
-            { icon: '=%', rarity: 'rare', title: 'Hot Streak' }
+            { icon: 'ðŸ†', rarity: 'epic', title: 'Champion' },
+            { icon: 'âš¡', rarity: 'rare', title: 'Speed Demon' },
+            { icon: 'ðŸŒŸ', rarity: 'common', title: 'First Steps' },
+            { icon: 'ðŸ”¥', rarity: 'rare', title: 'Hot Streak' }
           ]
         }
       };
 
-      mockHooks.useUserCentricLeaderboard.mockReturnValue({
+      mockUseUserCentricLeaderboard.mockReturnValue({
         data: dataWithManyBadges,
         isLoading: false,
         error: null,
@@ -233,7 +259,7 @@ describe('UserCentricLeaderboard', () => {
 
       render(<UserCentricLeaderboard studentId={1} />);
 
-      expect(screen.getByText('+2')).toBeInTheDocument();
+      expect(screen.getAllByText('+2')).toHaveLength(2);
     });
 
     it('displays rank change indicators', () => {
@@ -249,7 +275,7 @@ describe('UserCentricLeaderboard', () => {
     it('displays next target when available', () => {
       render(<UserCentricLeaderboard studentId={1} />);
 
-      expect(screen.getByText('<¯ Votre prochain défi:')).toBeInTheDocument();
+      expect(screen.getByText('ðŸŽ¯ Votre prochain dÃ©fi:')).toBeInTheDocument();
       expect(screen.getByText('Battez Alice !')).toBeInTheDocument();
     });
 
@@ -262,7 +288,7 @@ describe('UserCentricLeaderboard', () => {
         }
       };
 
-      mockHooks.useUserCentricLeaderboard.mockReturnValue({
+      mockUseUserCentricLeaderboard.mockReturnValue({
         data: dataWithoutTarget,
         isLoading: false,
         error: null,
@@ -271,7 +297,7 @@ describe('UserCentricLeaderboard', () => {
 
       render(<UserCentricLeaderboard studentId={1} />);
 
-      expect(screen.queryByText('<¯ Votre prochain défi:')).not.toBeInTheDocument();
+      expect(screen.queryByText('<ï¿½ Votre prochain dï¿½fi:')).not.toBeInTheDocument();
     });
   });
 
@@ -303,25 +329,25 @@ describe('UserCentricLeaderboard', () => {
     it('calls useUserCentricLeaderboard with correct parameters', () => {
       render(<UserCentricLeaderboard studentId={123} type="weekly" category="exercises" />);
 
-      expect(mockHooks.useUserCentricLeaderboard).toHaveBeenCalledWith(123, 'weekly', 'exercises', 3);
+      expect(mockUseUserCentricLeaderboard).toHaveBeenCalledWith(123, 'weekly', 'exercises', 3);
     });
 
     it('calls motivation message hook with correct data', () => {
       render(<UserCentricLeaderboard studentId={1} />);
 
-      expect(mockHooks.useMotivationMessage).toHaveBeenCalledWith(mockLeaderboardData);
+      expect(mockUseMotivationMessage).toHaveBeenCalledWith(mockLeaderboardData);
     });
 
     it('calls rank change icon hook', () => {
       render(<UserCentricLeaderboard studentId={1} />);
 
-      expect(mockHooks.useRankChangeIcon).toHaveBeenCalled();
+      expect(mockUseRankChangeIcon).toHaveBeenCalled();
     });
 
     it('calls badge style hook', () => {
       render(<UserCentricLeaderboard studentId={1} />);
 
-      expect(mockHooks.useBadgeStyle).toHaveBeenCalled();
+      expect(mockUseBadgeStyle).toHaveBeenCalled();
     });
   });
 
@@ -330,19 +356,19 @@ describe('UserCentricLeaderboard', () => {
       const { rerender } = render(<UserCentricLeaderboard studentId={1} />);
 
       // Initial render
-      expect(mockHooks.useMotivationMessage).toHaveBeenCalledTimes(1);
+      expect(mockUseMotivationMessage).toHaveBeenCalledTimes(1);
 
       // Rerender with same props
       rerender(<UserCentricLeaderboard studentId={1} />);
 
       // Should not call motivation hook again due to memoization
-      expect(mockHooks.useMotivationMessage).toHaveBeenCalledTimes(2);
+      expect(mockUseMotivationMessage).toHaveBeenCalledTimes(2);
     });
   });
 
   describe('Accessibility', () => {
     it('provides appropriate button roles', () => {
-      mockHooks.useUserCentricLeaderboard.mockReturnValue({
+      mockUseUserCentricLeaderboard.mockReturnValue({
         data: null,
         isLoading: false,
         error: new Error('Failed to load'),
@@ -357,7 +383,7 @@ describe('UserCentricLeaderboard', () => {
     it('uses semantic HTML structure', () => {
       render(<UserCentricLeaderboard studentId={1} />);
 
-      expect(screen.getByText('<¯ Votre Classement')).toBeInTheDocument();
+      expect(screen.getByText('ðŸŽ¯ Votre Classement')).toBeInTheDocument();
     });
   });
 

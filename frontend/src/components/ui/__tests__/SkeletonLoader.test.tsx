@@ -5,11 +5,14 @@ import SkeletonLoader from '../SkeletonLoader';
 // Mock framer-motion
 jest.mock('framer-motion', () => ({
   motion: {
-    div: ({ children, className, ...props }: any) => (
-      <div className={className} data-testid="motion-div-skeleton" {...props}>
-        {children}
-      </div>
-    )
+    div: ({ children, className, ...props }: any) => {
+      const { animate, transition, ...domProps } = props;
+      return (
+        <div className={className} {...domProps}>
+          {children}
+        </div>
+      );
+    }
   }
 }));
 
@@ -17,17 +20,17 @@ describe('SkeletonLoader', () => {
   it('renders mascot skeleton correctly', () => {
     render(<SkeletonLoader type="mascot" />);
     
-    const motionDiv = screen.getByTestId('motion-div-skeleton');
-    expect(motionDiv).toBeInTheDocument();
-    expect(motionDiv).toHaveClass('w-64', 'h-64', 'rounded-full');
+    const skeletonDiv = screen.getByTestId('skeleton-mascot');
+    expect(skeletonDiv).toBeInTheDocument();
+    expect(skeletonDiv).toHaveClass('w-64', 'h-64', 'rounded-full');
   });
 
   it('renders xp-bar skeleton correctly', () => {
     render(<SkeletonLoader type="xp-bar" />);
     
-    const motionDiv = screen.getByTestId('motion-div-skeleton');
-    expect(motionDiv).toBeInTheDocument();
-    expect(motionDiv).toHaveClass('h-8', 'rounded-full');
+    const skeletonDiv = screen.getByTestId('skeleton-xp-bar');
+    expect(skeletonDiv).toBeInTheDocument();
+    expect(skeletonDiv).toHaveClass('h-8', 'rounded-full');
   });
 
   it('renders wardrobe skeleton correctly', () => {
@@ -54,14 +57,14 @@ describe('SkeletonLoader', () => {
   it('applies custom className', () => {
     render(<SkeletonLoader type="mascot" className="custom-class" />);
     
-    const motionDiv = screen.getByTestId('motion-div-skeleton');
-    expect(motionDiv).toHaveClass('custom-class');
+    const skeletonDiv = screen.getByTestId('skeleton-mascot');
+    expect(skeletonDiv).toHaveClass('custom-class');
   });
 
   it('has default empty className', () => {
     render(<SkeletonLoader type="xp-bar" />);
     
-    const motionDiv = screen.getByTestId('motion-div-skeleton');
-    expect(motionDiv.className).toContain('h-8');
+    const skeletonDiv = screen.getByTestId('skeleton-xp-bar');
+    expect(skeletonDiv.className).toContain('h-8');
   });
 });

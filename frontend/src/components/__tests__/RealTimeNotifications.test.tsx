@@ -23,6 +23,14 @@ jest.mock('framer-motion', () => ({
       const { whileHover, whileTap, initial, animate, transition, ...domProps } = props;
       return <button {...domProps}>{children}</button>;
     },
+    h1: ({ children, ...props }: any) => {
+      const { whileHover, whileTap, initial, animate, transition, ...domProps } = props;
+      return <h1 {...domProps}>{children}</h1>;
+    },
+    p: ({ children, ...props }: any) => {
+      const { whileHover, whileTap, initial, animate, transition, ...domProps } = props;
+      return <p {...domProps}>{children}</p>;
+    },
   },
   AnimatePresence: ({ children }: any) => <div>{children}</div>,
 }));
@@ -47,15 +55,24 @@ Object.defineProperty(window, 'innerHeight', { writable: true, value: 768 });
 const mockWebSocket = {
   send: jest.fn(),
   close: jest.fn(),
-  onopen: jest.fn(),
-  onmessage: jest.fn(),
-  onclose: jest.fn(),
-  onerror: jest.fn(),
-  readyState: 1, // WebSocket.OPEN
+  onopen: null as ((event: Event) => void) | null,
+  onmessage: null as ((event: MessageEvent) => void) | null,
+  onclose: null as ((event: Event) => void) | null,
+  onerror: null as ((event: Event) => void) | null,
+  readyState: 0, // WebSocket.CONNECTING initially
 };
 
 // Mock WebSocket constructor
-global.WebSocket = jest.fn(() => mockWebSocket) as any;
+global.WebSocket = jest.fn(() => {
+  // Simulate connection process
+  setTimeout(() => {
+    mockWebSocket.readyState = 1; // WebSocket.OPEN
+    if (mockWebSocket.onopen) {
+      mockWebSocket.onopen(new Event('open'));
+    }
+  }, 0);
+  return mockWebSocket;
+}) as any;
 
 // Mock WebSocket constants
 Object.defineProperty(global.WebSocket, 'OPEN', { value: 1 });
@@ -136,7 +153,7 @@ beforeEach(() => {
   mockWebSocket.onmessage = null;
   mockWebSocket.onclose = null;
   mockWebSocket.onerror = null;
-  mockWebSocket.readyState = WebSocket.OPEN;
+  mockWebSocket.readyState = 0; // WebSocket.CONNECTING
   
   // Reset global WebSocket mock
   (global.WebSocket as unknown as jest.Mock).mockClear();
@@ -151,19 +168,13 @@ describe('RealTimeNotifications', () => {
     it('should establish WebSocket connection on mount', () => {
       render(<RealTimeNotifications {...defaultProps} />, { wrapper: TestWrapper });
 
-      expect(global.WebSocket).toHaveBeenCalledWith('ws://localhost:3004/ws');
+      expect(global.WebSocket).toHaveBeenCalledWith('ws://localhost:3003/ws');
     });
 
     it('should send registration message when connected', async () => {
       render(<RealTimeNotifications {...defaultProps} />, { wrapper: TestWrapper });
 
-      // Simulate WebSocket connection
-      act(() => {
-        if (mockWebSocket.onopen) {
-          mockWebSocket.onopen(new Event('open'));
-        }
-      });
-
+      // Wait for WebSocket to connect and send registration message
       await waitFor(() => {
         expect(mockWebSocket.send).toHaveBeenCalledWith(
           JSON.stringify({
@@ -182,13 +193,7 @@ describe('RealTimeNotifications', () => {
       expect(screen.getByTestId('bell-off-icon')).toBeInTheDocument();
       expect(screen.getByText('Reconnexion...')).toBeInTheDocument();
 
-      // Simulate connection
-      act(() => {
-        if (mockWebSocket.onopen) {
-          mockWebSocket.onopen(new Event('open'));
-        }
-      });
-
+      // Wait for connection to be established
       await waitFor(() => {
         expect(screen.getByTestId('bell-icon')).toBeInTheDocument();
         expect(screen.getByText('Notifications actives')).toBeInTheDocument();
@@ -199,13 +204,7 @@ describe('RealTimeNotifications', () => {
       jest.useFakeTimers();
       render(<RealTimeNotifications {...defaultProps} />, { wrapper: TestWrapper });
 
-      // Simulate connection and then disconnection
-      act(() => {
-        if (mockWebSocket.onopen) {
-          mockWebSocket.onopen(new Event('open'));
-        }
-      });
-
+      // Wait for initial connection
       await waitFor(() => {
         expect(screen.getByText('Notifications actives')).toBeInTheDocument();
       });

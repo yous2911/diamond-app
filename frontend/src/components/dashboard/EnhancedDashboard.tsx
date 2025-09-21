@@ -265,6 +265,6 @@ const EnhancedDashboard: React.FC<EnhancedDashboardProps> = React.memo(({
       </div>
     </motion.div>
   );
-};
+});
 
 export default EnhancedDashboard;

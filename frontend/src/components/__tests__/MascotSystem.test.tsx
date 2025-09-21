@@ -1,36 +1,58 @@
-import React from 'react';
-import { render, screen, act } from '@testing-library/react';
-import MascotSystem from '../MascotSystem';
-import * as THREE from 'three';
-
 // Mock the WardrobeData module
-const mockCreateItemMesh = jest.fn();
 jest.mock('../WardrobeData', () => ({
   WARDROBE_ITEMS: [
     { id: 'wizard_hat', name: 'Wizard Hat' },
     { id: 'superhero_cape', name: 'Superhero Cape' },
   ],
-  createItemMesh: mockCreateItemMesh,
+  createItemMesh: jest.fn(),
 }));
 
-// Mock Three.js renderer
+// Create a mock canvas element
+const mockCanvas = {
+  addEventListener: jest.fn(),
+  removeEventListener: jest.fn(),
+  style: {},
+  width: 800,
+  height: 600,
+};
+
+// Mock Three.js completely
 jest.mock('three', () => {
-  const originalThree = jest.requireActual('three');
+  const mockWebGLRenderer = jest.fn().mockImplementation(() => ({
+    setSize: jest.fn(),
+    setPixelRatio: jest.fn(),
+    render: jest.fn(),
+    dispose: jest.fn(),
+    domElement: mockCanvas,
+  }));
+
   return {
-    ...originalThree,
-    WebGLRenderer: jest.fn().mockImplementation(() => ({
-      setSize: jest.fn(),
-      setPixelRatio: jest.fn(),
-      render: jest.fn(),
-      dispose: jest.fn(),
-      domElement: document.createElement('canvas'),
-    })),
+    WebGLRenderer: mockWebGLRenderer,
+    Scene: jest.fn(),
+    PerspectiveCamera: jest.fn(),
+    AmbientLight: jest.fn(),
+    DirectionalLight: jest.fn(),
+    Mesh: jest.fn(),
+    SphereGeometry: jest.fn(),
+    MeshBasicMaterial: jest.fn(),
+    Color: jest.fn(),
   };
 });
+
+import React from 'react';
+import { render, screen, act } from '@testing-library/react';
+import MascotSystem from '../MascotSystem';
+
+// Get reference to the mocked function
+const mockCreateItemMesh = jest.mocked(require('../WardrobeData').createItemMesh);
 
 describe('MascotSystem', () => {
   const mockOnMascotInteraction = jest.fn();
   const mockOnEmotionalStateChange = jest.fn();
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
 
   const defaultProps = {
     locale: 'en' as 'en' | 'fr',

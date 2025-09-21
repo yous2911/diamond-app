@@ -15,7 +15,7 @@ jest.mock('framer-motion', () => ({
   AnimatePresence: ({ children }: any) => <div data-testid="animate-presence">{children}</div>
 }));
 
-jest.mock('../NextLevelXPSystem', () => {
+jest.mock('../../NextLevelXPSystem', () => {
   return function MockNextLevelXPSystem(props: any) {
     return (
       <div data-testid="next-level-xp-system" {...props}>
@@ -40,14 +40,7 @@ const mockBadges = [
   }
 ];
 
-const mockHooks = {
-  useStudentBadges: () => ({
-    data: mockBadges,
-    isLoading: false
-  })
-};
-
-jest.mock('../../hooks/useLeaderboard', () => mockHooks);
+jest.mock('../../../hooks/useLeaderboard');
 
 const mockAuth = {
   student: {
@@ -57,11 +50,11 @@ const mockAuth = {
   }
 };
 
-jest.mock('../../contexts/AuthContext', () => ({
+jest.mock('../../../contexts/AuthContext', () => ({
   useAuth: () => mockAuth
 }));
 
-jest.mock('../ui/AccessibleButton', () => {
+jest.mock('../../ui/AccessibleButton', () => {
   return function MockAccessibleButton({ children, onClick, ariaLabel, ...props }: any) {
     return (
       <button
@@ -79,13 +72,21 @@ jest.mock('../ui/AccessibleButton', () => {
 // Mock timers
 jest.useFakeTimers();
 
+import * as useLeaderboardModule from '../../../hooks/useLeaderboard';
+const mockUseStudentBadges = jest.mocked(useLeaderboardModule.useStudentBadges);
+
 describe('XPProgressWidget', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.useFakeTimers();
+    mockUseStudentBadges.mockReturnValue({
+      data: mockBadges,
+      isLoading: false
+    });
   });
 
   afterEach(() => {
-    jest.runOnlyPendingTimers();
+    jest.clearAllTimers();
     jest.useRealTimers();
   });
 
@@ -93,7 +94,7 @@ describe('XPProgressWidget', () => {
     it('renders XP progress widget with default props', () => {
       render(<XPProgressWidget studentId={1} />);
 
-      expect(screen.getByText('� Progression')).toBeInTheDocument();
+      expect(screen.getByText('⚡ Progression')).toBeInTheDocument();
       expect(screen.getByText('Niveau 12')).toBeInTheDocument();
       expect(screen.getByTestId('next-level-xp-system')).toBeInTheDocument();
     });
@@ -101,7 +102,7 @@ describe('XPProgressWidget', () => {
     it('displays streak information when streak > 0', () => {
       render(<XPProgressWidget studentId={1} />);
 
-      expect(screen.getByText('=% 5 jours')).toBeInTheDocument();
+      expect(screen.getByText('🔥 5 jours')).toBeInTheDocument();
     });
 
     it('applies custom className', () => {
@@ -122,16 +123,16 @@ describe('XPProgressWidget', () => {
 
   describe('Loading State', () => {
     it('shows loading skeleton when badges are loading', () => {
-      mockHooks.useStudentBadges.mockReturnValue({
+      mockUseStudentBadges.mockReturnValue({
         data: null,
         isLoading: true
       });
 
       render(<XPProgressWidget studentId={1} />);
 
-      expect(screen.getByText('� Progression')).toBeInTheDocument();
-      const loadingElement = screen.getByText('� Progression').closest('div');
-      expect(loadingElement).toHaveClass('animate-pulse');
+      expect(screen.getByText('⚡ Progression')).toBeInTheDocument();
+      const progressSection = screen.getByText('⚡ Progression').closest('.bg-white');
+      expect(progressSection).toHaveClass('animate-pulse');
     });
   });
 
@@ -170,7 +171,7 @@ describe('XPProgressWidget', () => {
       fireEvent.click(levelUpButton);
 
       // Should trigger level up celebration
-      expect(screen.getByText('F�licitations !')).toBeInTheDocument();
+      expect(screen.getByText('Félicitations !')).toBeInTheDocument();
       expect(screen.getByText('Vous avez atteint le niveau 13 !')).toBeInTheDocument();
     });
 
@@ -180,13 +181,13 @@ describe('XPProgressWidget', () => {
       const levelUpButton = screen.getByText('Level Up!');
       fireEvent.click(levelUpButton);
 
-      expect(screen.getByText('F�licitations !')).toBeInTheDocument();
+      expect(screen.getByText('Félicitations !')).toBeInTheDocument();
 
       act(() => {
         jest.advanceTimersByTime(3000);
       });
 
-      expect(screen.queryByText('F�licitations !')).not.toBeInTheDocument();
+      expect(screen.queryByText('Félicitations !')).not.toBeInTheDocument();
     });
   });
 
@@ -197,12 +198,12 @@ describe('XPProgressWidget', () => {
       const levelUpButton = screen.getByText('Level Up!');
       fireEvent.click(levelUpButton);
 
-      expect(screen.getByText('F�licitations !')).toBeInTheDocument();
+      expect(screen.getByText('Félicitations !')).toBeInTheDocument();
 
       const continueButton = screen.getByText('Continuer');
       fireEvent.click(continueButton);
 
-      expect(screen.queryByText('F�licitations !')).not.toBeInTheDocument();
+      expect(screen.queryByText('Félicitations !')).not.toBeInTheDocument();
     });
   });
 
@@ -210,7 +211,7 @@ describe('XPProgressWidget', () => {
     it('displays recent achievements when showAchievements is true', () => {
       render(<XPProgressWidget studentId={1} showAchievements={true} />);
 
-      expect(screen.getByText('<� Succ�s r�cents')).toBeInTheDocument();
+      expect(screen.getByText('🏆 Succès récents')).toBeInTheDocument();
       expect(screen.getByText('First Steps')).toBeInTheDocument();
       expect(screen.getByText('Speed Demon')).toBeInTheDocument();
     });
@@ -218,7 +219,7 @@ describe('XPProgressWidget', () => {
     it('hides achievements when showAchievements is false', () => {
       render(<XPProgressWidget studentId={1} showAchievements={false} />);
 
-      expect(screen.queryByText('<� Succ�s r�cents')).not.toBeInTheDocument();
+      expect(screen.queryByText('🏆 Succès récents')).not.toBeInTheDocument();
       expect(screen.queryByText('First Steps')).not.toBeInTheDocument();
     });
 
@@ -236,7 +237,7 @@ describe('XPProgressWidget', () => {
         earnedAt: new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString()
       }));
 
-      mockHooks.useStudentBadges.mockReturnValue({
+      mockUseStudentBadges.mockReturnValue({
         data: manyBadges,
         isLoading: false
       });
@@ -250,7 +251,7 @@ describe('XPProgressWidget', () => {
     });
 
     it('does not show achievements section when no recent achievements', () => {
-      mockHooks.useStudentBadges.mockReturnValue({
+      mockUseStudentBadges.mockReturnValue({
         data: [
           {
             title: 'Old Badge',
@@ -262,7 +263,7 @@ describe('XPProgressWidget', () => {
 
       render(<XPProgressWidget studentId={1} showAchievements={true} />);
 
-      expect(screen.queryByText('<� Succ�s r�cents')).not.toBeInTheDocument();
+      expect(screen.queryByText('🏆 Succès récents')).not.toBeInTheDocument();
     });
   });
 
@@ -288,7 +289,7 @@ describe('XPProgressWidget', () => {
     it('shows streak animation when streak > 0', () => {
       render(<XPProgressWidget studentId={1} />);
 
-      const streakElement = screen.getByText('=% 5 jours');
+      const streakElement = screen.getByText('🔥 5 jours');
       expect(streakElement).toBeInTheDocument();
       expect(streakElement.closest('div')).toHaveAttribute('data-testid', 'motion-div');
     });
@@ -308,7 +309,7 @@ describe('XPProgressWidget', () => {
 
       // Initial render should show streak, but if it was 0, it wouldn't show
       // This test verifies the conditional rendering logic
-      expect(screen.getByText('=% 5 jours')).toBeInTheDocument();
+      expect(screen.getByText('🔥 5 jours')).toBeInTheDocument();
     });
   });
 
@@ -327,7 +328,7 @@ describe('XPProgressWidget', () => {
       const levelUpButton = screen.getByText('Level Up!');
       fireEvent.click(levelUpButton);
 
-      expect(screen.getByLabelText('Fermer la c�l�bration')).toBeInTheDocument();
+      expect(screen.getByLabelText('Fermer la célébration')).toBeInTheDocument();
     });
   });
 
@@ -342,31 +343,31 @@ describe('XPProgressWidget', () => {
     it('handles studentId prop correctly', () => {
       render(<XPProgressWidget studentId={123} />);
 
-      expect(mockHooks.useStudentBadges).toHaveBeenCalledWith(123);
+      expect(mockUseStudentBadges).toHaveBeenCalledWith(123);
     });
   });
 
   describe('Error Handling', () => {
     it('handles missing badges data gracefully', () => {
-      mockHooks.useStudentBadges.mockReturnValue({
+      mockUseStudentBadges.mockReturnValue({
         data: null,
         isLoading: false
       });
 
       render(<XPProgressWidget studentId={1} showAchievements={true} />);
 
-      expect(screen.queryByText('<� Succ�s r�cents')).not.toBeInTheDocument();
+      expect(screen.queryByText('🏆 Succès récents')).not.toBeInTheDocument();
     });
 
     it('handles empty badges array', () => {
-      mockHooks.useStudentBadges.mockReturnValue({
+      mockUseStudentBadges.mockReturnValue({
         data: [],
         isLoading: false
       });
 
       render(<XPProgressWidget studentId={1} showAchievements={true} />);
 
-      expect(screen.queryByText('<� Succ�s r�cents')).not.toBeInTheDocument();
+      expect(screen.queryByText('🏆 Succès récents')).not.toBeInTheDocument();
     });
   });
 

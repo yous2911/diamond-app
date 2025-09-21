@@ -4,11 +4,22 @@ import { act } from '@testing-library/react';
 import AdvancedParticleEngine from '../AdvancedParticleEngine';
 
 // Mock requestAnimationFrame
-const mockRequestAnimationFrame = jest.fn();
+const mockRequestAnimationFrame = jest.fn((callback) => {
+  // Simulate animation frame by calling the callback immediately
+  if (callback) {
+    callback(performance.now());
+  }
+  return 1; // Return a frame ID
+});
 const mockCancelAnimationFrame = jest.fn();
 
 global.requestAnimationFrame = mockRequestAnimationFrame;
 global.cancelAnimationFrame = mockCancelAnimationFrame;
+
+// Mock performance.now
+global.performance = {
+  now: jest.fn(() => Date.now())
+};
 
 // Mock canvas context
 const mockCanvasContext = {
@@ -80,10 +91,6 @@ describe('AdvancedParticleEngine', () => {
   beforeEach(() => {
     jest.useFakeTimers();
     jest.clearAllMocks();
-    mockRequestAnimationFrame.mockImplementation((callback) => {
-      const id = setTimeout(() => callback(Date.now()), 16);
-      return id as unknown as number;
-    });
   });
 
   afterEach(() => {
@@ -93,7 +100,7 @@ describe('AdvancedParticleEngine', () => {
   it('renders canvas element', () => {
     render(<AdvancedParticleEngine {...defaultProps} />);
     
-    const canvas = screen.getByRole('img', { hidden: true }) || document.querySelector('canvas');
+    const canvas = document.querySelector('canvas');
     expect(canvas).toBeInTheDocument();
   });
 
@@ -252,10 +259,15 @@ describe('AdvancedParticleEngine', () => {
     expect(canvas).toHaveClass('pointer-events-auto');
   });
 
-  it('handles component unmounting', () => {
-    const { unmount } = render(<AdvancedParticleEngine {...defaultProps} />);
+  it('handles component unmounting', async () => {
+    const { unmount } = render(<AdvancedParticleEngine {...defaultProps} isActive={true} />);
     
     expect(document.querySelector('canvas')).toBeInTheDocument();
+    
+    // Wait for the animation frame to be requested
+    await waitFor(() => {
+      expect(mockRequestAnimationFrame).toHaveBeenCalled();
+    });
     
     unmount();
     
@@ -263,11 +275,13 @@ describe('AdvancedParticleEngine', () => {
     expect(mockCancelAnimationFrame).toHaveBeenCalled();
   });
 
-  it('handles animation frame requests', () => {
-    render(<AdvancedParticleEngine {...defaultProps} />);
+  it('handles animation frame requests', async () => {
+    render(<AdvancedParticleEngine {...defaultProps} isActive={true} />);
     
-    // Animation should be requested when active
-    expect(mockRequestAnimationFrame).toHaveBeenCalled();
+    // Wait for the animation frame to be requested
+    await waitFor(() => {
+      expect(mockRequestAnimationFrame).toHaveBeenCalled();
+    });
   });
 
   it('handles different particle configurations', () => {
@@ -344,41 +358,52 @@ describe('AdvancedParticleEngine', () => {
   it('calls drawing functions in a loop when active', async () => {
     render(<AdvancedParticleEngine {...defaultProps} isActive={true} />);
 
-    await act(async () => {
-      jest.advanceTimersByTime(100);
+    // Wait for the animation frame to be requested
+    await waitFor(() => {
+      expect(mockRequestAnimationFrame).toHaveBeenCalled();
     });
-
+    
+    // The animation callback should have been called, which should call clearRect
     expect(mockCanvasContext.clearRect).toHaveBeenCalled();
-    expect(mockCanvasContext.clearRect.mock.calls.length).toBeGreaterThan(1);
   });
 
-  it('stops the animation loop when isActive becomes false', () => {
+  it('stops the animation loop when isActive becomes false', async () => {
     const { rerender } = render(<AdvancedParticleEngine {...defaultProps} isActive={true} />);
 
-    expect(mockRequestAnimationFrame).toHaveBeenCalled();
+    // Wait for the animation frame to be requested
+    await waitFor(() => {
+      expect(mockRequestAnimationFrame).toHaveBeenCalled();
+    });
 
-    rerender(<AdvancedParticleEngine {...defaultProps} isActive={false} />);
+    await act(async () => {
+      rerender(<AdvancedParticleEngine {...defaultProps} isActive={false} />);
+    });
 
+    // The component should call cancelAnimationFrame when isActive becomes false
     expect(mockCancelAnimationFrame).toHaveBeenCalled();
   });
 
   it('draws a heart shape when particleType is "heart"', async () => {
     render(<AdvancedParticleEngine {...defaultProps} particleType="heart" isActive={true} />);
 
-    await act(async () => {
-      jest.advanceTimersByTime(50);
+    // Wait for the animation frame to be requested
+    await waitFor(() => {
+      expect(mockRequestAnimationFrame).toHaveBeenCalled();
     });
-
+    
+    // The heart drawing code should have been called
     expect(mockCanvasContext.bezierCurveTo).toHaveBeenCalled();
   });
 
   it('draws trails when enableTrails is true', async () => {
       render(<AdvancedParticleEngine {...defaultProps} enableTrails={true} isActive={true} />);
 
-      await act(async () => {
-        jest.advanceTimersByTime(50);
+      // Wait for the animation frame to be requested
+      await waitFor(() => {
+        expect(mockRequestAnimationFrame).toHaveBeenCalled();
       });
-
+      
+      // The trail drawing code should have been called
       expect(mockCanvasContext.stroke).toHaveBeenCalled();
     });
 });

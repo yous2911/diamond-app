@@ -6,8 +6,6 @@ import {
   SmartMascotSystem,
   SmartWardrobe3D,
   SmartParticleEngine,
-  SmartMathGame,
-  SmartPhonicsGame,
   SmartMentalMath,
   SmartAchievementBadges,
   SmartProgressTracker,
@@ -38,23 +36,6 @@ jest.mock('../AdvancedParticleEngine', () => {
   };
 });
 
-jest.mock('../games/EnhancedMathGame', () => ({
-  EnhancedMathGame: function MockEnhancedMathGame(props: any) {
-    return <div data-testid="enhanced-math-game">Enhanced Math Game {JSON.stringify(props)}</div>;
-  }
-}));
-
-jest.mock('../games/FrenchPhonicsGame', () => ({
-  FrenchPhonicsGame: function MockFrenchPhonicsGame(props: any) {
-    return <div data-testid="french-phonics-game">French Phonics Game {JSON.stringify(props)}</div>;
-  }
-}));
-
-jest.mock('../games/MysteryWordGame', () => {
-  return function MockMysteryWordGame(props: any) {
-    return <div data-testid="mystery-word-game">Mystery Word Game {JSON.stringify(props)}</div>;
-  };
-});
 
 jest.mock('../exercises/MentalMathExercise', () => {
   return function MockMentalMathExercise(props: any) {
@@ -179,17 +160,6 @@ describe('LazyComponents', () => {
       expect(screen.getByTestId('skeleton-card')).toBeInTheDocument();
     });
 
-    it('renders SmartMathGame with correct skeleton', () => {
-      render(<SmartMathGame testProp="math-test" />);
-
-      expect(screen.getByTestId('skeleton-exercise')).toBeInTheDocument();
-    });
-
-    it('renders SmartPhonicsGame with correct skeleton', () => {
-      render(<SmartPhonicsGame testProp="phonics-test" />);
-
-      expect(screen.getByTestId('skeleton-exercise')).toBeInTheDocument();
-    });
 
     it('renders SmartMentalMath with correct skeleton', () => {
       render(<SmartMentalMath testProp="mental-math-test" />);
@@ -231,15 +201,6 @@ describe('LazyComponents', () => {
       expect(screen.getByText(/Mascot Wardrobe 3D.*testProp.*wardrobe-test/)).toBeInTheDocument();
     });
 
-    it('loads SmartMathGame component after skeleton', async () => {
-      render(<SmartMathGame testProp="math-test" />);
-
-      await waitFor(() => {
-        expect(screen.getByTestId('enhanced-math-game')).toBeInTheDocument();
-      });
-
-      expect(screen.getByText(/Enhanced Math Game.*testProp.*math-test/)).toBeInTheDocument();
-    });
 
     it('loads SmartAchievementBadges component after skeleton', async () => {
       render(<SmartAchievementBadges testProp="achievement-test" />);
@@ -261,15 +222,6 @@ describe('LazyComponents', () => {
       expect(screen.getByText(/Advanced Particle Engine.*testProp.*particle-test/)).toBeInTheDocument();
     });
 
-    it('loads SmartPhonicsGame component after skeleton', async () => {
-      render(<SmartPhonicsGame testProp="phonics-test" />);
-
-      await waitFor(() => {
-        expect(screen.getByTestId('french-phonics-game')).toBeInTheDocument();
-      });
-
-      expect(screen.getByText(/French Phonics Game.*testProp.*phonics-test/)).toBeInTheDocument();
-    });
 
     it('loads SmartMentalMath component after skeleton', async () => {
       render(<SmartMentalMath testProp="mental-math-test" />);

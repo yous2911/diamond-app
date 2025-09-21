@@ -104,7 +104,7 @@ const EnhancedLevelUpSystem: React.FC<EnhancedLevelUpSystemProps> = ({
         onLevelUpComplete?.();
       }, 4000);
     }
-  }, [isLevelingUp, newLevel, achievements, playLevelUpFanfare, playSparkleSound, createCelebrations, onLevelUpComplete]);
+  }, [isLevelingUp, newLevel, achievements.length]); // Simplified dependencies
 
   const renderCelebration = (celebration: LevelUpCelebration) => {
     const { type, x, y, delay } = celebration;

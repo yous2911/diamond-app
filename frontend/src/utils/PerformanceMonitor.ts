@@ -22,6 +22,7 @@ interface PerformanceThresholds {
 
 class PerformanceMonitor {
   private metrics: PerformanceMetrics[] = [];
+  private componentStats: Record<string, { renderCount: number; totalTime: number; averageTime: number }> = {};
   private thresholds: PerformanceThresholds = {
     componentRenderTime: 16, // 60fps target
     bundleSize: 500, // 500KB target
@@ -32,7 +33,7 @@ class PerformanceMonitor {
   };
 
   private observers: PerformanceObserver[] = [];
-  private isMonitoring = false;
+  private _isMonitoring = false;
 
   constructor() {
     this.initializeObservers();
@@ -76,9 +77,9 @@ class PerformanceMonitor {
 
   // Start monitoring
   startMonitoring() {
-    if (this.isMonitoring) return;
+    if (this._isMonitoring) return;
     
-    this.isMonitoring = true;
+    this._isMonitoring = true;
     this.monitorFPS();
     this.monitorMemory();
     this.monitorBundleSize();
@@ -88,7 +89,7 @@ class PerformanceMonitor {
 
   // Stop monitoring
   stopMonitoring() {
-    this.isMonitoring = false;
+    this._isMonitoring = false;
     this.observers.forEach(observer => observer.disconnect());
     // Performance monitoring stopped
   }
@@ -99,7 +100,7 @@ class PerformanceMonitor {
     let lastTime = performance.now();
     
     const measureFPS = () => {
-      if (!this.isMonitoring) return;
+      if (!this._isMonitoring) return;
       
       frameCount++;
       const currentTime = performance.now();
@@ -116,17 +117,21 @@ class PerformanceMonitor {
         lastTime = currentTime;
       }
       
-      requestAnimationFrame(measureFPS);
+      if (typeof requestAnimationFrame !== 'undefined') {
+        requestAnimationFrame(measureFPS);
+      }
     };
     
-    requestAnimationFrame(measureFPS);
+    if (typeof requestAnimationFrame !== 'undefined') {
+      requestAnimationFrame(measureFPS);
+    }
   }
 
   // Monitor memory usage
   private monitorMemory() {
     if ('memory' in performance) {
       const checkMemory = () => {
-        if (!this.isMonitoring) return;
+        if (!this._isMonitoring) return;
         
         const memory = (performance as any).memory;
         const usedMB = memory.usedJSHeapSize / (1024 * 1024);
@@ -147,8 +152,9 @@ class PerformanceMonitor {
   // Monitor bundle size
   private monitorBundleSize() {
     // Estimate bundle size from performance timing
-    const navigationEntry = performance.getEntriesByType('navigation')[0] as any;
-    if (navigationEntry) {
+    const navigationEntries = performance.getEntriesByType('navigation');
+    if (navigationEntries && navigationEntries.length > 0) {
+      const navigationEntry = navigationEntries[0] as any;
       const transferSize = navigationEntry.transferSize || 0;
       const bundleSizeKB = transferSize / 1024;
       
@@ -167,6 +173,21 @@ class PerformanceMonitor {
     };
     
     this.metrics.push(metric as PerformanceMetrics);
+    
+    // Check for threshold violations and warn
+    if (type === 'fps' && value < this.thresholds.fps) {
+      console.warn(`⚠️ Low FPS detected: ${value}`);
+    } else if (type === 'memoryUsage' && value > this.thresholds.memoryUsage) {
+      console.warn(`⚠️ High memory usage: ${value.toFixed(2)}MB`);
+    } else if (type === 'componentRenderTime' && value > this.thresholds.componentRenderTime) {
+      console.warn(`⚠️ Slow component render: ${value.toFixed(2)}ms`);
+    } else if (type === 'loadTime' && value > this.thresholds.loadTime) {
+      console.warn(`⚠️ Slow load time: ${value.toFixed(2)}ms`);
+    } else if (type === 'interactionDelay' && value > this.thresholds.interactionDelay) {
+      console.warn(`⚠️ Slow interaction response: ${value.toFixed(2)}ms`);
+    } else if (type === 'bundleSize' && value > this.thresholds.bundleSize) {
+      console.warn(`⚠️ Large bundle size: ${value.toFixed(2)}KB`);
+    }
     
     // Keep only last 100 metrics
     if (this.metrics.length > 100) {
@@ -198,24 +219,49 @@ class PerformanceMonitor {
       interactionDelay: 0
     };
     
+    const counts = {
+      componentRenderTime: 0,
+      bundleSize: 0,
+      memoryUsage: 0,
+      fps: 0,
+      loadTime: 0,
+      interactionDelay: 0
+    };
+    
     this.metrics.forEach(metric => {
-      sums.componentRenderTime += metric.componentRenderTime || 0;
-      sums.bundleSize += metric.bundleSize || 0;
-      sums.memoryUsage += metric.memoryUsage || 0;
-      sums.fps += metric.fps || 0;
-      sums.loadTime += metric.loadTime || 0;
-      sums.interactionDelay += metric.interactionDelay || 0;
+      if (metric.componentRenderTime !== undefined) {
+        sums.componentRenderTime += metric.componentRenderTime;
+        counts.componentRenderTime++;
+      }
+      if (metric.bundleSize !== undefined) {
+        sums.bundleSize += metric.bundleSize;
+        counts.bundleSize++;
+      }
+      if (metric.memoryUsage !== undefined) {
+        sums.memoryUsage += metric.memoryUsage;
+        counts.memoryUsage++;
+      }
+      if (metric.fps !== undefined) {
+        sums.fps += metric.fps;
+        counts.fps++;
+      }
+      if (metric.loadTime !== undefined) {
+        sums.loadTime += metric.loadTime;
+        counts.loadTime++;
+      }
+      if (metric.interactionDelay !== undefined) {
+        sums.interactionDelay += metric.interactionDelay;
+        counts.interactionDelay++;
+      }
     });
     
-    const count = this.metrics.length || 1;
-    
     return {
-      componentRenderTime: sums.componentRenderTime / count,
-      bundleSize: sums.bundleSize / count,
-      memoryUsage: sums.memoryUsage / count,
-      fps: sums.fps / count,
-      loadTime: sums.loadTime / count,
-      interactionDelay: sums.interactionDelay / count
+      componentRenderTime: counts.componentRenderTime > 0 ? sums.componentRenderTime / counts.componentRenderTime : 0,
+      bundleSize: counts.bundleSize > 0 ? sums.bundleSize / counts.bundleSize : 0,
+      memoryUsage: counts.memoryUsage > 0 ? sums.memoryUsage / counts.memoryUsage : 0,
+      fps: counts.fps > 0 ? sums.fps / counts.fps : 0,
+      loadTime: counts.loadTime > 0 ? sums.loadTime / counts.loadTime : 0,
+      interactionDelay: counts.interactionDelay > 0 ? sums.interactionDelay / counts.interactionDelay : 0
     };
   }
 
@@ -271,6 +317,14 @@ class PerformanceMonitor {
     
     this.recordMetric('componentRenderTime', renderTime);
     
+    // Track component-specific stats
+    if (!this.componentStats[componentName]) {
+      this.componentStats[componentName] = { renderCount: 0, totalTime: 0, averageTime: 0 };
+    }
+    this.componentStats[componentName].renderCount++;
+    this.componentStats[componentName].totalTime += renderTime;
+    this.componentStats[componentName].averageTime = this.componentStats[componentName].totalTime / this.componentStats[componentName].renderCount;
+    
     if (renderTime > this.thresholds.componentRenderTime) {
       console.warn(`⚠️ Slow component render: ${componentName} took ${renderTime.toFixed(2)}ms`);
     }
@@ -302,7 +356,182 @@ class PerformanceMonitor {
 
   // Set custom thresholds
   setThresholds(thresholds: Partial<PerformanceThresholds>) {
-    this.thresholds = { ...this.thresholds, ...thresholds };
+    // Validate threshold values
+    const validatedThresholds: Partial<PerformanceThresholds> = {};
+    
+    Object.entries(thresholds).forEach(([key, value]) => {
+      if (typeof value === 'number' && value >= 0) {
+        validatedThresholds[key as keyof PerformanceThresholds] = value;
+      }
+    });
+    
+    this.thresholds = { ...this.thresholds, ...validatedThresholds };
+  }
+
+  // Get current thresholds
+  getThresholds(): PerformanceThresholds {
+    return { ...this.thresholds };
+  }
+
+  // Check if monitoring is active
+  isMonitoring(): boolean {
+    return this._isMonitoring;
+  }
+
+  // Get all metrics
+  getMetrics(): PerformanceMetrics[] {
+    return [...this.metrics];
+  }
+
+  // Clear all metrics
+  clearMetrics(): void {
+    this.metrics = [];
+    this.componentStats = {};
+  }
+
+  // Get component statistics
+  getComponentStats(): Record<string, { renderCount: number; totalTime: number; averageTime: number }> {
+    return { ...this.componentStats };
+  }
+
+  // Export metrics as JSON
+  exportMetrics(): any {
+    const averages = this.calculateAverages();
+    return {
+      timestamp: Date.now(),
+      metrics: this.metrics,
+      thresholds: this.thresholds,
+      isMonitoring: this._isMonitoring,
+      analysis: {
+        averages,
+        recommendations: this.generateRecommendations(averages, averages)
+      }
+    };
+  }
+
+  // Get metrics summary
+  getMetricsSummary(): any {
+    const averages = this.calculateAverages();
+    const violations: string[] = [];
+    
+    // Check for threshold violations
+    if (averages.fps < this.thresholds.fps) violations.push('Low FPS detected');
+    if (averages.bundleSize > this.thresholds.bundleSize) violations.push('Large bundle size');
+    if (averages.memoryUsage > this.thresholds.memoryUsage) violations.push('High memory usage');
+    if (averages.loadTime > this.thresholds.loadTime) violations.push('Slow load time');
+    if (averages.interactionDelay > this.thresholds.interactionDelay) violations.push('Slow interaction response');
+    if (averages.componentRenderTime > this.thresholds.componentRenderTime) violations.push('Slow component renders');
+    
+    return {
+      totalMetrics: this.metrics.length,
+      timeRange: {
+        start: this.metrics.length > 0 ? this.metrics[0] : null,
+        end: this.metrics.length > 0 ? this.metrics[this.metrics.length - 1] : null
+      },
+      averages,
+      violations,
+      thresholds: this.thresholds,
+      isMonitoring: this._isMonitoring,
+      recommendations: this.generateRecommendations(averages, averages)
+    };
+  }
+
+  // Get performance analysis
+  getPerformanceAnalysis(): any {
+    const averages = this.calculateAverages();
+    const issues: string[] = [];
+    
+    // Check for performance issues
+    if (averages.fps < this.thresholds.fps) issues.push('Low FPS detected');
+    if (averages.componentRenderTime > this.thresholds.componentRenderTime) issues.push('Slow component renders');
+    if (averages.memoryUsage > this.thresholds.memoryUsage) issues.push('High memory usage');
+    if (averages.loadTime > this.thresholds.loadTime) issues.push('Slow load time');
+    if (averages.interactionDelay > this.thresholds.interactionDelay) issues.push('Slow interaction response');
+    if (averages.bundleSize > this.thresholds.bundleSize) issues.push('Large bundle size');
+    
+    // Calculate performance score (0-100)
+    let score = 100;
+    if (averages.fps < this.thresholds.fps) score -= 20;
+    if (averages.componentRenderTime > this.thresholds.componentRenderTime) score -= 15;
+    if (averages.memoryUsage > this.thresholds.memoryUsage) score -= 15;
+    if (averages.loadTime > this.thresholds.loadTime) score -= 15;
+    if (averages.interactionDelay > this.thresholds.interactionDelay) score -= 15;
+    if (averages.bundleSize > this.thresholds.bundleSize) score -= 20;
+    
+    return {
+      averageFPS: averages.fps,
+      averageRenderTime: averages.componentRenderTime,
+      averageMemoryUsage: averages.memoryUsage,
+      averageLoadTime: averages.loadTime,
+      averageInteractionDelay: averages.interactionDelay,
+      averageBundleSize: averages.bundleSize,
+      totalMetrics: this.metrics.length,
+      issues,
+      score: Math.max(0, score),
+      recommendations: this.generateRecommendations(averages, averages)
+    };
+  }
+
+  // Get slow components
+  getSlowComponents(): string[] {
+    const slowComponents: string[] = [];
+    Object.entries(this.componentStats).forEach(([componentName, stats]) => {
+      if (stats.averageTime > this.thresholds.componentRenderTime) {
+        slowComponents.push(componentName);
+      }
+    });
+    return slowComponents;
+  }
+
+  // Track memory usage
+  trackMemoryUsage(): void {
+    if ('memory' in performance) {
+      const memory = (performance as any).memory;
+      const usedMB = memory.usedJSHeapSize / (1024 * 1024);
+      this.recordMetric('memoryUsage', usedMB);
+    }
+  }
+
+  // Detect memory leak
+  detectMemoryLeak(): boolean {
+    const memoryMetrics = this.metrics.filter(m => m.memoryUsage > 0);
+    if (memoryMetrics.length < 3) return false;
+    
+    // Check if memory usage is consistently increasing
+    const recent = memoryMetrics.slice(-3);
+    return recent[0].memoryUsage < recent[1].memoryUsage && 
+           recent[1].memoryUsage < recent[2].memoryUsage;
+  }
+
+  // Track FPS
+  trackFPS(callback?: (fps: number) => void): void {
+    let frameCount = 0;
+    let lastTime = performance.now();
+    
+    const measureFPS = () => {
+      frameCount++;
+      const currentTime = performance.now();
+      
+      if (currentTime - lastTime >= 1000) {
+        const fps = Math.round((frameCount * 1000) / (currentTime - lastTime));
+        this.recordMetric('fps', fps);
+        
+        if (callback) {
+          callback(fps);
+        }
+        
+        frameCount = 0;
+        lastTime = currentTime;
+      }
+      
+      if (typeof requestAnimationFrame !== 'undefined') {
+        requestAnimationFrame(measureFPS);
+      }
+    };
+    
+    if (typeof requestAnimationFrame !== 'undefined') {
+      requestAnimationFrame(measureFPS);
+    }
   }
 }
 

@@ -10,18 +10,6 @@ export const LazyAdvancedMascotSystem = lazy(() => import('./AdvancedMascotSyste
 export const LazyMascotWardrobe3D = lazy(() => import('./mascot/MascotWardrobe3D'));
 export const LazyAdvancedParticleEngine = lazy(() => import('./AdvancedParticleEngine'));
 
-// Lazy load complex game components - EnhancedMathGame has named export, others have default
-export const LazyEnhancedMathGame = lazy(() => 
-  import('./games/EnhancedMathGame').then(module => ({ 
-    default: module.EnhancedMathGame 
-  }))
-);
-export const LazyFrenchPhonicsGame = lazy(() => 
-  import('./games/FrenchPhonicsGame').then(module => ({ 
-    default: module.FrenchPhonicsGame 
-  }))
-);
-export const LazyMysteryWordGame = lazy(() => import('./games/MysteryWordGame'));
 
 // Lazy load exercise components - these have default exports
 export const LazyMentalMathExercise = lazy(() => import('./exercises/MentalMathExercise'));
@@ -97,24 +85,6 @@ export const SmartParticleEngine = (props: any) => (
   />
 );
 
-// Games with smart loading
-export const SmartMathGame = (props: any) => (
-  <LazyComponentWrapper
-    component={LazyEnhancedMathGame}
-    skeletonType="exercise"
-    className="w-full h-96"
-    {...props}
-  />
-);
-
-export const SmartPhonicsGame = (props: any) => (
-  <LazyComponentWrapper
-    component={LazyFrenchPhonicsGame}
-    skeletonType="exercise"
-    className="w-full h-96"
-    {...props}
-  />
-);
 
 // Exercises with loading states
 export const SmartMentalMath = (props: any) => (
@@ -183,9 +153,6 @@ export default {
   LazyAdvancedMascotSystem,
   LazyMascotWardrobe3D,
   LazyAdvancedParticleEngine,
-  LazyEnhancedMathGame,
-  LazyFrenchPhonicsGame,
-  LazyMysteryWordGame,
   LazyMentalMathExercise,
   LazyDragDropExercise,
   LazyAchievementBadges,
@@ -194,8 +161,6 @@ export default {
   SmartMascotSystem,
   SmartWardrobe3D,
   SmartParticleEngine,
-  SmartMathGame,
-  SmartPhonicsGame,
   SmartMentalMath,
   SmartAchievementBadges,
   SmartProgressTracker,
