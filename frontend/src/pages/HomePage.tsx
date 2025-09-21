@@ -39,7 +39,12 @@ const HomePage = () => {
   } = usePremiumFeatures();
 
   // Hooks API
-  const { data: exercisesData, isLoading: isLoadingExercises, error: exercisesError } = useExercisesByLevel(student?.niveau || 'CP');
+  const { data: exercisesData, isLoading: isLoadingExercises, error: exercisesError } = useExercisesByLevel(student?.niveau || 'CP', {
+    matiere: 'MATHEMATIQUES',
+    type: 'QCM',
+    difficulty: 'FACILE',
+    limit: 10
+  });
   const { data: statsData } = useStudentStats();
   const { updateEmotion: updateMascotEmotion } = useMascot();
   const { startSession, endSession, data: activeSessionData } = useSessionManagement();
