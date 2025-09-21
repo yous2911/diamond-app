@@ -16,6 +16,7 @@ const ExercisePage = lazy(() => import('./pages/ExercisePage'));
 const LeaderboardPage = lazy(() => import('./pages/LeaderboardPage'));
 const ParentDashboard = lazy(() => import('./pages/ParentDashboard'));
 const LoginScreen = lazy(() => import('./components/LoginScreen'));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 // =============================================================================
 //  LAYOUT PRINCIPAL AVEC ÉLÉMENTS PARTAGÉS
@@ -59,6 +60,7 @@ const AppRouter = () => {
           <Route path="/parent-dashboard" element={<ParentDashboard />} />
           {/* Add other routes here, e.g., /wardrobe */}
         </Route>
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </Suspense>
   );

@@ -47,9 +47,7 @@ export const exercises = mysqlTable('exercises', {
   pointsRecompense: int('points_recompense').default(10),
   tempsEstime: int('temps_estime').default(300),
   typeExercice: varchar('type_exercice', { length: 30 }).notNull(),
-  // Alias for compatibility
-  type: varchar('type', { length: 30 }).notNull(),
-  xp: int('xp').default(10), // Missing field from seed data
+  xp: int('xp').default(10),
   configuration: json('configuration'),
   ordre: int('ordre').default(0),
   estActif: boolean('est_actif').default(true),
@@ -78,11 +76,8 @@ export const studentProgress = mysqlTable('student_progress', {
   reviewScheduledAt: timestamp('review_scheduled_at'),
   streakCount: int('streak_count').default(0),
   difficultyPreference: varchar('difficulty_preference', { length: 30 }),
-  // Missing field that code expects
   completed: boolean('completed').default(false),
   completedAt: timestamp('completed_at'),
-  attempts: int('attempts').default(0),
-  score: decimal('score', { precision: 5, scale: 2 }).default('0.00'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow().onUpdateNow()
 });
@@ -624,7 +619,6 @@ export const MasteryLevels = {
   EXPERT: 'expert'
 } as const;
 
-// Missing tables that code expects
 export const securityAlerts = mysqlTable('security_alerts', {
   id: varchar('id', { length: 36 }).primaryKey(),
   studentId: int('student_id').references(() => students.id),
@@ -653,15 +647,11 @@ export const files = mysqlTable('files', {
   id: varchar('id', { length: 36 }).primaryKey(),
   studentId: int('student_id').references(() => students.id),
   fileName: varchar('file_name', { length: 255 }).notNull(),
-  originalName: varchar('original_name', { length: 255 }).notNull(),
   filePath: varchar('file_path', { length: 500 }).notNull(),
   fileSize: int('file_size').notNull(),
   mimeType: varchar('mime_type', { length: 100 }).notNull(),
   uploadedAt: timestamp('uploaded_at').notNull().defaultNow(),
   uploadedBy: varchar('uploaded_by', { length: 100 }),
-  // Missing fields that services expect
-  path: varchar('path', { length: 500 }).notNull(),
-  size: int('size').notNull(),
   status: varchar('status', { length: 20 }).default('active'),
   category: varchar('category', { length: 50 }).default('general'),
   isPublic: boolean('is_public').default(false),
@@ -679,21 +669,11 @@ export const fileVariants = mysqlTable('file_variants', {
   variantType: varchar('variant_type', { length: 50 }).notNull(),
   filePath: varchar('file_path', { length: 500 }).notNull(),
   fileSize: int('file_size').notNull(),
-  // Missing fields that services expect
-  fileId: varchar('file_id', { length: 36 }).notNull(),
-  path: varchar('path', { length: 500 }).notNull(),
-  type: varchar('type', { length: 50 }).notNull(),
-  filename: varchar('filename', { length: 255 }).notNull(),
   url: varchar('url', { length: 500 }),
-  size: int('size').notNull(),
-  mimetype: varchar('mimetype', { length: 100 }),
   metadata: json('metadata'),
   deletedAt: timestamp('deleted_at'),
   createdAt: timestamp('created_at').notNull().defaultNow()
 });
-
-// Alias for compatibility
-export const progress = studentProgress;
 
 // Type exports for missing tables
 export type SecurityAlert = InferSelectModel<typeof securityAlerts>;

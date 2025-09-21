@@ -83,40 +83,40 @@ async function registerPlugins() {
     logger.info('🛣️ Registering exercises routes...');
     await fastify.register(import('./routes/exercises'), { prefix: '/api/exercises' });
     
-    console.log('🛣️ Registering curriculum routes...');
+    logger.info('🛣️ Registering curriculum routes...');
     await fastify.register(import('./routes/curriculum'), { prefix: '/api' });
     
-    console.log('🛣️ Registering competences routes...');
+    logger.info('🛣️ Registering competences routes...');
     await fastify.register(import('./routes/competences'), { prefix: '/api/competences' });
     
-    console.log('🛣️ Registering mascots routes...');
+    logger.info('🛣️ Registering mascots routes...');
     await fastify.register(import('./routes/mascots'), { prefix: '/api/mascots' });
     
-    console.log('🛣️ Registering wardrobe routes...');
+    logger.info('🛣️ Registering wardrobe routes...');
     await fastify.register(import('./routes/wardrobe'), { prefix: '/api/wardrobe' });
     
-    console.log('🛣️ Registering sessions routes...');
+    logger.info('🛣️ Registering sessions routes...');
     await fastify.register(import('./routes/sessions'), { prefix: '/api/sessions' });
     
-    console.log('🛣️ Registering analytics routes...');
+    logger.info('🛣️ Registering analytics routes...');
     await fastify.register(import('./routes/analytics'), { prefix: '/api/analytics' });
     
-    console.log('🛣️ Registering monitoring routes...');
+    logger.info('🛣️ Registering monitoring routes...');
     await fastify.register(import('./routes/monitoring'), { prefix: '/api/monitoring' });
     
-    console.log('🛣️ Registering leaderboard routes...');
+    logger.info('🛣️ Registering leaderboard routes...');
     await fastify.register(import('./routes/leaderboard'));
     
-    console.log('🛣️ Registering parent authentication routes...');
+    logger.info('🛣️ Registering parent authentication routes...');
     await fastify.register(import('./routes/parent-auth'), { prefix: '/api/parent-auth' });
     
-    console.log('🛣️ Registering parent dashboard routes...');
+    logger.info('🛣️ Registering parent dashboard routes...');
     await fastify.register(import('./routes/parents'), { prefix: '/api/parents' });
     
-    console.log('🛣️ Registering gamification routes...');
+    logger.info('🛣️ Registering gamification routes...');
     await fastify.register(import('./routes/gamification'));
     
-    console.log('🛣️ Route registration completed successfully');
+    logger.info('🛣️ Route registration completed successfully');
     
     // Health check route
     fastify.get('/api/health', async () => {
@@ -192,7 +192,7 @@ async function registerPlugins() {
       };
     });
     
-    console.log('✅ All routes registered successfully');
+    logger.info('✅ All routes registered successfully');
 
     // Register global error handler
     logger.info('📦 Registering global error handler...');
@@ -201,7 +201,7 @@ async function registerPlugins() {
     logger.info('🔧 Error handler registered successfully');
     
   } catch (error) {
-    console.error('❌ Error during plugin/route registration:', error);
+    logger.error({ err: error }, '❌ Error during plugin/route registration:');
     throw error;
   }
 }
@@ -209,7 +209,7 @@ async function registerPlugins() {
 // Graceful shutdown
 async function gracefulShutdown() {
   try {
-    (fastify.log as any).info('Starting graceful shutdown...');
+    logger.info('Starting graceful shutdown...');
     
     // Close Fastify server (this also closes all plugins)
     await fastify.close();
@@ -217,10 +217,10 @@ async function gracefulShutdown() {
     // Close database connections
     await disconnectDatabase();
     
-    (fastify.log as any).info('Graceful shutdown completed');
+    logger.info('Graceful shutdown completed');
     process.exit(0);
   } catch (error) {
-    (fastify.log as any).error('Error during graceful shutdown:', error);
+    logger.error({ err: error }, 'Error during graceful shutdown:');
     process.exit(1);
   }
 }
@@ -228,40 +228,41 @@ async function gracefulShutdown() {
 // Start server
 async function start() {
   try {
-    console.log('🚀 Starting RevEd Kids Fastify server...');
+    logger.info('🚀 Starting RevEd Kids Fastify server...');
     
     // Validate environment first
     if (!config.JWT_SECRET || !config.ENCRYPTION_KEY) {
       throw new Error('Missing required environment variables: JWT_SECRET, ENCRYPTION_KEY');
     }
 
-    console.log('✅ Environment variables validated');
+    logger.info('✅ Environment variables validated');
 
     // Test database connection
-    console.log('🔗 Testing database connection...');
+    logger.info('🔗 Testing database connection...');
     await connectDatabase();
-    (fastify.log as any).info('Database connected successfully');
+    logger.info('Database connected successfully');
 
     // Register all plugins and routes
-    console.log('🔧 Registering plugins and routes...');
+    logger.info('🔧 Registering plugins and routes...');
     await registerPlugins();
     
     // Start the server
-    console.log('🌐 Starting server on port', config.PORT);
+    logger.info(`🌐 Starting server on port ${config.PORT}`);
     const address = await fastify.listen({
       port: config.PORT,
       host: config.HOST
     });
 
-    (fastify.log as any).info(`🚀 RevEd Kids Fastify server started successfully!`);
-    (fastify.log as any).info(`📍 Server listening on: ${address}`);
-    (fastify.log as any).info(`🌍 Environment: ${config.NODE_ENV}`);
-    (fastify.log as any).info(`📊 Health Check: ${address}/api/health`);
-    (fastify.log as any).info(`📚 API Documentation: ${address}/docs`);
-    (fastify.log as any).info(`🔒 GDPR Compliance: ${config.GDPR_ENABLED ? 'ENABLED' : 'DISABLED'}`);
-    (fastify.log as any).info(`🛡️ GDPR Endpoints: ${address}/api/gdpr`);
+    logger.info(`🚀 RevEd Kids Fastify server started successfully!`);
+    logger.info(`📍 Server listening on: ${address}`);
+    logger.info(`🌍 Environment: ${config.NODE_ENV}`);
+    logger.info(`📊 Health Check: ${address}/api/health`);
+    logger.info(`📚 API Documentation: ${address}/docs`);
+    logger.info(`🔒 GDPR Compliance: ${config.GDPR_ENABLED ? 'ENABLED' : 'DISABLED'}`);
+    logger.info(`🛡️ GDPR Endpoints: ${address}/api/gdpr`);
 
   } catch (error) {
+    // Use console.error here as the logger might not be initialized
     console.error('❌ Error starting server:', error);
     console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     process.exit(1);
@@ -274,6 +275,7 @@ process.on('SIGINT', gracefulShutdown);
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (error) => {
+  // Use console.error here as the logger might be in an unknown state
   console.error('❌ Uncaught Exception:', error);
   console.error('❌ Error stack:', error.stack);
   gracefulShutdown();
@@ -281,6 +283,7 @@ process.on('uncaughtException', (error) => {
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (reason, promise) => {
+  // Use console.error here as the logger might be in an unknown state
   console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
   gracefulShutdown();
 });
