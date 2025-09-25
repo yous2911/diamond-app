@@ -161,6 +161,10 @@ env.*
 config/local.*
 secrets/
 
+# Railway deployment files
+railway.env
+backend/railway.env
+
 # Large files and binaries
 *.mp4
 *.avi

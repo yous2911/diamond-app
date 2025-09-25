@@ -9,7 +9,7 @@ async function testEmailService() {
     
     // Test basic email sending
     const result = await emailService.sendEmail({
-      to: 'fastrevedkids@gmail.com',
+      to: 'test@example.com',
       subject: 'Test Email from Diamond Backend',
       template: 'test',
       variables: {
