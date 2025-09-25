@@ -12,9 +12,10 @@ export default defineConfig({
     clearMocks: true,
     restoreMocks: true,
     unstubEnvs: true,
-    maxConcurrency: 2,
+    maxConcurrency: 1, // Reduce concurrency to prevent plugin conflicts
     testTimeout: 30000,
     hookTimeout: 30000,
+    teardownTimeout: 10000, // Add teardown timeout
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

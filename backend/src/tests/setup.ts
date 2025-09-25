@@ -2150,8 +2150,13 @@ beforeAll(async () => {
     if (!app) {
       app = await build();
       
-      
-      await app.ready();
+      // Wait for app to be ready with timeout
+      await Promise.race([
+        app.ready(),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('App ready timeout')), 10000)
+        )
+      ]);
     }
     
     setupComplete = true;
@@ -2163,8 +2168,9 @@ beforeAll(async () => {
 });
 
 beforeEach(() => {
-  // Clear mocks between tests
+  // Clear mocks between tests and restore all spies
   vi.clearAllMocks();
+  vi.restoreAllMocks();
 });
 
 // Mock Database Service
@@ -2414,6 +2420,10 @@ vi.mock('../utils/requestContextExtractor', () => ({
 }));
 
 afterAll(async () => {
+  // Clean up all spies and mocks
+  vi.clearAllMocks();
+  vi.restoreAllMocks();
+  
   // Don't close the app between tests to prevent "Fastify has already been closed" errors
   // The app will be closed when the test process exits
   console.log('🧪 Test suite completed - keeping app alive for remaining tests');

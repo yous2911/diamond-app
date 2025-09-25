@@ -22,11 +22,12 @@ export async function build() {
 
   // Register plugins (same as main app but for testing)
   try {
+    // Register plugins sequentially to avoid conflicts
     await fastify.register(import('./plugins/database'));
     await fastify.register(import('./plugins/redis'));
     await fastify.register(import('./plugins/auth'));
     await fastify.register(import('./plugins/validation'));
-    await fastify.register(import('./plugins/gdpr')); // Add GDPR plugin
+    await fastify.register(import('./plugins/gdpr'));
     
     // Add database decoration for tests (only if not already decorated)
     if (!fastify.hasDecorator('db')) {

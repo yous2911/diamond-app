@@ -83,8 +83,8 @@ describe('APIService', () => {
       const response = await apiService.login({ email: 'test@test.com', password: 'password' });
       expect(response.success).toBe(true);
       expect(response.data?.student).toEqual(mockStudent);
-      expect(apiService.authenticated).toBe(true);
-      expect(apiService.currentStudentData).toEqual(mockStudent);
+      expect(apiService.getAuthenticated()).toBe(true);
+      expect(apiService.getCurrentStudentData()).toEqual(mockStudent);
     });
 
     it('should handle login failure', async () => {
@@ -98,8 +98,8 @@ describe('APIService', () => {
 
       const response = await apiService.login({ email: 'test@test.com', password: 'password' });
       expect(response.success).toBe(false);
-      expect(apiService.authenticated).toBe(false);
-      expect(apiService.currentStudentData).toBeNull();
+      expect(apiService.getAuthenticated()).toBe(false);
+      expect(apiService.getCurrentStudentData()).toBeNull();
     });
 
     it('should logout successfully and clear state', async () => {
@@ -113,8 +113,8 @@ describe('APIService', () => {
       });
 
       await apiService.logout();
-      expect(apiService.authenticated).toBe(false);
-      expect(apiService.currentStudentData).toBeNull();
+      expect(apiService.getAuthenticated()).toBe(false);
+      expect(apiService.getCurrentStudentData()).toBeNull();
     });
   });
 

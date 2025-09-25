@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { authSchemas, loginSchema, registerSchema } from '../schemas/auth.schema';
 import { AuthService } from '../services/auth.service';
 import { addSendWelcomeEmailJob } from '../jobs/producers/email.producer';
-import { serviceContainer } from '../container/service.container';
+import { serviceContainer } from '../services/service-factory';
 
 // Types will be inferred from Zod schemas, removing manual interfaces
 type LoginRequestBody = z.infer<typeof loginSchema>;

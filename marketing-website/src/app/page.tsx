@@ -5,6 +5,7 @@ import Method from "../components/sections/Method";
 import MasteryGuarantee from "../components/sections/MasteryGuarantee";
 import ImpactB1G1 from "../components/sections/ImpactB1G1";
 import FullPresentation from "../components/sections/FullPresentation";
+import DownloadApp from "../components/sections/DownloadApp";
 import Pricing from "../components/sections/Pricing";
 import Contract from "../components/sections/Contract";
 import FAQ from "../components/sections/FAQ";
@@ -17,6 +18,7 @@ export default function Home() {
       <SocialProof />
       <AttentionEconomy />
       <FullPresentation />
+      <DownloadApp />
       <Method />
       <MasteryGuarantee />
       <ImpactB1G1 />

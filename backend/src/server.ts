@@ -83,8 +83,11 @@ async function registerPlugins() {
     logger.info('🛣️ Registering exercises routes...');
     await fastify.register(import('./routes/exercises'), { prefix: '/api/exercises' });
     
+    logger.info('🛣️ Registering legacy exercises routes...');
+    await fastify.register(import('./routes/legacy-exercises'), { prefix: '/api/legacy-exercises' });
+    
     logger.info('🛣️ Registering curriculum routes...');
-    await fastify.register(import('./routes/curriculum'), { prefix: '/api' });
+    await fastify.register(import('./routes/curriculum'), { prefix: '/api/curriculum' });
     
     logger.info('🛣️ Registering competences routes...');
     await fastify.register(import('./routes/competences'), { prefix: '/api/competences' });

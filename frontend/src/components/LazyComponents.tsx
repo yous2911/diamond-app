@@ -6,7 +6,7 @@ import SkeletonLoader from './ui/SkeletonLoader';
 // =============================================================================
 
 // Lazy load heavy 3D components - these have default exports
-export const LazyAdvancedMascotSystem = lazy(() => import('./AdvancedMascotSystem'));
+export const LazyMascotSystem = lazy(() => import('./MascotSystem'));
 export const LazyMascotWardrobe3D = lazy(() => import('./mascot/MascotWardrobe3D'));
 export const LazyAdvancedParticleEngine = lazy(() => import('./AdvancedParticleEngine'));
 
@@ -58,7 +58,7 @@ export const LazyComponentWrapper: React.FC<LazyComponentWrapperProps> = ({
 // Mascot system with smart loading
 export const SmartMascotSystem = (props: any) => (
   <LazyComponentWrapper
-    component={LazyAdvancedMascotSystem}
+    component={LazyMascotSystem}
     skeletonType="mascot"
     className="w-64 h-64"
     {...props}
@@ -150,7 +150,7 @@ export const useLazyLoadingPerformance = () => {
 };
 
 export default {
-  LazyAdvancedMascotSystem,
+  LazyMascotSystem,
   LazyMascotWardrobe3D,
   LazyAdvancedParticleEngine,
   LazyMentalMathExercise,

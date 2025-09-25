@@ -3,6 +3,9 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { act } from '@testing-library/react';
 import MascottePremium from '../MascottePremium';
 
+// Counter to generate unique test IDs
+let animatePresenceCounter = 0;
+
 jest.mock('framer-motion', () => ({
   motion: {
     div: ({ children, onClick, className, initial, animate, transition, whileHover, whileTap, style, ...props }: any) => (
@@ -17,16 +20,23 @@ jest.mock('framer-motion', () => ({
       </div>
     )
   },
-  AnimatePresence: ({ children }: any) => <div data-testid="animate-presence">{children}</div>
+  AnimatePresence: ({ children }: any) => {
+    const testId = `animate-presence-${++animatePresenceCounter}`;
+    return <div data-testid={testId}>{children}</div>;
+  }
 }));
 
 describe('MascottePremium', () => {
   beforeEach(() => {
     jest.useFakeTimers();
+    // Reset the counter for each test
+    animatePresenceCounter = 0;
   });
 
   afterEach(() => {
-    jest.runOnlyPendingTimers();
+    act(() => {
+      jest.runOnlyPendingTimers();
+    });
     jest.useRealTimers();
   });
 
@@ -93,10 +103,9 @@ describe('MascottePremium', () => {
     fireEvent.click(mascot);
 
     // Should show the interaction effect (yellow border)
-    const interactionEffect = screen.getByTestId('animate-presence');
+    // Look for the element with yellow border class instead of specific test ID
+    const interactionEffect = document.querySelector('.border-yellow-400');
     expect(interactionEffect).toBeInTheDocument();
-    // The interaction effect should have the yellow border class
-    expect(interactionEffect.querySelector('.border-yellow-400')).toBeInTheDocument();
   });
 
   it('returns to happy emotion after interaction', async () => {

@@ -52,7 +52,6 @@ CREATE TABLE exercises (
   points_recompense INT DEFAULT 10,
   temps_estime INT DEFAULT 300,
   type_exercice VARCHAR(30) NOT NULL,
-  type VARCHAR(30) NOT NULL,
   xp INT DEFAULT 10,
   configuration JSON,
   ordre INT DEFAULT 0,

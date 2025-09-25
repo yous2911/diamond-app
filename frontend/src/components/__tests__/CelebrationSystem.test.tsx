@@ -5,6 +5,12 @@ import '@testing-library/jest-dom';
 import CelebrationSystem from '../CelebrationSystem';
 
 // Mock framer-motion
+const mockAnimationControls = {
+  start: jest.fn().mockImplementation(() => Promise.resolve()),
+  stop: jest.fn(),
+  set: jest.fn(),
+};
+
 jest.mock('framer-motion', () => ({
   motion: {
     div: ({ children, ...props }: any) => {
@@ -25,14 +31,7 @@ jest.mock('framer-motion', () => ({
     },
   },
   AnimatePresence: ({ children }: any) => <div>{children}</div>,
-  useAnimation: () => ({
-    start: jest.fn().mockImplementation(() => {
-      // Return a promise that resolves immediately to prevent async state updates
-      return Promise.resolve();
-    }),
-    stop: jest.fn(),
-    set: jest.fn(),
-  }),
+  useAnimation: () => mockAnimationControls,
   useMotionValue: (initial: any) => ({
     get: jest.fn(() => initial),
     set: jest.fn(),
@@ -79,6 +78,10 @@ describe('CelebrationSystem', () => {
   beforeEach(() => {
     jest.useFakeTimers();
     jest.clearAllMocks();
+    // Reset the mock animation controls
+    mockAnimationControls.start.mockClear();
+    mockAnimationControls.stop.mockClear();
+    mockAnimationControls.set.mockClear();
   });
 
   afterEach(() => {
@@ -195,11 +198,17 @@ describe('CelebrationSystem', () => {
     const originalEnv = process.env.NODE_ENV;
 
     beforeEach(() => {
-      process.env.NODE_ENV = 'development';
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        value: 'development',
+        writable: true
+      });
     });
 
     afterEach(() => {
-      process.env.NODE_ENV = originalEnv;
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        value: originalEnv,
+        writable: true
+      });
     });
 
     it('affiche les XP gagnés', async () => {
@@ -267,11 +276,17 @@ describe('CelebrationSystem', () => {
     const originalEnv = process.env.NODE_ENV;
 
     beforeEach(() => {
-      process.env.NODE_ENV = 'development';
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        value: 'development',
+        writable: true
+      });
     });
 
     afterEach(() => {
-      process.env.NODE_ENV = originalEnv;
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        value: originalEnv,
+        writable: true
+      });
     });
 
     it('affiche le bouton de continuation', async () => {
@@ -291,6 +306,11 @@ describe('CelebrationSystem', () => {
         jest.advanceTimersByTime(650);
       });
       
+      // Wait for the button to appear
+      await waitFor(() => {
+        expect(screen.getByText('Continuer l\'aventure')).toBeInTheDocument();
+      });
+      
       const continueButton = screen.getByText('Continuer l\'aventure');
       fireEvent.click(continueButton);
       
@@ -302,11 +322,17 @@ describe('CelebrationSystem', () => {
     const originalEnv = process.env.NODE_ENV;
 
     beforeEach(() => {
-      process.env.NODE_ENV = 'development';
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        value: 'development',
+        writable: true
+      });
     });
 
     afterEach(() => {
-      process.env.NODE_ENV = originalEnv;
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        value: originalEnv,
+        writable: true
+      });
     });
 
     it('affiche les confettis au début et les cache à la fin', async () => {
@@ -341,18 +367,22 @@ describe('CelebrationSystem', () => {
   describe('Séquence de célébration', () => {
     const originalEnv = process.env.NODE_ENV;
     beforeEach(() => {
-      process.env.NODE_ENV = 'development';
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        value: 'development',
+        writable: true
+      });
     });
     afterEach(() => {
-      process.env.NODE_ENV = originalEnv;
+      Object.defineProperty(process.env, 'NODE_ENV', {
+        value: originalEnv,
+        writable: true
+      });
     });
 
     it('démarre la séquence de célébration automatiquement en dev', () => {
-      const useAnimationMock = require('framer-motion').useAnimation;
-      const startMock = useAnimationMock().start;
       render(<CelebrationSystem {...defaultProps} />);
       // The sequence calls mainControls.start
-      expect(startMock).toHaveBeenCalled();
+      expect(mockAnimationControls.start).toHaveBeenCalled();
     });
 
     it('appelle onComplete après la séquence', async () => {
@@ -363,7 +393,10 @@ describe('CelebrationSystem', () => {
         jest.advanceTimersByTime(2050);
       });
       
-      expect(defaultProps.onComplete).toHaveBeenCalled();
+      // Wait for onComplete to be called
+      await waitFor(() => {
+        expect(defaultProps.onComplete).toHaveBeenCalled();
+      });
     });
   });
 
@@ -375,14 +408,12 @@ describe('CelebrationSystem', () => {
         writable: true
       });
       
-      await act(async () => {
-        render(<CelebrationSystem {...defaultProps} />);
-        // Wait for any async animations to complete
-        await new Promise(resolve => setTimeout(resolve, 100));
-      });
+      render(<CelebrationSystem {...defaultProps} />);
       
-      // Look for debug text containing the celebration type
-      expect(screen.getByText(/exercise_complete/)).toBeInTheDocument();
+      // Wait for debug info to appear
+      await waitFor(() => {
+        expect(screen.getByText(/exercise_complete/)).toBeInTheDocument();
+      });
       
       Object.defineProperty(process.env, 'NODE_ENV', {
         value: originalEnv,
@@ -411,18 +442,21 @@ describe('CelebrationSystem', () => {
   });
 
   describe('Accessibilité', () => {
-    it('utilise des éléments sémantiques appropriés', () => {
-      act(() => {
-        render(<CelebrationSystem {...defaultProps} />);
+    it('utilise des éléments sémantiques appropriés', async () => {
+      render(<CelebrationSystem {...defaultProps} />);
+      
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
       });
       
-      expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
       expect(screen.getByText('Excellent travail !')).toBeInTheDocument();
     });
 
-    it('affiche le contenu avec un contraste approprié', () => {
-      act(() => {
-        render(<CelebrationSystem {...defaultProps} />);
+    it('affiche le contenu avec un contraste approprié', async () => {
+      render(<CelebrationSystem {...defaultProps} />);
+      
+      await waitFor(() => {
+        expect(screen.getByText('Excellent travail !')).toBeInTheDocument();
       });
       
       const title = screen.getByText('Excellent travail !');
@@ -431,53 +465,52 @@ describe('CelebrationSystem', () => {
   });
 
   describe('Cas limites', () => {
-    it('gère les données manquantes', () => {
-      act(() => {
-        render(<CelebrationSystem {...defaultProps} data={undefined} />);
-      });
+    it('gère les données manquantes', async () => {
+      render(<CelebrationSystem {...defaultProps} data={undefined} />);
       
-      expect(screen.getByText('Excellent travail !')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Excellent travail !')).toBeInTheDocument();
+      });
     });
 
-    it('gère un nom d\'étudiant vide', () => {
-      act(() => {
-        render(<CelebrationSystem {...defaultProps} studentName="" />);
-      });
+    it('gère un nom d\'étudiant vide', async () => {
+      render(<CelebrationSystem {...defaultProps} studentName="" />);
       
-      expect(screen.getByText(/Tu as réussi cet exercice,.*!/)).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText(/Tu as réussi cet exercice,.*!/)).toBeInTheDocument();
+      });
     });
 
-    it('gère les données de récompense nulles', () => {
-      act(() => {
-        render(<CelebrationSystem {...defaultProps} data={{ xpGained: undefined, newLevel: undefined }} />);
-      });
+    it('gère les données de récompense nulles', async () => {
+      render(<CelebrationSystem {...defaultProps} data={{ xpGained: undefined, newLevel: undefined }} />);
       
-      // Vérifier que la célébration fonctionne toujours
-      expect(screen.getByText('Excellent travail !')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Excellent travail !')).toBeInTheDocument();
+      });
     });
   });
 
   describe('Performance', () => {
-    it('utilise memo pour optimiser les re-rendus', () => {
+    it('utilise memo pour optimiser les re-rendus', async () => {
       let component: ReturnType<typeof render>;
-      act(() => {
-        component = render(<CelebrationSystem {...defaultProps} />);
-      });
+      component = render(<CelebrationSystem {...defaultProps} />);
       
       // Re-render avec les mêmes props
-      act(() => {
-        component.rerender(<CelebrationSystem {...defaultProps} />);
-      });
+      component.rerender(<CelebrationSystem {...defaultProps} />);
       
       // Vérifier que le composant fonctionne toujours
-      expect(screen.getByText('Excellent travail !')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Excellent travail !')).toBeInTheDocument();
+      });
     });
 
-    it('gère les animations complexes conditionnellement', () => {
+    it('gère les animations complexes conditionnellement', async () => {
       render(<CelebrationSystem {...defaultProps} />);
       
       // Vérifier que le composant se rend correctement
-      expect(screen.getByText('Excellent travail !')).toBeInTheDocument();
+      await waitFor(() => {
+        expect(screen.getByText('Excellent travail !')).toBeInTheDocument();
+      });
     });
   });
 });

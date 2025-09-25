@@ -298,7 +298,7 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({
                   </div>
                   <div className="text-xs text-gray-600">
                     Répétition #{selectedProgress.repetitionNumber} • 
-                    Facteur de facilité: {selectedProgress.easinessFactor.toFixed(2)}
+                    Facteur de facilité: {selectedProgress.easinessFactor?.toFixed(2) || 'N/A'}
                   </div>
                   {selectedProgress.nextReview && (
                     <div className="text-xs text-blue-600 mt-1">

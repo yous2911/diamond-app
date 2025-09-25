@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState, useMemo, useCallback } from 'react'
 import * as THREE from 'three';
 import { motion, AnimatePresence } from 'framer-motion';
 import { WARDROBE_ITEMS, createItemMesh } from './WardrobeData';
+import { canCreateWebGLContext, registerWebGLContext, unregisterWebGLContext, getWebGLFallback } from '../utils/webglUtils';
 
 // --- DIALOGUE INTERNATIONALIZATION ---
 const DIALOGUES = {
@@ -11,6 +12,10 @@ const DIALOGUES = {
     excited: "WOW! That was AMAZING! 🎉",
     curious: "I wonder what you'll discover next?",
     struggling_support: "Remember when you solved that hard problem? You can do this too!",
+    correct_answer: "Perfect! You got it right! 🌟",
+    perfect_score: "INCREDIBLE! Perfect score! You're a genius! 🧠✨",
+    streak_bonus: "You're on fire! {streak} in a row! 🔥",
+    level_up: "LEVEL UP! You're getting so smart! 🚀",
     default: "Ready for a new challenge? 🤔"
   },
   fr: {
@@ -19,13 +24,17 @@ const DIALOGUES = {
     excited: "WOW ! C'était INCROYABLE ! 🎉",
     curious: "Je me demande ce que tu vas découvrir ensuite ?",
     struggling_support: "Tu te souviens quand tu as résolu ce problème difficile ? Tu peux le faire aussi !",
+    correct_answer: "Parfait ! Tu as trouvé la bonne réponse ! 🌟",
+    perfect_score: "INCROYABLE ! Score parfait ! Tu es un génie ! 🧠✨",
+    streak_bonus: "Tu es en feu ! {streak} de suite ! 🔥",
+    level_up: "NIVEAU SUPÉRIEUR ! Tu deviens si intelligent ! 🚀",
     default: "Prêt pour un nouveau défi ? 🤔"
   },
 };
 
 // --- TYPE DEFINITIONS ---
 interface MascotAIState {
-  mood: 'happy' | 'excited' | 'focused' | 'tired' | 'curious' | 'proud' | 'encouraging';
+  mood: 'happy' | 'excited' | 'focused' | 'tired' | 'curious' | 'proud' | 'encouraging' | 'correct_answer' | 'perfect_score' | 'streak_bonus' | 'level_up';
   energy: number; // 0-100
   attention: number; // 0-100
   relationship: number; // 0-100 (bond with student)
@@ -53,7 +62,7 @@ interface MascotSystemProps {
     timeOfDay: 'morning' | 'afternoon' | 'evening';
     recentPerformance: 'struggling' | 'average' | 'excellent';
   };
-  currentActivity: 'idle' | 'exercise' | 'achievement' | 'mistake' | 'learning';
+  currentActivity: 'idle' | 'exercise' | 'achievement' | 'mistake' | 'learning' | 'correct_answer' | 'perfect_score' | 'streak_bonus' | 'level_up';
   equippedItems: string[];
   onMascotInteraction: (interaction: string) => void;
   onEmotionalStateChange: (state: MascotAIState) => void;
@@ -138,6 +147,10 @@ const MascotSystem: React.FC<MascotSystemProps> = ({
       case 'achievement': newMood = 'excited'; energyChange += 15; break;
       case 'mistake': newMood = 'encouraging'; break;
       case 'exercise': newMood = 'focused'; energyChange -= 5; break;
+      case 'correct_answer': newMood = 'correct_answer'; energyChange += 10; relationshipChange += 3; break;
+      case 'perfect_score': newMood = 'perfect_score'; energyChange += 20; relationshipChange += 5; break;
+      case 'streak_bonus': newMood = 'streak_bonus'; energyChange += 15; relationshipChange += 4; break;
+      case 'level_up': newMood = 'level_up'; energyChange += 25; relationshipChange += 8; break;
     }
 
     setAiState(prev => ({
@@ -154,7 +167,7 @@ const MascotSystem: React.FC<MascotSystemProps> = ({
     const { recentPerformance } = studentData;
     const lang = DIALOGUES[locale];
 
-    let dialogue = lang[mood] || lang.default;
+    let dialogue = (lang as any)[mood] || lang.default;
 
     if (recentPerformance === 'struggling' && relationship > 70) {
       dialogue = lang.struggling_support;
@@ -253,8 +266,16 @@ const MascotSystem: React.FC<MascotSystemProps> = ({
 
     switch (aiState.mood) {
       case 'excited':
-        mascot.position.y = Math.sin(time * 0.01) * 0.3 + 0.2;
-        mascot.rotation.z = Math.sin(time * 0.008) * 0.1;
+      case 'perfect_score':
+      case 'level_up':
+        mascot.position.y = Math.sin(time * 0.012) * 0.4 + 0.2;
+        mascot.rotation.z = Math.sin(time * 0.01) * 0.15;
+        mascot.scale.setScalar(1 + Math.sin(time * 0.02) * 0.05);
+        break;
+      case 'correct_answer':
+      case 'streak_bonus':
+        mascot.position.y = Math.sin(time * 0.008) * 0.2 + 0.15;
+        mascot.rotation.y = Math.sin(time * 0.005) * 0.08;
         break;
       default:
         mascot.position.y = Math.sin(time * 0.004) * 0.15;
@@ -287,10 +308,44 @@ const MascotSystem: React.FC<MascotSystemProps> = ({
     camera.position.z = 4;
     cameraRef.current = camera;
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
-    renderer.setSize(200, 200);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    rendererRef.current = renderer;
+    if (!canCreateWebGLContext()) {
+      console.warn('WebGL not available, using fallback mascot');
+      if (mountRef.current) {
+        mountRef.current.innerHTML = getWebGLFallback('mascot');
+      }
+      return;
+    }
+
+    // Clear any existing content
+    if (mountRef.current) {
+      mountRef.current.innerHTML = '';
+    }
+
+    let renderer: THREE.WebGLRenderer;
+    try {
+      // Check if we already have a renderer and dispose it
+      if (rendererRef.current) {
+        rendererRef.current.dispose();
+        rendererRef.current = undefined;
+      }
+
+      renderer = new THREE.WebGLRenderer({ 
+        antialias: true, 
+        alpha: true, 
+        powerPreference: "high-performance",
+        failIfMajorPerformanceCaveat: false
+      });
+      renderer.setSize(200, 200);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      rendererRef.current = renderer;
+      registerWebGLContext();
+    } catch (error) {
+      console.warn('WebGL creation failed, using fallback:', error);
+      if (mountRef.current) {
+        mountRef.current.innerHTML = getWebGLFallback('mascot');
+      }
+      return;
+    }
 
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
@@ -313,7 +368,9 @@ const MascotSystem: React.FC<MascotSystemProps> = ({
     return () => {
       if (animationRef.current) cancelAnimationFrame(animationRef.current);
       if (mountRef.current && renderer.domElement) mountRef.current.removeChild(renderer.domElement);
+      if (mountRef.current) mountRef.current.innerHTML = '';
       renderer.dispose();
+      unregisterWebGLContext();
     };
   }, [createMascotModel, updateMascotAnimation]);
 

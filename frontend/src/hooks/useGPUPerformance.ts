@@ -160,7 +160,16 @@ export const useGPUPerformance = () => {
     };
     
     animationFrameRef.current = requestAnimationFrame(measure);
-  }, [performanceTier]);
+  }, []); // Remove performanceTier from dependencies to prevent infinite loop
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, []);
 
   // System Capability Detection
   const detectSystemCapabilities = useCallback(() => {
@@ -248,8 +257,14 @@ export const useGPUPerformance = () => {
 
   const getOptimalParticleCount = useCallback((baseCount: number) => {
     const ratio = config.particleCount / 35; // 35 is baseline
-    return Math.max(Math.floor(baseCount * ratio), 1);
-  }, [config.particleCount]);
+    const optimized = Math.max(Math.floor(baseCount * ratio), 1);
+    
+    // Performance tier adjustments
+    if (performanceTier === 'low') return Math.min(optimized, 15);
+    if (performanceTier === 'medium') return Math.min(optimized, 35);
+    if (performanceTier === 'high') return Math.min(optimized, 75);
+    return Math.min(optimized, 100); // Ultra tier
+  }, [config.particleCount, performanceTier]);
 
   // Memory and performance monitoring
   const getPerformanceMetrics = useCallback(() => {

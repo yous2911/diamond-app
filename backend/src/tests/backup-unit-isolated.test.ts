@@ -6,27 +6,26 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 // Mock ALL dependencies before any imports
-vi.mock('fs/promises', () => ({
+const mockFs = {
   mkdir: vi.fn(),
   writeFile: vi.fn(),
   readFile: vi.fn(),
   readdir: vi.fn(),
   unlink: vi.fn(),
   stat: vi.fn()
-}));
+};
 
-vi.mock('fs', () => ({
+const mockFsSync = {
   createReadStream: vi.fn(),
   createWriteStream: vi.fn(),
-  existsSync: vi.fn(),
-  promises: {
-    mkdir: vi.fn(),
-    writeFile: vi.fn(),
-    readFile: vi.fn(),
-    readdir: vi.fn(),
-    unlink: vi.fn(),
-    stat: vi.fn()
-  }
+  existsSync: vi.fn()
+};
+
+vi.mock('fs/promises', () => mockFs);
+
+vi.mock('fs', () => ({
+  ...mockFsSync,
+  promises: mockFs
 }));
 
 vi.mock('child_process', () => ({
@@ -172,7 +171,7 @@ describe('Backup Service - Isolated Unit Tests', () => {
   describe('restoreBackup Function', () => {
     it('should restore backup successfully', async () => {
       // Mock backup metadata file exists
-      existsSync.mockReturnValue(true);
+      mockFsSync.existsSync.mockReturnValue(true);
       
       // Mock backup metadata content
       mockFs.readFile.mockResolvedValue(JSON.stringify({
@@ -202,9 +201,14 @@ describe('Backup Service - Isolated Unit Tests', () => {
       
       // Mock file stream
       const mockReadStream = { pipe: vi.fn() };
-      createReadStream.mockReturnValue(mockReadStream);
+      mockFsSync.createReadStream.mockReturnValue(mockReadStream);
       
-      const result = await backupService.restoreBackup({ backupId: 'test-backup', dryRun: false });
+      const result = await backupService.restoreBackup({ 
+        backupId: 'test-backup', 
+        dryRun: false,
+        replaceExisting: true,
+        validateIntegrity: true
+      });
       
       expect(result).toBeDefined();
       expect(typeof result).toBe('string'); // Returns restore ID
@@ -215,7 +219,12 @@ describe('Backup Service - Isolated Unit Tests', () => {
       // Mock backup metadata not found
       mockFs.readFile.mockRejectedValue(new Error('File not found'));
       
-      await expect(backupService.restoreBackup({ backupId: 'nonexistent-backup', dryRun: false }))
+      await expect(backupService.restoreBackup({ 
+        backupId: 'nonexistent-backup', 
+        dryRun: false,
+        replaceExisting: true,
+        validateIntegrity: true
+      }))
         .rejects.toThrow('Backup nonexistent-backup not found');
     });
   });
@@ -277,7 +286,7 @@ describe('Backup Service - Isolated Unit Tests', () => {
         tables: ['users']
       }));
       
-      existsSync.mockReturnValue(true);
+      mockFsSync.existsSync.mockReturnValue(true);
       mockFs.unlink.mockResolvedValue(undefined);
       
       const result = await backupService.deleteBackup('test-backup');
@@ -356,4 +365,4 @@ describe('Backup Service - Isolated Unit Tests', () => {
     });
   });
 });
-    
+

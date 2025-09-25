@@ -1,129 +1,475 @@
-import React, { useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { LogOut } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Star, Heart, Home, Volume2, VolumeX, Trophy, Sparkles, LogOut } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { usePremiumFeatures } from '../contexts/PremiumFeaturesContext';
-import {
-  useCompetences,
-  useExercisesByLevel,
-  useMascot,
-  useSessionManagement,
-  useStudentStats,
-  useXpTracking
-} from '../hooks/useApiData';
-import DiamondCP_CE2Interface from '../components/DiamondCP_CE2Interface';
-import XPCrystalsPremium from '../components/XPCrystalsPremium';
-import MemorableEntrance from '../components/MemorableEntrance';
-import MicroInteraction from '../components/MicroInteractions';
-import { useGPUPerformance } from '../hooks/useGPUPerformance';
-import SkeletonLoader from '../components/ui/SkeletonLoader';
-import WardrobeModal from '../components/WardrobeModal';
+import { useNavigate } from 'react-router-dom';
+import { useExercisesByLevel } from '../hooks/useApiData';
+import { adaptExercises } from '../utils/exerciseAdapter';
 
-const HomePage = () => {
-  const navigate = useNavigate();
-  const { student, logout } = useAuth();
-  
-  // HomePage loaded for student
-  
-  // Ensure we're on the correct route
-  React.useEffect(() => {
-    if (window.location.pathname !== '/') {
-      navigate('/', { replace: true });
+// Import ALL the advanced components - TEMPORARILY DISABLED
+// import MicroInteraction from '../components/MicroInteractions';
+// import AdvancedParticleEngine from '../components/AdvancedParticleEngine';
+// import MascotSystem from '../components/MascotSystem';
+// import CelebrationSystem from '../components/CelebrationSystem';
+// import MemorableEntrance from '../components/MemorableEntrance';
+// import WardrobeModal from '../components/WardrobeModal';
+// import { useGPUPerformance } from '../hooks/useGPUPerformance';
+
+// =============================================================================
+// 🔊 SYSTÈME AUDIO PREMIUM DIAMANT
+// =============================================================================
+const useMagicalSounds = () => {
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const audioContextRef = useRef<AudioContext | null>(null);
+
+  useEffect(() => {
+    if (soundEnabled) {
+      try {
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+      } catch (error) {
+        console.warn('Audio context not supported');
+      }
     }
-  }, [navigate]);
-  const { 
-    setMascotEmotion, 
-    setMascotMessage, 
-    triggerParticles
-  } = usePremiumFeatures();
+  }, [soundEnabled]);
 
-  // Hooks API
-  const { data: exercisesData, isLoading: isLoadingExercises, error: exercisesError } = useExercisesByLevel(student?.niveau || 'CP', {
-    matiere: 'MATHEMATIQUES',
-    type: 'QCM',
-    difficulty: 'FACILE',
-    limit: 10
-  });
-  const { data: statsData } = useStudentStats();
-  const { updateEmotion: updateMascotEmotion } = useMascot();
-  const { startSession, endSession, data: activeSessionData } = useSessionManagement();
-  const { currentXp, currentLevel } = useXpTracking();
+  const playTone = useCallback((frequency: number, duration: number, type: OscillatorType = 'sine') => {
+    if (!soundEnabled || !audioContextRef.current) return;
 
-  // Local state for wardrobe and memorable moments
-  const [equippedItems, setEquippedItems] = useState<string[]>(['golden_crown', 'magic_cape']);
-  const [selectedMascot, setSelectedMascot] = useState<'dragon' | 'fairy' | 'robot'>('dragon');
+    try {
+      const oscillator = audioContextRef.current.createOscillator();
+      const gainNode = audioContextRef.current.createGain();
+
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContextRef.current.destination);
+
+      oscillator.frequency.setValueAtTime(frequency, audioContextRef.current.currentTime);
+      oscillator.type = type;
+
+      gainNode.gain.setValueAtTime(0, audioContextRef.current.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0.3, audioContextRef.current.currentTime + 0.01);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, audioContextRef.current.currentTime + duration);
+
+      oscillator.start(audioContextRef.current.currentTime);
+      oscillator.stop(audioContextRef.current.currentTime + duration);
+    } catch (error) {
+      console.warn('Error playing sound:', error);
+    }
+  }, [soundEnabled]);
+
+  const playMagicalChord = useCallback(() => {
+    setTimeout(() => playTone(523.25, 0.3), 0);    // C5
+    setTimeout(() => playTone(659.25, 0.3), 100);  // E5
+    setTimeout(() => playTone(783.99, 0.3), 200);  // G5
+    setTimeout(() => playTone(1046.50, 0.5), 300); // C6
+  }, [playTone]);
+
+  const playSparkleSound = useCallback(() => {
+    for (let i = 0; i < 5; i++) {
+      setTimeout(() => {
+        playTone(800 + Math.random() * 600, 0.1, 'sine');
+      }, i * 80);
+    }
+  }, [playTone]);
+
+  const playLevelUpFanfare = useCallback(() => {
+    const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98];
+    notes.forEach((note, index) => {
+      setTimeout(() => playTone(note, 0.4), index * 150);
+    });
+  }, [playTone]);
+
+  const playButtonClick = useCallback(() => {
+    playTone(800, 0.1, 'square');
+  }, [playTone]);
+
+  const playErrorSound = useCallback(() => {
+    playTone(200, 0.3, 'square');
+    setTimeout(() => playTone(150, 0.3, 'square'), 200);
+  }, [playTone]);
+
+  return {
+    playMagicalChord,
+    playSparkleSound,
+    playLevelUpFanfare,
+    playButtonClick,
+    playErrorSound,
+    soundEnabled,
+    setSoundEnabled
+  };
+};
+
+// =============================================================================
+// 💎 CRISTAUX XP PREMIUM AVEC PHYSIQUE 3D
+// =============================================================================
+const XPCrystalsPremium: React.FC<{
+  currentXP: number;
+  maxXP: number;
+  level: number;
+  onLevelUp?: (newLevel: number) => void;
+}> = ({ currentXP, maxXP, level, onLevelUp }) => {
+  const [displayXP, setDisplayXP] = useState(currentXP);
+  const [isLevelingUp, setIsLevelingUp] = useState(false);
+  const [showXPGain, setShowXPGain] = useState<number | null>(null);
+  const { playLevelUpFanfare, playSparkleSound } = useMagicalSounds();
+
+  const progress = Math.min((displayXP / maxXP) * 100, 100);
+
+  // Animation XP gain
+  useEffect(() => {
+    if (currentXP > displayXP) {
+      const difference = currentXP - displayXP;
+      setShowXPGain(difference);
+      playSparkleSound();
+      
+      // Animation progressive
+      const duration = 1000;
+      const steps = 30;
+      const increment = difference / steps;
+      
+      let currentStep = 0;
+      const timer = setInterval(() => {
+        currentStep++;
+        setDisplayXP(prev => Math.min(prev + increment, currentXP));
+        
+        if (currentStep >= steps) {
+          clearInterval(timer);
+          setDisplayXP(currentXP);
+          setTimeout(() => setShowXPGain(null), 1000);
+        }
+      }, duration / steps);
+      
+      return () => clearInterval(timer);
+    }
+  }, [currentXP, displayXP, playSparkleSound]);
+
+  // Détection level up
+  useEffect(() => {
+    if (displayXP >= maxXP && !isLevelingUp) {
+      setIsLevelingUp(true);
+      playLevelUpFanfare();
+      
+      setTimeout(() => {
+        onLevelUp?.(level + 1);
+        setIsLevelingUp(false);
+      }, 2000);
+    }
+  }, [displayXP, maxXP, isLevelingUp, level, onLevelUp, playLevelUpFanfare]);
+
+  return (
+    <div className="relative flex flex-col items-center space-y-4">
+      {/* Niveau avec couronne */}
+      <motion.div
+        className="relative"
+        animate={isLevelingUp ? { 
+          scale: [1, 1.3, 1], 
+          rotate: [0, 360, 0] 
+        } : {}}
+        transition={{ duration: 2 }}
+      >
+        <div className="bg-gradient-to-r from-purple-500 to-blue-500 text-white px-6 py-2 rounded-full font-bold text-lg shadow-lg">
+          Niveau {level}
+        </div>
+        
+        {isLevelingUp && (
+          <motion.div
+            className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-3xl"
+            initial={{ scale: 0, rotate: -180 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: "spring", stiffness: 300 }}
+          >
+            👑
+          </motion.div>
+        )}
+      </motion.div>
+
+      {/* Cristal principal rotatif */}
+      <motion.div
+        className="relative"
+        animate={{
+          rotate: [0, 360],
+          scale: isLevelingUp ? [1, 1.2, 1] : 1
+        }}
+        transition={{
+          rotate: { duration: 10, repeat: Infinity, ease: "linear" },
+          scale: { duration: 2 }
+        }}
+      >
+        {/* Aura du cristal */}
+        <div className="absolute inset-0 w-20 h-20 bg-purple-400 rounded-full blur-lg opacity-50 animate-pulse" />
+        
+        {/* Cristal 3D */}
+        <div className="relative w-16 h-16 bg-gradient-to-br from-purple-400 to-blue-500 rounded-lg transform rotate-45 shadow-xl">
+          {/* Facettes */}
+          <div className="absolute inset-2 bg-gradient-to-br from-white/40 to-transparent rounded-lg" />
+          <div className="absolute top-1 left-1 w-3 h-3 bg-white/60 rounded-full blur-sm" />
+          
+          {/* Reflet animé */}
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent rounded-lg"
+            animate={{ x: [-60, 60] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          />
+        </div>
+
+        {/* Cristaux satellites */}
+        {[...Array(6)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute w-2 h-2 bg-purple-400 rounded-full"
+            animate={{
+              x: [0, Math.cos(i * 60 * Math.PI / 180) * 40],
+              y: [0, Math.sin(i * 60 * Math.PI / 180) * 40],
+              scale: [0.5, 1, 0.5]
+            }}
+            transition={{
+              duration: 3,
+              repeat: Infinity,
+              delay: i * 0.5,
+            }}
+            style={{
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)'
+            }}
+          />
+        ))}
+      </motion.div>
+
+      {/* Barre de progression liquide */}
+      <div className="relative w-64 h-6 bg-gray-200 rounded-full overflow-hidden shadow-inner">
+        <motion.div
+          className="h-full bg-gradient-to-r from-purple-500 to-blue-500 rounded-full relative overflow-hidden"
+          initial={{ width: '0%' }}
+          animate={{ width: `${progress}%` }}
+          transition={{ duration: 1, ease: "easeOut" }}
+        >
+          {/* Effet liquide ondulant */}
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-r from-white/30 via-transparent to-white/30"
+            animate={{ x: ['-100%', '200%'] }}
+            transition={{ duration: 1.5, repeat: Infinity }}
+          />
+          
+          {/* Bulles dans le liquide */}
+          {[...Array(3)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute w-1 h-1 bg-white/50 rounded-full"
+              animate={{
+                y: [15, -5],
+                scale: [0.5, 1, 0.5]
+              }}
+              transition={{
+                duration: 1.5,
+                repeat: Infinity,
+                delay: i * 0.3,
+              }}
+              style={{ left: `${i * 30 + 10}%`, bottom: 0 }}
+            />
+          ))}
+        </motion.div>
+        
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-xs font-bold text-gray-700">
+            {Math.round(displayXP)} / {maxXP} XP
+          </span>
+        </div>
+      </div>
+
+      {/* XP flottant */}
+      <AnimatePresence>
+        {showXPGain && (
+          <motion.div
+            className="absolute text-xl font-bold text-yellow-500 pointer-events-none z-50"
+            style={{ top: '10%', left: '60%' }}
+            initial={{ opacity: 0, scale: 0.5, y: 0 }}
+            animate={{ 
+              opacity: [0, 1, 1, 0], 
+              scale: [0.5, 1.2, 1.2, 0.8], 
+              y: [-30, -60, -80, -100] 
+            }}
+            exit={{ opacity: 0, scale: 0 }}
+            transition={{ duration: 2 }}
+          >
+            +{showXPGain} XP ✨
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+// =============================================================================
+// 🎯 APP PRINCIPALE DIAMANT PREMIUM WITH ALL ADVANCED COMPONENTS
+// =============================================================================
+const HomePage = () => {
+  const { student, logout } = useAuth();
+  const navigate = useNavigate();
+  
+  // Advanced state management
+  const [currentView, setCurrentView] = useState('home');
+  const [currentExercise, setCurrentExercise] = useState<any>(null);
+  const [mascotEmotion, setMascotEmotion] = useState<'idle' | 'happy' | 'excited' | 'thinking' | 'celebrating' | 'sleepy'>('happy');
+  const [mascotMessage, setMascotMessage] = useState('');
+  const [showParticles, setShowParticles] = useState(false);
+  const [particleType, setParticleType] = useState<'success' | 'levelup' | 'magic'>('magic');
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [celebrationType, setCelebrationType] = useState<'exercise_complete' | 'level_up' | 'streak' | 'first_time' | 'perfect_score' | 'comeback' | 'milestone' | 'achievement_unlocked' | 'daily_goal' | 'weekly_champion'>('exercise_complete');
   const [showEntrance, setShowEntrance] = useState(() => {
-    // Only show entrance for first visit
     return !localStorage.getItem('diamond-app-visited');
   });
   
-  // GPU performance integration
-  const { } = useGPUPerformance();
+  // Wardrobe state
+  const [equippedItems, setEquippedItems] = useState<string[]>(['golden_crown', 'magic_cape']);
+  const [selectedMascot, setSelectedMascot] = useState<'dragon' | 'fairy' | 'robot'>('dragon');
 
-  const studentData = useMemo(() => ({
+  const [studentData, setStudentData] = useState({
     prenom: student?.prenom || 'Élève',
     niveau: student?.niveau || 'CP',
-    stars: statsData?.stats?.totalCorrectAnswers || 0,
-    hearts: student?.heartsRemaining || 3,
-    streak: student?.currentStreak || 0,
-    currentXP: currentXp,
-    maxXP: 100 + (currentLevel * 20),
-    level: currentLevel
-  }), [student, statsData, currentXp, currentLevel]);
+    stars: 47,
+    hearts: 3,
+    streak: 5,
+    currentXP: 75,
+    maxXP: 100,
+    level: 3
+  });
 
-  const subjects = useMemo(() => {
-    if (!exercisesData) {
-      return [];
+  // Load exercises data
+  const { data: exercisesData, isLoading: isLoadingExercises, error: exercisesError } = useExercisesByLevel(student?.niveau || 'CP', {
+    limit: 20
+  });
+
+  // GPU Performance detection - TEMPORARILY DISABLED TO FIX INFINITE LOOP
+  // const { 
+  //   performanceTier, 
+  //   getOptimalParticleCount, 
+  //   shouldUseComplexAnimation,
+  //   canUseBlur,
+  //   canUseShadows 
+  // } = useGPUPerformance();
+
+  // Temporary fixed values
+  const performanceTier = 'ultra';
+  const getOptimalParticleCount = () => 100;
+  const shouldUseComplexAnimation = () => true;
+  const canUseBlur = true;
+  const canUseShadows = true;
+
+  // Loading state
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Set loading to false when data is ready
+  useEffect(() => {
+    if (exercisesData && student) {
+      setIsLoading(false);
     }
+  }, [exercisesData, student]);
 
-    return exercisesData.map((exercise: any) => ({
-      id: `subject-${exercise.matiere}`,
-      name: exercise.matiere === 'mathematiques' ? 'Mathématiques' :
-            exercise.matiere === 'francais' ? 'Français' : 'Sciences',
-      emoji: exercise.matiere === 'mathematiques' ? '🔢' :
-             exercise.matiere === 'francais' ? '📚' : '🔬',
-      exercises: [exercise]
-    }));
-  }, [exercisesData]);
+  const { 
+    playMagicalChord, 
+    playSparkleSound, 
+    playButtonClick, 
+    playErrorSound,
+    soundEnabled, 
+    setSoundEnabled 
+  } = useMagicalSounds();
 
-  const handleSubjectClick = async (subject: any) => {
+  // Matières avec animations
+  const subjects = [
+    {
+      id: 'mathematiques',
+          name: 'Mathématiques',
+          emoji: '🔢',
+      gradient: 'from-blue-400 via-blue-500 to-blue-600',
+      shadowColor: 'shadow-blue-500/50',
+      description: 'Compter, additionner, géométrie',
+      exercises: exercisesData ? adaptExercises(exercisesData).filter(ex => ex.subject === 'Mathématiques') : []
+        },
+        {
+      id: 'francais',
+          name: 'Français',
+          emoji: '📚',
+      gradient: 'from-green-400 via-green-500 to-green-600',
+      shadowColor: 'shadow-green-500/50',
+      description: 'Lettres, mots, lecture',
+      exercises: exercisesData ? adaptExercises(exercisesData).filter(ex => ex.subject === 'Français') : []
+        },
+        {
+      id: 'sciences',
+          name: 'Sciences',
+          emoji: '🔬',
+      gradient: 'from-purple-400 via-purple-500 to-purple-600',
+      shadowColor: 'shadow-purple-500/50',
+      description: 'Animaux, plantes, corps humain',
+      exercises: []
+    },
+    {
+      id: 'geographie',
+      name: 'Géographie',
+      emoji: '🌍',
+      gradient: 'from-orange-400 via-orange-500 to-orange-600',
+      shadowColor: 'shadow-orange-500/50',
+      description: 'Pays, villes, cartes',
+      exercises: []
+    }
+  ];
+
+  const handleSubjectClick = (subject: any) => {
+    playButtonClick();
     setMascotEmotion('thinking');
     setMascotMessage('C\'est parti pour une nouvelle aventure !');
 
-    await updateMascotEmotion('good', 'exercise_complete').catch(console.warn);
-
-    if (!activeSessionData?.hasActiveSession) {
-      await startSession(subject.competences?.map((c: any) => c.code) || []).catch(console.warn);
-    }
-
     if (subject.exercises.length > 0) {
-      const randomExercise = subject.exercises[Math.floor(Math.random() * subject.exercises.length)];
-      navigate('/exercise', { state: { exercise: randomExercise } });
+      setCurrentView('exercise');
+      setCurrentExercise(subject.exercises[0]);
+      navigate('/exercise', { state: { exercise: subject.exercises[0] } });
     } else {
       setMascotEmotion('sleepy');
       setMascotMessage('Cette matière arrive bientôt ! 🚧');
     }
   };
 
-  const handleExerciseStart = (exercise: any) => {
-    navigate('/exercise', { state: { exercise } });
+  const handleExerciseComplete = (success: boolean) => {
+    if (success) {
+      setMascotEmotion('celebrating');
+      setMascotMessage('BRAVO ! Tu as réussi ! 🎉');
+      setShowParticles(true);
+      setParticleType('success');
+      setShowCelebration(true);
+      setCelebrationType('exercise_complete');
+      playSparkleSound();
+      
+      setTimeout(() => {
+        setShowParticles(false);
+        setShowCelebration(false);
+        setMascotEmotion('happy');
+        setMascotMessage('Prêt pour le prochain défi ?');
+      }, 3000);
+    } else {
+      setMascotEmotion('thinking');
+      setMascotMessage('Pas de problème, on va y arriver ! 💪');
+      playErrorSound();
+    }
   };
 
   const handleLevelUp = (newLevel: number) => {
     setMascotEmotion('excited');
-    setMascotMessage('NIVEAU SUPÉRIEUR ! 🎉');
-    updateMascotEmotion('excellent', 'level_up').catch(console.warn);
+    setMascotMessage('NIVEAU SUPÉRIEUR ! 🚀');
+    setShowParticles(true);
+    setParticleType('levelup');
+    setShowCelebration(true);
+    setCelebrationType('level_up');
+    playMagicalChord();
     
-    // Trigger amazing particle effects using global system!
-    triggerParticles('levelup', 3000);
+    setTimeout(() => {
+      setShowParticles(false);
+      setShowCelebration(false);
+      setMascotEmotion('celebrating');
+      setMascotMessage('Tu es incroyable ! 🌟');
+    }, 4000);
   };
-  
 
   const handleLogout = async () => {
-    if (activeSessionData?.hasActiveSession && activeSessionData.session) {
-      await endSession(activeSessionData.session.id).catch(console.error);
-    }
     await logout();
   };
 
@@ -132,88 +478,264 @@ const HomePage = () => {
     setShowEntrance(false);
   };
 
+  const handleMascotInteraction = (type: string) => {
+    if (type === 'click') {
+      setMascotEmotion('excited');
+      setMascotMessage('C\'est parti pour une nouvelle aventure !');
+      playSparkleSound();
+    }
+  };
+
+  const handleEmotionalStateChange = (state: any) => {
+    // Handle mascot emotional state changes
+    console.log('Mascot emotional state changed:', state);
+  };
+
+  // Show loading screen while initializing
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-cognitive-gold mx-auto mb-8"></div>
+          <h2 className="text-2xl font-bold text-white mb-4">Chargement de l'aventure...</h2>
+          <p className="text-white/80">Initialisation des systèmes premium</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="relative">
-      {/* Memorable Entrance - World-Class First Experience */}
-      {showEntrance && (
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 relative overflow-hidden">
+      {/* TEMPORARILY DISABLED - WebGL Context Leak */}
+      {/* {showEntrance && (
         <MemorableEntrance
           studentName={studentData.prenom}
           level={String(studentData.level)}
           onComplete={handleEntranceComplete}
         />
+      )} */}
+
+      {/* TEMPORARILY DISABLED - WebGL Context Leak */}
+      {/* <AdvancedParticleEngine
+        isActive={showParticles}
+        intensity={performanceTier === 'ultra' ? 5 : performanceTier === 'high' ? 4 : 3}
+        particleType={particleType === 'success' ? 'sparkle' : particleType === 'levelup' ? 'star' : 'magic'}
+        emitterPosition={{ x: 50, y: 50 }}
+        enablePhysics={shouldUseComplexAnimation()}
+        enableTrails={shouldUseComplexAnimation()}
+        className="fixed inset-0 pointer-events-none z-50"
+      /> */}
+
+      {/* Simple CSS Particles Fallback */}
+      {showParticles && (
+        <div className="fixed inset-0 pointer-events-none z-50">
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+            <div className="w-4 h-4 bg-yellow-400 rounded-full animate-ping"></div>
+            <div className="w-2 h-2 bg-pink-400 rounded-full animate-pulse absolute top-4 left-4"></div>
+            <div className="w-3 h-3 bg-blue-400 rounded-full animate-bounce absolute -top-2 right-2"></div>
+          </div>
+        </div>
       )}
 
-      {/* Show XP System on HomePage */}
+      {/* TEMPORARILY DISABLED - WebGL Context Leak */}
+      {/* {showCelebration && (
+        <CelebrationSystem
+          type={celebrationType}
+          studentName={studentData.prenom}
+          data={{
+            score: 100,
+            newLevel: studentData.level + 1,
+            streakCount: studentData.streak,
+            xpGained: 25,
+            timeSpent: 30,
+            difficulty: 'FACILE',
+            enhanced: shouldUseComplexAnimation()
+          }}
+          onComplete={() => setShowCelebration(false)}
+        />
+      )} */}
+
+      {/* XP System */}
       <div className="fixed top-6 left-6 z-40">
         <XPCrystalsPremium
           currentXP={studentData.currentXP}
           maxXP={studentData.maxXP}
           level={studentData.level}
           onLevelUp={handleLevelUp}
-          studentName={studentData.prenom}
-          achievements={[
-            'Premier exercice réussi !',
-            'Série de 5 exercices !',
-            'Niveau supérieur atteint !'
-          ]}
         />
       </div>
 
-      {/* Premium Diamond Interface */}
-      {isLoadingExercises ? (
-        <div className="flex justify-center items-center h-64">
-          <SkeletonLoader type="dashboard" />
-        </div>
-      ) : exercisesError ? (
-        <div className="text-center text-red-500 bg-red-100 p-4 rounded-lg">
-          <p className="font-bold">Erreur de chargement</p>
-          <p>Nous n'avons pas pu charger les exercices. Veuillez réessayer plus tard.</p>
-        </div>
-      ) : (
-        <DiamondCP_CE2Interface
-          onSubjectClick={handleSubjectClick}
-          onExerciseStart={handleExerciseStart}
-          studentData={studentData}
-          subjects={subjects}
-        />
-      )}
+      {/* Advanced Logout Button with Micro-Interactions */}
+      <div className="fixed top-6 right-6 z-40">
+        <button
+          onClick={handleLogout}
+          className="bg-white/80 backdrop-blur-sm rounded-full p-3 border border-gray-200/50 shadow-lg hover:bg-white transition-all duration-300"
+        >
+          <LogOut className="w-5 h-5 text-gray-600 hover:text-red-500 transition-colors" />
+        </button>
+      </div>
 
-      <WardrobeModal
+      {/* Advanced Sound Toggle with Micro-Interactions */}
+      <div className="fixed top-6 right-20 z-40">
+        <button
+          onClick={() => setSoundEnabled(!soundEnabled)}
+          className="bg-white/80 backdrop-blur-sm rounded-full p-3 border border-gray-200/50 shadow-lg hover:scale-105 transition-transform duration-200"
+        >
+          {soundEnabled ? (
+            <Volume2 className="w-5 h-5 text-gray-600 hover:text-green-500 transition-colors" />
+          ) : (
+            <VolumeX className="w-5 h-5 text-gray-600 hover:text-red-500 transition-colors" />
+          )}
+        </button>
+      </div>
+
+      {/* TEMPORARILY DISABLED - WebGL Context Leak */}
+      {/* <WardrobeModal
         selectedMascot={selectedMascot}
         equippedItems={equippedItems}
         studentLevel={studentData.level}
         onItemEquip={(itemId) => setEquippedItems(prev => [...prev, itemId])}
         onItemUnequip={(itemId) => setEquippedItems(prev => prev.filter(id => id !== itemId))}
-      />
+      /> */}
 
-      {/* Logout Button with Premium Micro-Interactions */}
-      <div className="fixed top-6 right-6 z-40">
-        <div title="Se déconnecter">
-          <MicroInteraction
-            type="button"
-            intensity="high"
-            onClick={handleLogout}
-            className="bg-white/80 backdrop-blur-sm rounded-full p-3 hover:bg-white transition-all duration-300 border border-gray-200/50 shadow-lg hover:shadow-xl"
-          >
-            <LogOut className="w-5 h-5 text-gray-600 hover:text-red-500 transition-colors" />
-          </MicroInteraction>
-        </div>
-      </div>
-
-      {activeSessionData?.hasActiveSession && (
+      {/* Main Content */}
+      <div className="relative z-10 pt-24 pb-20 px-6">
+        {/* Welcome Header */}
         <motion.div
-          className="fixed bottom-6 left-6 max-w-md bg-blue-100 border border-blue-300 rounded-2xl p-4 z-40"
-          initial={{ opacity: 0, y: 20 }}
+          className="text-center mb-12"
+          initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
         >
-          <div className="text-center">
-            <div className="text-blue-600 font-medium">📚 Session en cours</div>
-            <div className="text-sm text-blue-500">
-              {activeSessionData.session?.exercisesCompleted || 0} exercices complétés
+          <motion.div
+            className="text-6xl mb-4"
+            animate={{ rotate: [0, 360] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+          >
+            ✨
+          </motion.div>
+          <motion.h1 
+            className="text-4xl font-bold text-gray-800 mb-2 bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            Bonjour {studentData.prenom} ! 👋
+          </motion.h1>
+          <motion.p 
+            className="text-xl text-gray-600 font-semibold"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+          >
+            Prêt pour une nouvelle aventure d'apprentissage ? 💎
+          </motion.p>
+        </motion.div>
+
+        {/* Subjects Grid with Advanced Micro-Interactions */}
+        {isLoadingExercises ? (
+          <div className="flex justify-center items-center h-64">
+            <motion.div
+              className="text-6xl"
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+            >
+              ⏳
+            </motion.div>
+          </div>
+        ) : (
+          <div className="max-w-6xl mx-auto">
+            <motion.h2 
+              className="text-2xl font-bold text-gray-800 mb-8 text-center"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.6 }}
+            >
+              Choisis ta matière préférée ! 📚
+            </motion.h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {subjects.map((subject, index) => (
+                <motion.div
+                  key={subject.id}
+                  onClick={() => handleSubjectClick(subject)}
+                  className={`
+                    bg-white/80 backdrop-blur-sm rounded-3xl p-6 border border-white/40 
+                    hover:border-white/60 transition-all duration-300 cursor-pointer group 
+                    shadow-lg ${subject.shadowColor}
+                  `}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <motion.div
+                    className="text-center"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 0.1 * index }}
+                  >
+                    <motion.div 
+                      className="text-6xl mb-4 group-hover:scale-110 transition-transform duration-300"
+                      whileHover={{ rotate: 360 }}
+                      transition={{ duration: 0.6 }}
+                    >
+                      {subject.emoji}
+                    </motion.div>
+                    <h3 className="text-xl font-bold text-gray-800 mb-2">
+                      {subject.name}
+                    </h3>
+                    <p className="text-gray-600 text-sm mb-4">
+                      {subject.description}
+                    </p>
+                    <div className="flex justify-center">
+                      <motion.div
+                        className={`
+                          bg-gradient-to-r ${subject.gradient} text-white px-6 py-3 
+                          rounded-xl font-bold text-lg shadow-lg border border-white/20
+                        `}
+                        whileHover={{ scale: 1.05, boxShadow: "0 20px 40px rgba(0,0,0,0.3)" }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        {subject.exercises.length > 0 ? 'Commencer ✨' : 'Bientôt 🚧'}
+                      </motion.div>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-2">
+                      {subject.exercises.length} exercices disponibles
+                    </p>
+                </motion.div>
+                </motion.div>
+              ))}
             </div>
           </div>
-        </motion.div>
-      )}
+        )}
+      </div>
+
+      {/* TEMPORARILY DISABLED - WebGL Context Leak */}
+      {/* <MascotSystem
+        locale="fr"
+        mascotType={selectedMascot}
+        studentData={{
+          level: studentData.level,
+          xp: studentData.currentXP,
+          currentStreak: studentData.streak,
+          timeOfDay: 'afternoon',
+          recentPerformance: 'excellent'
+        }}
+        currentActivity="learning"
+        equippedItems={equippedItems}
+        onMascotInteraction={handleMascotInteraction}
+        onEmotionalStateChange={handleEmotionalStateChange}
+      /> */}
+
+      {/* Simple Fallback Mascot */}
+      <div className="fixed bottom-6 right-6 z-40">
+        <div className="w-32 h-32 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-6xl shadow-2xl animate-pulse">
+          🐉
+        </div>
+        <div className="mt-2 text-center">
+          <p className="text-white text-sm font-semibold">Mascotte</p>
+          <p className="text-white/80 text-xs">{mascotMessage || "Prêt pour l'aventure!"}</p>
+        </div>
+      </div>
     </div>
   );
 };

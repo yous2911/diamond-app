@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -30,6 +30,13 @@ import {
 import XPCrystalsMobile from '../../components/premium/XPCrystalsMobile';
 import MascotMobile3D from '../../components/MascotMobile3D';
 
+// NEW AAA MOBILE COMPONENTS
+import AdvancedParticleEngineMobile from '../../components/premium/AdvancedParticleEngineMobile';
+import MicroInteractionsMobile from '../../components/premium/MicroInteractionsMobile';
+import CelebrationSystemMobile from '../../components/premium/CelebrationSystemMobile';
+import WardrobeModalMobile from '../../components/premium/WardrobeModalMobile';
+import { useGPUPerformanceMobile } from '../../hooks/useGPUPerformanceMobile';
+
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const StudentHomeScreen = () => {
@@ -50,8 +57,28 @@ const StudentHomeScreen = () => {
   const [mascotEmotion, setMascotEmotion] = useState('happy');
   const [mascotMessage, setMascotMessage] = useState('Welcome!');
   const [showMascotSelector, setShowMascotSelector] = useState(false);
-  const [equippedItems, setEquippedItems] = useState<string[]>(['golden_crown', 'magic_cape']);
+  const [equippedItems, setEquippedItems] = useState<string[]>(['crown', 'glasses']);
   const [showWardrobe, setShowWardrobe] = useState(false);
+  
+  // NEW AAA STATE
+  const [showParticles, setShowParticles] = useState(true);
+  const [particleType, setParticleType] = useState<'sparkle' | 'star' | 'magic' | 'crystal' | 'heart'>('sparkle');
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [celebrationType, setCelebrationType] = useState<'levelup' | 'achievement' | 'streak' | 'perfect'>('achievement');
+  const [celebrationData, setCelebrationData] = useState<any>({});
+  const [soundEnabled, setSoundEnabled] = useState(true);
+
+  // GPU Performance Detection
+  const {
+    performanceData,
+    shouldUseComplexAnimation,
+    getOptimalParticleCount,
+    enablePhysics,
+    enableTrails,
+    enableGlow,
+    isHighEnd,
+    isUltraEnd
+  } = useGPUPerformanceMobile();
 
   const studentData = useMemo(() => ({
     prenom: user?.name || 'Élève',
@@ -103,6 +130,10 @@ const StudentHomeScreen = () => {
 
     setMascotEmotion('thinking');
     setMascotMessage("C'est parti pour une nouvelle aventure !");
+    
+    // Trigger particles
+    setParticleType('sparkle');
+    setShowParticles(true);
 
     if (subject.exercises.length > 0) {
       const randomExercise = subject.exercises[Math.floor(Math.random() * subject.exercises.length)];
@@ -120,6 +151,35 @@ const StudentHomeScreen = () => {
   const handleLogout = async () => {
     await logout();
   };
+
+  // NEW AAA HANDLERS
+  const handleLevelUp = useCallback((newLevel: number) => {
+    setCelebrationType('levelup');
+    setCelebrationData({ level: newLevel });
+    setShowCelebration(true);
+    setMascotEmotion('excited');
+    setMascotMessage('NIVEAU SUPÉRIEUR ! 🎉');
+    setParticleType('star');
+  }, []);
+
+  const handleAchievement = useCallback((achievement: string) => {
+    setCelebrationType('achievement');
+    setCelebrationData({ achievement });
+    setShowCelebration(true);
+    setMascotEmotion('excited');
+    setMascotMessage('NOUVEAU SUCCÈS ! 🏆');
+    setParticleType('heart');
+  }, []);
+
+  const handleMascotInteraction = useCallback(() => {
+    setMascotEmotion('excited');
+    setMascotMessage('Tu es fantastique ! ✨');
+    setParticleType('magic');
+  }, []);
+
+  const handleEmotionalStateChange = useCallback((emotion: string) => {
+    setMascotEmotion(emotion);
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -169,61 +229,133 @@ const StudentHomeScreen = () => {
             currentXP={studentData.currentXP}
             maxXP={studentData.maxXP}
             level={studentData.level}
-            onLevelUp={(newLevel) => {
-              setMascotEmotion('excited');
-              setMascotMessage('NIVEAU SUPÉRIEUR ! 🎉');
-            }}
+            onLevelUp={handleLevelUp}
             studentName={studentData.prenom}
+            achievements={['Premier exercice réussi !', 'Série de 5 exercices !', 'Niveau supérieur atteint !']}
           />
         </View>
 
         {/* Subjects Grid */}
         <View style={styles.subjectsGrid}>
           {subjects.map((subject, index) => (
-            <TouchableOpacity
+            <MicroInteractionsMobile
               key={subject.id}
-              style={styles.subjectCard}
+              type="card"
+              intensity={isHighEnd ? 'high' : 'medium'}
               onPress={() => handleSubjectClick(subject)}
-              activeOpacity={0.8}
+              hapticFeedback={true}
+              soundFeedback={soundEnabled}
+              rippleEffect={true}
+              scaleEffect={true}
+              glowEffect={enableGlow}
             >
-              <LinearGradient
-                colors={subject.gradient}
-                style={styles.subjectGradient}
-              >
-                <Text style={styles.subjectEmoji}>{subject.emoji}</Text>
-                <Text style={styles.subjectName}>{subject.name}</Text>
-                <Text style={styles.subjectDescription}>
-                  📚 {subject.exercises.length} exercices
-                </Text>
-              </LinearGradient>
-            </TouchableOpacity>
+              <View style={styles.subjectCard}>
+                <LinearGradient
+                  colors={subject.gradient}
+                  style={styles.subjectGradient}
+                >
+                  <Text style={styles.subjectEmoji}>{subject.emoji}</Text>
+                  <Text style={styles.subjectName}>{subject.name}</Text>
+                  <Text style={styles.subjectDescription}>
+                    📚 {subject.exercises.length} exercices
+                  </Text>
+                </LinearGradient>
+              </View>
+            </MicroInteractionsMobile>
           ))}
         </View>
       </ScrollView>
 
       {/* Floating Action Buttons */}
-      <TouchableOpacity
-        style={[styles.fab, styles.leaderboardFab]}
+      <MicroInteractionsMobile
+        type="button"
+        intensity="high"
         onPress={() => navigation.navigate('Leaderboard')}
+        hapticFeedback={true}
+        soundFeedback={soundEnabled}
+        style={[styles.fab, styles.leaderboardFab]}
       >
         <Text style={styles.fabEmoji}>🏆</Text>
-      </TouchableOpacity>
+      </MicroInteractionsMobile>
 
-      <TouchableOpacity
-        style={[styles.fab, styles.logoutFab]}
+      <MicroInteractionsMobile
+        type="button"
+        intensity="medium"
         onPress={handleLogout}
+        hapticFeedback={true}
+        soundFeedback={soundEnabled}
+        style={[styles.fab, styles.logoutFab]}
       >
         <Text style={styles.fabEmoji}>🚪</Text>
-      </TouchableOpacity>
+      </MicroInteractionsMobile>
+
+      {/* Wardrobe Button */}
+      <MicroInteractionsMobile
+        type="button"
+        intensity="medium"
+        onPress={() => setShowWardrobe(true)}
+        hapticFeedback={true}
+        soundFeedback={soundEnabled}
+        style={[styles.fab, styles.wardrobeFab]}
+      >
+        <Text style={styles.fabEmoji}>👕</Text>
+      </MicroInteractionsMobile>
+
+      {/* Sound Toggle */}
+      <MicroInteractionsMobile
+        type="button"
+        intensity="low"
+        onPress={() => setSoundEnabled(!soundEnabled)}
+        hapticFeedback={true}
+        soundFeedback={false}
+        style={[styles.fab, styles.soundFab]}
+      >
+        <Text style={styles.fabEmoji}>{soundEnabled ? '🔊' : '🔇'}</Text>
+      </MicroInteractionsMobile>
 
       {/* Mobile Mascot */}
       <MascotMobile3D
         emotion={mascotEmotion}
         message={mascotMessage}
-        onInteraction={() => {
-          setMascotEmotion('excited');
-          setMascotMessage('Tu es fantastique ! ✨');
-        }}
+        onInteraction={handleMascotInteraction}
+      />
+
+      {/* AAA PARTICLE ENGINE */}
+      {showParticles && performanceData && (
+        <AdvancedParticleEngineMobile
+          width={screenWidth}
+          height={screenHeight}
+          particleCount={getOptimalParticleCount()}
+          particleType={particleType}
+          behavior="normal"
+          intensity={isUltraEnd ? 5 : isHighEnd ? 4 : 3}
+          isActive={showParticles}
+          emitterPosition={{ x: screenWidth / 2, y: screenHeight / 2 }}
+          enablePhysics={enablePhysics}
+          enableTrails={enableTrails}
+          style={styles.particleEngine}
+        />
+      )}
+
+      {/* CELEBRATION SYSTEM */}
+      {showCelebration && (
+        <CelebrationSystemMobile
+          type={celebrationType}
+          studentName={studentData.prenom}
+          data={celebrationData}
+          onComplete={() => setShowCelebration(false)}
+        />
+      )}
+
+      {/* WARDROBE MODAL */}
+      <WardrobeModalMobile
+        selectedMascot="dragon"
+        equippedItems={equippedItems}
+        studentLevel={studentData.level}
+        onItemEquip={(itemId) => setEquippedItems(prev => [...prev, itemId])}
+        onItemUnequip={(itemId) => setEquippedItems(prev => prev.filter(id => id !== itemId))}
+        onClose={() => setShowWardrobe(false)}
+        visible={showWardrobe}
       />
     </View>
   );
@@ -379,8 +511,24 @@ const styles = StyleSheet.create({
     right: 20,
     backgroundColor: '#EF4444',
   },
+  wardrobeFab: {
+    bottom: 100,
+    left: 20,
+    backgroundColor: '#8B5CF6',
+  },
+  soundFab: {
+    bottom: 170,
+    right: 20,
+    backgroundColor: '#6B7280',
+  },
   fabEmoji: {
     fontSize: 24,
+  },
+  particleEngine: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    zIndex: 1000,
   },
 });
 

@@ -1,81 +1,177 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 // =============================================================================
-// 🔊 SYSTÈME AUDIO PREMIUM DIAMANT
+// 🎵 MAGICAL SOUND SYSTEM - PERFECT AUDIO FEEDBACK
 // =============================================================================
+
+interface SoundConfig {
+  volume: number;
+  playbackRate: number;
+  loop: boolean;
+}
+
+const SOUND_EFFECTS = {
+  correct_answer: {
+    url: '/sounds/correct.mp3',
+    config: { volume: 0.7, playbackRate: 1.0, loop: false }
+  },
+  perfect_score: {
+    url: '/sounds/perfect.mp3',
+    config: { volume: 0.8, playbackRate: 1.0, loop: false }
+  },
+  level_up: {
+    url: '/sounds/levelup.mp3',
+    config: { volume: 0.9, playbackRate: 1.0, loop: false }
+  },
+  streak_bonus: {
+    url: '/sounds/streak.mp3',
+    config: { volume: 0.8, playbackRate: 1.0, loop: false }
+  },
+  celebration: {
+    url: '/sounds/celebration.mp3',
+    config: { volume: 0.6, playbackRate: 1.0, loop: false }
+  },
+  mascot_happy: {
+    url: '/sounds/mascot-happy.mp3',
+    config: { volume: 0.5, playbackRate: 1.0, loop: false }
+  },
+  mascot_excited: {
+    url: '/sounds/mascot-excited.mp3',
+    config: { volume: 0.6, playbackRate: 1.0, loop: false }
+  },
+  particle_magic: {
+    url: '/sounds/particle-magic.mp3',
+    config: { volume: 0.4, playbackRate: 1.0, loop: false }
+  },
+  particle_crystal: {
+    url: '/sounds/particle-crystal.mp3',
+    config: { volume: 0.5, playbackRate: 1.0, loop: false }
+  }
+};
+
 export const useMagicalSounds = () => {
-  const [soundEnabled, setSoundEnabled] = useState(true);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const soundCacheRef = useRef<Map<string, AudioBuffer>>(new Map());
 
-  useEffect(() => {
-    if (soundEnabled) {
-      try {
-        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-      } catch (error) {
-        console.warn('Audio context not supported');
-      }
+  // Initialize Web Audio API
+  const initAudioContext = useCallback(() => {
+    if (!audioContextRef.current) {
+      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
     }
-  }, [soundEnabled]);
+    return audioContextRef.current;
+  }, []);
 
-  const playTone = useCallback((frequency: number, duration: number, type: OscillatorType = 'sine') => {
-    if (!soundEnabled || !audioContextRef.current) return;
+  // Create synthetic sounds using Web Audio API (fallback when files don't exist)
+  const createSyntheticSound = useCallback((type: string, frequency: number, duration: number = 0.5) => {
+    const audioContext = initAudioContext();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+    oscillator.type = 'sine';
+    
+    gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+    gainNode.gain.linearRampToValueAtTime(0.3, audioContext.currentTime + 0.01);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + duration);
+  }, [initAudioContext]);
 
+  // Play sound effect
+  const playSound = useCallback((soundType: keyof typeof SOUND_EFFECTS) => {
     try {
-      const oscillator = audioContextRef.current.createOscillator();
-      const gainNode = audioContextRef.current.createGain();
-
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContextRef.current.destination);
-
-      oscillator.frequency.setValueAtTime(frequency, audioContextRef.current.currentTime);
-      oscillator.type = type;
-
-      gainNode.gain.setValueAtTime(0, audioContextRef.current.currentTime);
-      gainNode.gain.linearRampToValueAtTime(0.3, audioContextRef.current.currentTime + 0.01);
-      gainNode.gain.exponentialRampToValueAtTime(0.001, audioContextRef.current.currentTime + duration);
-
-      oscillator.start(audioContextRef.current.currentTime);
-      oscillator.stop(audioContextRef.current.currentTime + duration);
+      const soundConfig = SOUND_EFFECTS[soundType];
+      
+      // Try to play actual sound file first
+      const audio = new Audio(soundConfig.url);
+      audio.volume = soundConfig.config.volume;
+      audio.playbackRate = soundConfig.config.playbackRate;
+      
+      audio.play().catch(() => {
+        // Fallback to synthetic sounds
+        switch (soundType) {
+          case 'correct_answer':
+            createSyntheticSound('correct', 800, 0.3);
+            break;
+          case 'perfect_score':
+            createSyntheticSound('perfect', 1000, 0.5);
+            setTimeout(() => createSyntheticSound('perfect', 1200, 0.3), 200);
+            break;
+          case 'level_up':
+            createSyntheticSound('levelup', 600, 0.8);
+            setTimeout(() => createSyntheticSound('levelup', 800, 0.6), 300);
+            setTimeout(() => createSyntheticSound('levelup', 1000, 0.4), 600);
+            break;
+          case 'streak_bonus':
+            createSyntheticSound('streak', 700, 0.4);
+            setTimeout(() => createSyntheticSound('streak', 900, 0.3), 150);
+            break;
+          case 'celebration':
+            createSyntheticSound('celebration', 500, 1.0);
+            break;
+          case 'mascot_happy':
+            createSyntheticSound('mascot', 400, 0.3);
+            break;
+          case 'mascot_excited':
+            createSyntheticSound('mascot', 600, 0.4);
+            setTimeout(() => createSyntheticSound('mascot', 800, 0.3), 200);
+            break;
+          case 'particle_magic':
+            createSyntheticSound('magic', 300, 0.2);
+            break;
+          case 'particle_crystal':
+            createSyntheticSound('crystal', 1200, 0.3);
+            break;
+        }
+      });
     } catch (error) {
-      console.warn('Error playing sound:', error);
+      console.warn('Sound playback failed:', error);
     }
-  }, [soundEnabled]);
+  }, [createSyntheticSound]);
 
-  const playMagicalChord = useCallback(() => {
-    setTimeout(() => playTone(523.25, 0.3), 0);    // C5
-    setTimeout(() => playTone(659.25, 0.3), 100);  // E5
-    setTimeout(() => playTone(783.99, 0.3), 200);  // G5
-    setTimeout(() => playTone(1046.50, 0.5), 300); // C6
-  }, [playTone]);
+  // Specific sound functions for easy use
+  const playCorrectAnswer = useCallback(() => playSound('correct_answer'), [playSound]);
+  const playPerfectScore = useCallback(() => playSound('perfect_score'), [playSound]);
+  const playLevelUp = useCallback(() => playSound('level_up'), [playSound]);
+  const playStreakBonus = useCallback(() => playSound('streak_bonus'), [playSound]);
+  const playCelebration = useCallback(() => playSound('celebration'), [playSound]);
+  const playMascotHappy = useCallback(() => playSound('mascot_happy'), [playSound]);
+  const playMascotExcited = useCallback(() => playSound('mascot_excited'), [playSound]);
+  const playParticleMagic = useCallback(() => playSound('particle_magic'), [playSound]);
+  const playParticleCrystal = useCallback(() => playSound('particle_crystal'), [playSound]);
 
-  const playSparkleSound = useCallback(() => {
-    for (let i = 0; i < 5; i++) {
-      setTimeout(() => {
-        playTone(800 + Math.random() * 600, 0.1, 'sine');
-      }, i * 80);
-    }
-  }, [playTone]);
-
-  const playLevelUpFanfare = useCallback(() => {
-    const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98];
-    notes.forEach((note, index) => {
-      setTimeout(() => playTone(note, 0.4), index * 150);
-    });
-  }, [playTone]);
-
-  const playButtonClick = useCallback(() => {
-    playTone(600, 0.1, 'sine'); // Softer sine wave instead of harsh square wave
-  }, [playTone]);
-
+  // Additional methods for compatibility
+  const playLevelUpFanfare = useCallback(() => playSound('level_up'), [playSound]);
+  const playSparkleSound = useCallback(() => playSound('particle_crystal'), [playSound]);
+  const playMagicalChord = useCallback(() => playSound('celebration'), [playSound]);
+  const playButtonClick = useCallback(() => playSound('correct_answer'), [playSound]);
   const playErrorSound = useCallback(() => {
-    playTone(200, 0.3, 'square');
-    setTimeout(() => playTone(150, 0.3, 'square'), 200);
-  }, [playTone]);
+    // Create a lower frequency error sound
+    createSyntheticSound('error', 200, 0.5);
+  }, [createSyntheticSound]);
+
+  // Sound settings
+  const [soundEnabled, setSoundEnabled] = useState(true);
 
   return {
-    playMagicalChord,
-    playSparkleSound,
+    playSound,
+    playCorrectAnswer,
+    playPerfectScore,
+    playLevelUp,
+    playStreakBonus,
+    playCelebration,
+    playMascotHappy,
+    playMascotExcited,
+    playParticleMagic,
+    playParticleCrystal,
+    // Additional methods for compatibility
     playLevelUpFanfare,
+    playSparkleSound,
+    playMagicalChord,
     playButtonClick,
     playErrorSound,
     soundEnabled,

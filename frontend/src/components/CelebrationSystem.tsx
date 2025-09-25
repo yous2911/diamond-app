@@ -151,13 +151,14 @@ const CelebrationSystem = memo<CelebrationProps>(({
     setShowConfetti(true);
     
     await mainControls.start({
-      scale: [0, 1.2, 1],
-      rotate: [0, 10, 0],
+      scale: [0, 1.3, 1],
+      rotate: [0, 15, 0],
       opacity: [0, 1, 1],
       transition: {
-        duration: 0.8,
+        duration: 1.0,
         type: "spring",
-        damping: 20
+        damping: 15,
+        stiffness: 200
       }
     });
 

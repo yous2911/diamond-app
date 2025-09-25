@@ -19,6 +19,12 @@ Object.defineProperty(window, 'matchMedia', {
 });
 
 // Mock framer-motion
+const mockAnimationControls = {
+  start: jest.fn().mockImplementation(() => Promise.resolve()),
+  stop: jest.fn(),
+  set: jest.fn(),
+};
+
 jest.mock('framer-motion', () => ({
   motion: {
     div: ({ children, ...props }: any) => {
@@ -27,6 +33,20 @@ jest.mock('framer-motion', () => ({
     }
   },
   AnimatePresence: ({ children }: any) => <div>{children}</div>,
+  useAnimation: () => mockAnimationControls,
+  useMotionValue: (initial: any) => ({
+    get: jest.fn(() => initial),
+    set: jest.fn(),
+    onChange: jest.fn(),
+  }),
+  useTransform: jest.fn((value, inputRange, outputRange) => ({
+    get: jest.fn(() => outputRange[0]),
+    set: jest.fn(),
+  })),
+  useSpring: jest.fn((value) => ({
+    get: jest.fn(() => value),
+    set: jest.fn(),
+  })),
 }));
 
 // Mock useMagicalSounds hook
@@ -59,6 +79,10 @@ describe('XPCrystalsPremium', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Reset the mock animation controls
+    mockAnimationControls.start.mockClear();
+    mockAnimationControls.stop.mockClear();
+    mockAnimationControls.set.mockClear();
   });
 
   it('renders XP crystal component', () => {

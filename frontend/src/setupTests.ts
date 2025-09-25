@@ -214,5 +214,5 @@ jest.mock('./hooks/useGPUPerformance', () => ({
 jest.setTimeout(30000);
 
 // Configure test environment
-process.env.REACT_APP_API_BASE_URL = 'http://localhost:5000';
+process.env.REACT_APP_API_BASE_URL = 'http://localhost:3003';
 process.env.REACT_APP_ENVIRONMENT = 'test';

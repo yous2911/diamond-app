@@ -1,12 +1,12 @@
 // Export all components
 export * from './exercises';
-export * from './games';
+// export * from './games'; // Directory doesn't exist
 export * from './ui';
 
 // Core components
 export { default as NextLevelXPSystem } from './NextLevelXPSystem';
 export { default as LoginScreen } from './LoginScreen';
-export { default as AdvancedMascotSystem } from './AdvancedMascotSystem';
+export { default as MascotSystem } from './MascotSystem';
 export { default as AdvancedParticleEngine } from './AdvancedParticleEngine';
 
 // Component categories

@@ -122,7 +122,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const isAuth = await apiService.checkAuthStatus();
       
       if (isAuth) {
-        const currentStudentData = apiService.currentStudentData;
+        const currentStudentData = apiService.getCurrentStudentData();
         setIsAuthenticated(true);
         setStudent(currentStudentData);
       } else {

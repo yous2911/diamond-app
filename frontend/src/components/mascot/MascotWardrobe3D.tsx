@@ -406,11 +406,38 @@ const MascotWardrobe3D: React.FC<MascotWardrobe3DProps> = ({
     camera.position.set(0, 0, 3);
 
     // Renderer
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(400, 400);
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    rendererRef.current = renderer;
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ 
+        antialias: true,
+        failIfMajorPerformanceCaveat: false
+      });
+      renderer.setSize(400, 400);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      rendererRef.current = renderer;
+    } catch (error) {
+      console.warn('WebGL not available for wardrobe, using fallback:', error);
+      // Fallback to a simple div
+      if (mountRef.current) {
+        mountRef.current.innerHTML = `
+          <div style="
+            width: 400px; 
+            height: 400px; 
+            background: linear-gradient(45deg, #8A2BE2, #4F46E5); 
+            border-radius: 20px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 64px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+          ">
+            👕
+          </div>
+        `;
+      }
+      return;
+    }
 
     // Lighting
     const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
