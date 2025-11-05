@@ -176,3 +176,19 @@ backend/railway.env
 *.rar
 *.7z
 *.tar.gz
+
+# Analysis reports (temporary, regenerated as needed)
+docs/analysis/*.md
+*_ANALYSIS.md
+*_STATUS.md
+
+# Test output files (exclude specific files we want to keep)
+*.txt
+!requirements.txt
+!package-lock.txt
+
+# Disabled components (intentionally disabled)
+*.disabled
+
+# Validation reports (temporary)
+*_VALIDATION.md
