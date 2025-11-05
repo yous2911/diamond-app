@@ -87,36 +87,46 @@ const uploadRoutes: FastifyPluginAsync = async (fastify) => {
   const imageProcessor = new ImageProcessingService();
   const storageService = new StorageService();
 
+  // Import enhanced path security
+  const { pathSecurity } = await import('../security/path-security.service');
+
   /**
-   * Secure path validation helper
+   * Enhanced secure path validation helper
    */
   const getValidatedFilePath = async (
     fileId: string,
     filename: string,
     userId?: string
   ): Promise<string | null> => {
-    // Centralized validation to prevent path traversal
-    if (!filename || filename.includes('..') || filename.includes('/') || filename.includes('\\') || filename.includes('\0')) {
-      logger.warn('Invalid filename detected', { userId, fileId, filename });
+    // Use comprehensive path security validation
+    const validation = pathSecurity.validatePath(filename, config.upload?.path);
+
+    if (!validation.isValid) {
+      logger.warn('Path security validation failed', {
+        userId,
+        fileId,
+        filename,
+        errors: validation.errors,
+        securityViolations: validation.securityViolations
+      });
       return null;
     }
 
-    const safeFilePath = path.join(config.upload.path, filename);
-    const resolvedBase = path.resolve(config.upload.path);
-    const resolvedPath = path.resolve(safeFilePath);
+    // Additional file existence and access check
+    const accessResult = await pathSecurity.safeFileAccess(validation.normalizedPath!, 'read');
 
-    if (!resolvedPath.startsWith(resolvedBase)) {
-      logger.warn('Path traversal attempt detected', { userId, fileId, requestedPath: safeFilePath });
+    if (!accessResult.success) {
+      logger.warn('File access validation failed', {
+        userId,
+        fileId,
+        path: validation.normalizedPath,
+        error: accessResult.error,
+        securityViolations: accessResult.securityViolations
+      });
       return null;
     }
 
-    try {
-      await fs.access(resolvedPath);
-      return resolvedPath;
-    } catch (error) {
-      logger.warn('File not found at validated path', { userId, fileId, path: resolvedPath });
-      return null;
-    }
+    return accessResult.path!;
   };
 
   // Register multipart support

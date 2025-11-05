@@ -1,6 +1,6 @@
 import React from 'react';
-import AdvancedParticleEngine from './AdvancedParticleEngine';
-import MascotSystem from './MascotSystem'; // <-- UPDATED to use new MascotSystem
+// import AdvancedParticleEngine from './AdvancedParticleEngine'; // DISABLED for demo - GPU intensive
+import SimpleDragonMascot from './SimpleDragonMascot'; // LIGHTWEIGHT CSS 3D mascot
 import XPCrystalsPremium from './XPCrystalsPremium';
 import { usePremiumFeatures } from '../contexts/PremiumFeaturesContext';
 
@@ -63,19 +63,28 @@ const GlobalPremiumLayout: React.FC<GlobalPremiumLayoutProps> = ({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 relative overflow-hidden">
-      {/* Advanced Particle Effects */}
+      {/* Simple CSS Particles (Lightweight alternative) */}
       {showParticles && (
-        <AdvancedParticleEngine
-          width={window.innerWidth}
-          height={window.innerHeight}
-          particleType={getAdvancedParticleType(particleType)}
-          behavior="explosion"
-          intensity={4}
-          isActive={showParticles}
-          enablePhysics={true}
-          enableTrails={true}
-          className="fixed inset-0 pointer-events-none z-10"
-        />
+        <div className="fixed inset-0 pointer-events-none z-10 overflow-hidden">
+          {[...Array(20)].map((_, i) => (
+            <div
+              key={i}
+              className="absolute w-2 h-2 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full opacity-30"
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animation: `float ${3 + Math.random() * 2}s ease-in-out infinite`,
+                animationDelay: `${i * 0.1}s`
+              }}
+            />
+          ))}
+          <style>{`
+            @keyframes float {
+              0%, 100% { transform: translateY(0) scale(1); opacity: 0.3; }
+              50% { transform: translateY(-20px) scale(1.2); opacity: 0.6; }
+            }
+          `}</style>
+        </div>
       )}
 
       {/* Main Content */}
@@ -99,22 +108,17 @@ const GlobalPremiumLayout: React.FC<GlobalPremiumLayoutProps> = ({
         </div>
       )}
 
-      {/* UPDATED to use new MascotSystem */}
+      {/* Simple Dragon Mascot (CSS 3D - Lightweight and impressive) */}
       <div className="fixed bottom-6 right-6 z-40">
-        <MascotSystem
-          locale={locale}
-          mascotType="dragon"
-          studentData={{
-            level: level,
-            xp: currentXP,
-            currentStreak: studentStreak,
-            timeOfDay: 'afternoon',
-            recentPerformance: 'excellent'
+        <SimpleDragonMascot
+          studentName="Élève"
+          level={level}
+          xp={currentXP}
+          onInteraction={(type) => {
+            if (type === 'click') {
+              setMascotEmotion('excited');
+            }
           }}
-          currentActivity={getMascotActivity(mascotEmotion)}
-          equippedItems={equippedMascotItems}
-          onMascotInteraction={() => {}}
-          onEmotionalStateChange={() => {}}
         />
       </div>
     </div>

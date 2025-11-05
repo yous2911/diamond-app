@@ -19,7 +19,10 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({
   const [selectedProgress, setSelectedProgress] = useState<StudentProgress | null>(null);
 
   const competenceProgress = progressData || [];
-  const stats = statsData?.stats || {};
+  const stats = statsData?.stats || {} as any;
+  const averageSuccessRate = (stats.successRate ?? stats.averageSuccessRate ?? 0) as number;
+  const masteredCompetences = (stats.achievements ?? stats.masteredCompetences ?? 0) as number;
+  const totalTimeSpentMinutes = (stats.totalTime ?? stats.totalTimeSpent ?? 0) as number;
 
   const getStatusColor = (status: StudentProgress['status']) => {
     switch (status) {
@@ -106,19 +109,19 @@ export const ProgressTracker: React.FC<ProgressTrackerProps> = ({
       <div className="grid grid-cols-3 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
         <div className="text-center">
           <div className="text-2xl font-bold text-blue-600">
-            {Math.round(stats.averageSuccessRate || 0)}%
+            {Math.round(averageSuccessRate)}%
           </div>
           <div className="text-xs text-gray-600">Taux de réussite</div>
         </div>
         <div className="text-center">
           <div className="text-2xl font-bold text-green-600">
-            {stats.masteredCompetences || 0}
+            {masteredCompetences}
           </div>
           <div className="text-xs text-gray-600">Maîtrisées</div>
         </div>
         <div className="text-center">
           <div className="text-2xl font-bold text-purple-600">
-            {formatTime(stats.totalTimeSpent || 0)}
+            {formatTime(totalTimeSpentMinutes)}
           </div>
           <div className="text-xs text-gray-600">Temps total</div>
         </div>

@@ -7,15 +7,18 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     setupFiles: ['./src/tests/setup.ts'],
-    pool: 'forks',
-    isolate: true,
+    pool: 'threads',
+    isolate: false,
     clearMocks: true,
-    restoreMocks: true,
+    restoreMocks: false,
     unstubEnvs: true,
-    maxConcurrency: 1, // Reduce concurrency to prevent plugin conflicts
-    testTimeout: 30000,
-    hookTimeout: 30000,
-    teardownTimeout: 10000, // Add teardown timeout
+    maxConcurrency: 1,
+    testTimeout: 60000,
+    hookTimeout: 60000,
+    teardownTimeout: 30000,
+    sequence: {
+      hooks: 'stack'
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],

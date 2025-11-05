@@ -115,3 +115,7 @@ const SimpleMascot: React.FC<SimpleMascotProps> = ({
 export default SimpleMascot;
 
 
+
+
+
+

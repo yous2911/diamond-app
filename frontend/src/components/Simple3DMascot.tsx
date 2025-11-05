@@ -175,3 +175,7 @@ const Simple3DMascot: React.FC<Simple3DMascotProps> = ({
 export default Simple3DMascot;
 
 
+
+
+
+

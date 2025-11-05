@@ -34,16 +34,13 @@ export class StorageService {
         // Insert main file record
         await tx.insert(files).values({
           id: newFileId,
-          originalName: file.originalName,
           fileName: file.originalName,
           filePath: file.path,
           fileSize: file.size,
-          size: file.size,
-          path: file.path,
           mimeType: file.mimetype,
-          url: file.url,
-          thumbnailUrl: file.thumbnailUrl,
-          metadata: JSON.stringify(file.metadata),
+          url: file.url || null,
+          thumbnailUrl: file.thumbnailUrl || null,
+          metadata: file.metadata as any,
           uploadedBy: file.uploadedBy,
           uploadedAt: file.uploadedAt instanceof Date ? file.uploadedAt : new Date(file.uploadedAt),
           category: file.category,
@@ -61,14 +58,8 @@ export class StorageService {
             variantType: variant.type,
             filePath: variant.path,
             fileSize: variant.size,
-            fileId: newFileId,
-            path: variant.path,
-            type: variant.type,
-            filename: variant.filename,
-            url: variant.url,
-            size: variant.size,
-            mimetype: variant.mimetype,
-            metadata: JSON.stringify(variant.metadata)
+            url: variant.url || null,
+            metadata: variant.metadata as any
           }));
 
           await tx.insert(fileVariants).values(variantValues);
@@ -79,8 +70,9 @@ export class StorageService {
 
       logger.info('File metadata saved to database', { fileId: file.id });
     } catch (error) {
-      logger.error('Error saving file metadata:', { fileId: file.id, error: error.message });
-      throw new Error(`Failed to save file metadata: ${error.message}`);
+      const err = error as any;
+      logger.error('Error saving file metadata:', { fileId: file?.id, error: err?.message });
+      throw new Error(`Failed to save file metadata: ${err?.message}`);
     }
   }
 
@@ -105,17 +97,17 @@ export class StorageService {
       const variants = await db
         .select()
         .from(fileVariants)
-        .where(eq(fileVariants.fileId, fileId));
+        .where(eq(fileVariants.originalFileId, fileId));
 
       const processedVariants: ProcessedVariant[] = variants.map(variant => ({
         id: variant.id.toString(),
-        type: variant.type as any,
-        filename: variant.filename,
-        path: variant.path,
-        url: variant.url,
-        size: variant.size,
-        mimetype: variant.mimetype,
-        metadata: JSON.parse((variant.metadata as any) || '{}'),
+        type: variant.variantType as any,
+        filename: path.basename(variant.filePath),
+        path: variant.filePath,
+        url: variant.url || '',
+        size: variant.fileSize,
+        mimetype: (file as any).mimeType,
+        metadata: (variant.metadata as any) || {},
         createdAt: new Date(variant.createdAt)
       }));
 
@@ -124,11 +116,11 @@ export class StorageService {
         originalName: file.fileName,
         filename: file.fileName,
         mimetype: file.mimeType,
-        size: file.size,
-        path: file.path,
-        url: file.url,
+        size: file.fileSize,
+        path: file.filePath,
+        url: file.url || '',
         thumbnailUrl: file.thumbnailUrl || undefined,
-        metadata: JSON.parse((file.metadata as any) || '{}'),
+        metadata: (file.metadata as any) || {},
         uploadedBy: file.uploadedBy,
         uploadedAt: new Date(file.uploadedAt),
         category: file.category as FileCategory,
@@ -138,8 +130,9 @@ export class StorageService {
         processedVariants
       };
     } catch (error) {
-      logger.error('Error getting file by ID:', { fileId, error: error.message });
-      throw new Error(`Failed to get file: ${error.message}`);
+      const err = error as any;
+      logger.error('Error getting file by ID:', { fileId, error: err?.message });
+      throw new Error(`Failed to get file: ${err?.message}`);
     }
   }
 
@@ -163,7 +156,8 @@ export class StorageService {
 
       return this.getFileById(fileData[0].id.toString());
     } catch (error) {
-      logger.error('Error finding file by checksum:', { checksum, error: error.message });
+      const err = error as any;
+      logger.error('Error finding file by checksum:', { checksum, error: err?.message });
       return null;
     }
   }
@@ -218,8 +212,9 @@ export class StorageService {
 
       return { files: filesList, total: count };
     } catch (error) {
-      logger.error('Error getting files by user:', { userId, error: error.message });
-      throw new Error(`Failed to get user files: ${error.message}`);
+      const err = error as any;
+      logger.error('Error getting files by user:', { userId, error: err?.message });
+      throw new Error(`Failed to get user files: ${err?.message}`);
     }
   }
 
@@ -235,8 +230,9 @@ export class StorageService {
 
       logger.info('File status updated', { fileId, status });
     } catch (error) {
-      logger.error('Error updating file status:', { fileId, status, error: error.message });
-      throw new Error(`Failed to update file status: ${error.message}`);
+      const err = error as any;
+      logger.error('Error updating file status:', { fileId, status, error: err?.message });
+      throw new Error(`Failed to update file status: ${err?.message}`);
     }
   }
 
@@ -258,13 +254,14 @@ export class StorageService {
         await tx
           .update(fileVariants)
           .set({ deletedAt: new Date() })
-          .where(eq(fileVariants.fileId, fileId));
+          .where(eq(fileVariants.originalFileId, fileId));
       });
 
       logger.info('File marked as deleted', { fileId });
     } catch (error) {
-      logger.error('Error marking file as deleted:', { fileId, error: error.message });
-      throw new Error(`Failed to delete file: ${error.message}`);
+      const err = error as any;
+      logger.error('Error marking file as deleted:', { fileId, error: err?.message });
+      throw new Error(`Failed to delete file: ${err?.message}`);
     }
   }
 
@@ -277,7 +274,7 @@ export class StorageService {
       const [totalStats] = await db
         .select({
           totalFiles: sql<number>`count(*)`,
-          totalSize: sql<number>`sum(${files.size})`
+          totalSize: sql<number>`sum(${files.fileSize})`
         })
         .from(files)
         .where(eq(files.status, 'ready'));
@@ -286,7 +283,7 @@ export class StorageService {
       const categoryStats = await db
         .select({
           category: files.category,
-          size: sql<number>`sum(${files.size})`
+          size: sql<number>`sum(${files.fileSize})`
         })
         .from(files)
         .where(eq(files.status, 'ready'))
@@ -314,12 +311,12 @@ export class StorageService {
       }
 
       // Calculate storage usage
-      const usedSpace = totalStats.totalSize || 0;
+      const usedSpace = (totalStats?.totalSize as any) || 0;
       const availableSpace = this.maxStorageSize - usedSpace;
       const percentage = (usedSpace / this.maxStorageSize) * 100;
 
       return {
-        totalFiles: totalStats.totalFiles || 0,
+        totalFiles: (totalStats?.totalFiles as any) || 0,
         totalSize: usedSpace,
         categorySizes,
         recentUploads,
@@ -330,8 +327,9 @@ export class StorageService {
         }
       };
     } catch (error) {
-      logger.error('Error getting storage stats:', error);
-      throw new Error(`Failed to get storage statistics: ${error.message}`);
+      const err = error as any;
+      logger.error('Error getting storage stats:', { error: err });
+      throw new Error(`Failed to get storage statistics: ${err?.message}`);
     }
   }
 
@@ -365,32 +363,33 @@ export class StorageService {
         for (const file of expiredFiles) {
           try {
             // Remove physical file
-            await fs.remove(file.path);
+            await fs.remove((file as any).filePath);
 
             // Remove variants
             const variants = await db
               .select()
               .from(fileVariants)
-              .where(eq(fileVariants.fileId, file.id));
+              .where(eq(fileVariants.originalFileId, file.id));
 
             for (const variant of variants) {
-              await fs.remove(variant.path).catch(() => {
+              await fs.remove(variant.filePath).catch(() => {
                 // Ignore errors for variant deletion
               });
             }
 
             // Remove from database
             await db.transaction(async (tx) => {
-              await tx.delete(fileVariants).where(eq(fileVariants.fileId, file.id));
+              await tx.delete(fileVariants).where(eq(fileVariants.originalFileId, file.id));
               await tx.delete(files).where(eq(files.id, file.id));
             });
 
             deletedCount++;
             logger.debug('Cleaned up expired file', { fileId: file.id });
           } catch (error) {
+            const err = error as any;
             logger.warn('Failed to cleanup file:', { 
               fileId: file.id, 
-              error: error.message 
+              error: err?.message 
             });
           }
         }
@@ -402,8 +401,9 @@ export class StorageService {
 
       return deletedCount;
     } catch (error) {
-      logger.error('Error during cleanup:', error);
-      throw new Error(`Cleanup failed: ${error.message}`);
+      const err = error as any;
+      logger.error('Error during cleanup:', { error: err });
+      throw new Error(`Cleanup failed: ${err?.message}`);
     }
   }
 
@@ -441,7 +441,7 @@ export class StorageService {
             const dbFile = await db
               .select()
               .from(files)
-              .where(eq(files.path, fullPath))
+              .where(eq(files.filePath, fullPath))
               .limit(1);
 
             if (dbFile.length === 0) {
@@ -460,8 +460,9 @@ export class StorageService {
 
       return cleanedCount;
     } catch (error) {
-      logger.error('Error cleaning orphaned files:', error);
-      throw new Error(`Orphaned files cleanup failed: ${error.message}`);
+      const err = error as any;
+      logger.error('Error cleaning orphaned files:', { error: err });
+      throw new Error(`Orphaned files cleanup failed: ${err?.message}`);
     }
   }
 
@@ -503,7 +504,7 @@ export class StorageService {
         .from(files)
         .where(eq(files.status, 'failed'));
 
-      if (failedUploads.count > 10) {
+      if ((failedUploads as any)?.count > 10) {
         issues.push(`${failedUploads.count} failed uploads detected`);
         recommendations.push('Investigate and cleanup failed uploads');
       }
@@ -514,7 +515,7 @@ export class StorageService {
         .from(files)
         .where(eq(files.status, 'quarantined'));
 
-      if (quarantinedFiles.count > 0) {
+      if ((quarantinedFiles as any)?.count > 0) {
         issues.push(`${quarantinedFiles.count} quarantined files detected`);
         recommendations.push('Review and handle quarantined files');
       }
@@ -531,7 +532,8 @@ export class StorageService {
         }
       };
     } catch (error) {
-      logger.error('Error getting storage health:', error);
+      const err = error as any;
+      logger.error('Error getting storage health:', { error: err });
       return {
         status: 'critical',
         issues: ['Unable to assess storage health'],
@@ -568,28 +570,29 @@ export class StorageService {
           eq(files.category, 'image'),
           eq(files.status, 'ready'),
           lt(files.uploadedAt, cutoffDate),
-          sql`${files.size} > 1048576` // > 1MB
+          sql`${files.fileSize} > 1048576` // > 1MB
         ))
         .limit(50);
 
       for (const file of largeFiles) {
         try {
-          const originalSize = file.size;
+          const originalSize = (file as any).fileSize;
           
           // This would integrate with ImageProcessingService
           // For now, just log what would be optimized
           logger.info('Would optimize file', { 
             fileId: file.id, 
             originalSize,
-            path: file.path 
+            path: (file as any).filePath 
           });
           
           filesProcessed++;
           // spaceReclaimed += (originalSize - newSize);
         } catch (error) {
+          const err = error as any;
           logger.warn('Failed to optimize file:', { 
             fileId: file.id, 
-            error: error.message 
+            error: err?.message 
           });
         }
       }
@@ -601,8 +604,9 @@ export class StorageService {
 
       return { filesProcessed, spaceReclaimed };
     } catch (error) {
-      logger.error('Error optimizing storage:', error);
-      throw new Error(`Storage optimization failed: ${error.message}`);
+      const err = error as any;
+      logger.error('Error optimizing storage:', { error: err });
+      throw new Error(`Storage optimization failed: ${err?.message}`);
     }
   }
 }

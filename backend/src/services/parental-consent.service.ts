@@ -817,7 +817,8 @@ export class ParentalConsentService {
         entityType: 'parental_consent',
         action: 'create',
         includeDetails: true,
-        limit: 50
+        limit: 50,
+        offset: 0
       });
 
       for (const entry of auditResult.entries) {
@@ -840,7 +841,8 @@ export class ParentalConsentService {
       const auditResult = await this.auditService.queryAuditLogs({
         entityType: 'parental_consent',
         includeDetails: true,
-        limit: 100
+        limit: 100,
+        offset: 0
       });
 
       for (const entry of auditResult.entries) {
@@ -864,7 +866,8 @@ export class ParentalConsentService {
         entityType: 'parental_consent',
         action: 'verified',
         includeDetails: true,
-        limit: 50
+        limit: 50,
+        offset: 0
       });
 
       for (const entry of auditResult.entries) {

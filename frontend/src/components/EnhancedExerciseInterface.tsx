@@ -33,6 +33,15 @@ interface EnhancedExerciseInterfaceProps {
   timeRemaining?: number;
 }
 
+// Voice-over mapping for questions (Microsoft TTS pre-recorded files)
+const QUESTION_VOICE_FILES: Record<string, string> = {
+  // Map question text or ID to audio file path
+  'question_1': '/voices/questions/question-1.mp3',
+  'question_2': '/voices/questions/question-2.mp3',
+  'question_3': '/voices/questions/question-3.mp3',
+  // Fallback: try to match by question text (first 50 chars)
+};
+
 const EnhancedExerciseInterface: React.FC<EnhancedExerciseInterfaceProps> = ({
   exercise,
   studentName,
@@ -49,6 +58,10 @@ const EnhancedExerciseInterface: React.FC<EnhancedExerciseInterfaceProps> = ({
   const [isCorrect, setIsCorrect] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [answerAnimation, setAnswerAnimation] = useState<'none' | 'correct' | 'incorrect'>('none');
+  
+  // Voice-over state
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentAudio, setCurrentAudio] = useState<HTMLAudioElement | null>(null);
 
   // Handle answer selection with perfect animations
   const handleAnswerSelect = useCallback((answerIndex: number) => {

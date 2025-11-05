@@ -1,28 +1,26 @@
-
-{
-  "compilerOptions": {
-    "target": "es2015",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
-    "allowJs": true,
-    "skipLibCheck": true,
-    "esModuleInterop": true,
-    "allowSyntheticDefaultImports": true,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "noFallthroughCasesInSwitch": true,
-    "module": "esnext",
-    "moduleResolution": "node",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
-    "jsx": "react-jsx",
-    "downlevelIteration": true
-  },
-  "include": [
-    "src"
-  ]
+﻿{
+    "include":  [
+                    "src"
+                ],
+    "exclude":  [
+                    "**/__tests__/**",
+                    "**/*.test.ts",
+                    "**/*.test.tsx",
+                    "node_modules",
+                    "dist",
+                    "build",
+                    ".next"
+                ],
+    "compilerOptions":  {
+                            "forceConsistentCasingInFileNames":  true,
+                            "isolatedModules":  false,
+                            "moduleResolution":  "Bundler",
+                            "jsx":  "react-jsx",
+                            "strict":  true,
+                            "target":  "ES2020",
+                            "skipLibCheck":  true,
+                            "noEmit":  true,
+                            "module":  "ESNext"
+                        }
 }
+

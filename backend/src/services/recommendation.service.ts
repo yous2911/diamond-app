@@ -1,7 +1,7 @@
 import { db } from '../db/connection';
 import * as schema from '../db/schema';
 import { eq, and, sql, not, desc } from 'drizzle-orm';
-import type { exercises, students, studentProgress, Exercise } from '../db/schema';
+import type { Exercise } from '../db/schema';
 
 export class RecommendationService {
   async getRecommendedExercises(studentId: number, limit: number = 5): Promise<any[]> {
@@ -18,11 +18,11 @@ export class RecommendationService {
 
       // Get exercises the student has already completed
       const completedExercises = await db
-        .select({ exerciseId: schema.progress.exerciseId })
-        .from(schema.progress)
+        .select({ exerciseId: schema.studentProgress.exerciseId })
+        .from(schema.studentProgress)
         .where(and(
-          eq(schema.progress.studentId, studentId),
-          eq(schema.progress.completed, true)
+          eq(schema.studentProgress.studentId, studentId),
+          eq(schema.studentProgress.completed, true)
         ));
 
       const completedIds = completedExercises.map(p => p.exerciseId);
@@ -66,11 +66,11 @@ export class RecommendationService {
 
       // Get exercises the student has already completed
       const completedExercises = await db
-        .select({ exerciseId: schema.progress.exerciseId })
-        .from(schema.progress)
+        .select({ exerciseId: schema.studentProgress.exerciseId })
+        .from(schema.studentProgress)
         .where(and(
-          eq(schema.progress.studentId, studentId),
-          eq(schema.progress.completed, true)
+          eq(schema.studentProgress.studentId, studentId),
+          eq(schema.studentProgress.completed, true)
         ));
 
       const completedIds = completedExercises.map(p => p.exerciseId);
@@ -83,7 +83,7 @@ export class RecommendationService {
 
       // Add module filter if specified
       if (moduleId) {
-        whereConditions.push(eq(schema.exercises.type, moduleId.toString()));
+        whereConditions.push(eq(schema.exercises.ordre, moduleId));
       }
 
       // Exclude completed exercises if any exist
@@ -116,31 +116,32 @@ export class RecommendationService {
       // Check if progress record exists
       const existingProgress = await db
         .select()
-        .from(schema.progress)
+        .from(schema.studentProgress)
         .where(and(
-          eq(schema.progress.studentId, data.studentId),
-          eq(schema.progress.exerciseId, data.exerciseId)
+          eq(schema.studentProgress.studentId, data.studentId),
+          eq(schema.studentProgress.exerciseId, data.exerciseId)
         ))
         .limit(1);
 
-      const statut = data.completed ? 'TERMINE' : 'ECHEC';
       const pointsGagnes = data.completed ? Math.round(data.score) : 0;
 
       if (existingProgress[0]) {
         // Update existing progress
         await db
-          .update(schema.progress)
+          .update(schema.studentProgress)
           .set({
             completed: data.completed,
-            attempts: sql`attempts + 1`,
-            score: sql`score + ${pointsGagnes}`,
+            totalAttempts: sql`total_attempts + 1`,
+            successfulAttempts: data.completed ? sql`successful_attempts + 1` : sql`successful_attempts`,
             timeSpent: sql`time_spent + ${data.timeSpent || 0}`,
-            completedAt: data.completed && !existingProgress[0].completedAt ? new Date() : existingProgress[0].completedAt,
+            averageScore: sql`(average_score + ${Math.round(data.score)}) / 2`,
+            bestScore: sql`GREATEST(best_score, ${Math.round(data.score)})`,
+            completedAt: data.completed && !(existingProgress[0] as any).completedAt ? new Date() : (existingProgress[0] as any).completedAt,
             updatedAt: new Date(),
           })
           .where(and(
-            eq(schema.progress.studentId, data.studentId),
-            eq(schema.progress.exerciseId, data.exerciseId)
+            eq(schema.studentProgress.studentId, data.studentId),
+            eq(schema.studentProgress.exerciseId, data.exerciseId)
           ));
       } else {
         // Create new progress record
@@ -149,15 +150,17 @@ export class RecommendationService {
           exerciseId: data.exerciseId,
           competenceCode: 'default', // Add required field
           completed: data.completed,
-          score: pointsGagnes.toString(),
+          averageScore: Math.round(data.score).toString(),
+          bestScore: Math.round(data.score).toString(),
           timeSpent: data.timeSpent || 0,
-          attempts: 1,
+          totalAttempts: 1,
+          successfulAttempts: data.completed ? 1 : 0,
           completedAt: data.completed ? new Date() : null,
           createdAt: new Date(),
           updatedAt: new Date(),
         };
 
-        await db.insert(schema.progress).values(newProgress);
+        await db.insert(schema.studentProgress).values(newProgress);
       }
 
       // Update student's total points if completed
@@ -224,7 +227,7 @@ export class RecommendationService {
         .from(schema.exercises)
         .where(and(
           eq(schema.exercises.difficulte, student[0].niveauActuel),
-          eq(schema.exercises.type, matiere),
+          eq(schema.exercises.matiere, matiere),
           // exercises are active by default - removed estActif check
         ))
         .orderBy(schema.exercises.id);
@@ -245,17 +248,17 @@ export class RecommendationService {
       // Get exercises where student failed or struggled
       const weakAreas = await db
         .select({
-          matiere: schema.exercises.type,
+          matiere: schema.exercises.matiere,
           difficulte: schema.exercises.difficulte,
           count: sql<number>`count(*)`,
         })
-        .from(schema.progress)
-        .innerJoin(schema.exercises, eq(schema.progress.exerciseId, schema.exercises.id))
+        .from(schema.studentProgress)
+        .innerJoin(schema.exercises, eq(schema.studentProgress.exerciseId, schema.exercises.id))
         .where(and(
-          eq(schema.progress.studentId, studentId),
-          eq(schema.progress.completed, false)
+          eq(schema.studentProgress.studentId, studentId),
+          eq(schema.studentProgress.completed, false)
         ))
-        .groupBy(schema.exercises.type, schema.exercises.difficulte)
+        .groupBy(schema.exercises.matiere, schema.exercises.difficulte)
         .orderBy(desc(sql`count(*)`));
 
       return weakAreas.map(area => ({
@@ -286,7 +289,7 @@ export class RecommendationService {
           .select()
           .from(schema.exercises)
           .where(and(
-            eq(schema.exercises.type, weakness.matiere),
+            eq(schema.exercises.matiere, weakness.matiere),
             eq(schema.exercises.difficulte, weakness.difficulte as 'FACILE' | 'MOYEN' | 'DIFFICILE'),
             // exercises are active by default - removed estActif check
           ))

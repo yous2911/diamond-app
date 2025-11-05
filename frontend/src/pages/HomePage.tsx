@@ -11,7 +11,7 @@ import { adaptExercises } from '../utils/exerciseAdapter';
 // import AdvancedParticleEngine from '../components/AdvancedParticleEngine';
 // import MascotSystem from '../components/MascotSystem';
 // import CelebrationSystem from '../components/CelebrationSystem';
-// import MemorableEntrance from '../components/MemorableEntrance';
+import MemorableEntrance from '../components/MemorableEntrance';
 // import WardrobeModal from '../components/WardrobeModal';
 // import { useGPUPerformance } from '../hooks/useGPUPerformance';
 
@@ -506,14 +506,17 @@ const HomePage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 relative overflow-hidden">
-      {/* TEMPORARILY DISABLED - WebGL Context Leak */}
-      {/* {showEntrance && (
+      {/* Memorable Entrance - CSS/Framer Motion (NO GPU) - ACTIVE FOR DEMO */}
+      {showEntrance && (
         <MemorableEntrance
           studentName={studentData.prenom}
           level={String(studentData.level)}
-          onComplete={handleEntranceComplete}
+          onComplete={() => {
+            setShowEntrance(false);
+            localStorage.setItem('diamond-app-visited', 'true');
+          }}
         />
-      )} */}
+      )}
 
       {/* TEMPORARILY DISABLED - WebGL Context Leak */}
       {/* <AdvancedParticleEngine

@@ -50,19 +50,44 @@ export class SuperMemoService {
   private static readonly INITIAL_INTERVAL = 1; // Start with 1 day
   private static readonly SECOND_INTERVAL = 6; // Second review after 6 days
 
+  // Quality scoring constants
+  private static readonly QUALITY_SCORING = {
+    CORRECT_BASE: 3,
+    INCORRECT_WITH_HINTS: 1,
+    INCORRECT_MANY_HINTS: 0.5,
+    TIME_GOOD_MIN: 0.5,
+    TIME_GOOD_MAX: 2.0,
+    TIME_OK_MAX: 3.0,
+    TIME_GOOD_SCORE: 1,
+    TIME_OK_SCORE: 0.5,
+    HINTS_NONE_SCORE: 1,
+    HINTS_REASONABLE_SCORE: 0.5,
+    HINTS_REASONABLE_MAX: 2,
+    CONFIDENCE_MAX: 5,
+    CONFIDENCE_BONUS_MULTIPLIER: 0.5
+  } as const;
+
   /**
-   * Calculate quality score based on student response
+   * Calculate quality score (0-5) based on student response
    * Adapted for elementary students with emphasis on engagement over perfection
+   * 
+   * Scoring breakdown:
+   * - Correctness: 0-3 points (correct = 3, incorrect with hints = 0.5-1)
+   * - Time pacing: 0-1 points (appropriate speed = 1, slow = 0.5)
+   * - Hint usage: 0-1 points (no hints = 1, reasonable = 0.5)
+   * - Confidence: 0-0.5 bonus (if provided)
    */
   static calculateQuality(response: ExerciseResponse): number {
     let quality = 0;
 
     // Base quality on correctness (0-3 points)
     if (response.isCorrect) {
-      quality += 3;
+      quality += this.QUALITY_SCORING.CORRECT_BASE;
     } else {
       // Partial credit for attempt and engagement
-      quality += response.hintsUsed <= 1 ? 1 : 0.5;
+      quality += response.hintsUsed <= 1 
+        ? this.QUALITY_SCORING.INCORRECT_WITH_HINTS 
+        : this.QUALITY_SCORING.INCORRECT_MANY_HINTS;
     }
 
     // Time factor (0-1 points)
@@ -70,112 +95,92 @@ export class SuperMemoService {
     const expectedTime = this.getExpectedTimeForDifficulty(response.difficulty);
     const timeRatio = response.timeSpent / expectedTime;
     
-    if (timeRatio >= 0.5 && timeRatio <= 2.0) {
-      quality += 1; // Good pacing
-    } else if (timeRatio > 2.0 && timeRatio <= 3.0) {
-      quality += 0.5; // Slower but still learning
+    if (timeRatio >= this.QUALITY_SCORING.TIME_GOOD_MIN && 
+        timeRatio <= this.QUALITY_SCORING.TIME_GOOD_MAX) {
+      quality += this.QUALITY_SCORING.TIME_GOOD_SCORE;
+    } else if (timeRatio > this.QUALITY_SCORING.TIME_GOOD_MAX && 
+               timeRatio <= this.QUALITY_SCORING.TIME_OK_MAX) {
+      quality += this.QUALITY_SCORING.TIME_OK_SCORE;
     }
 
     // Hint usage factor (0-1 points)
     if (response.hintsUsed === 0) {
-      quality += 1; // No hints needed
-    } else if (response.hintsUsed <= 2) {
-      quality += 0.5; // Reasonable hint usage
+      quality += this.QUALITY_SCORING.HINTS_NONE_SCORE;
+    } else if (response.hintsUsed <= this.QUALITY_SCORING.HINTS_REASONABLE_MAX) {
+      quality += this.QUALITY_SCORING.HINTS_REASONABLE_SCORE;
     }
 
-    // Confidence bonus (if provided)
+    // Confidence bonus (if provided, max 0.5 points)
     if (response.confidence !== undefined) {
-      quality += (response.confidence / 5) * 0.5; // Max 0.5 bonus
+      const confidenceScore = (response.confidence / this.QUALITY_SCORING.CONFIDENCE_MAX) * 
+                              this.QUALITY_SCORING.CONFIDENCE_BONUS_MULTIPLIER;
+      quality += confidenceScore;
     }
 
     // Normalize to 0-5 scale and round to nearest 0.5
     const normalizedQuality = Math.min(5, Math.max(0, quality));
-    return Math.round(normalizedQuality * 2) / 2; // Round to nearest 0.5
+    return Math.round(normalizedQuality * 2) / 2;
   }
 
   /**
    * Get expected time based on exercise difficulty
+   * Returns expected completion time in seconds for a given difficulty level (0-5)
    */
   private static getExpectedTimeForDifficulty(difficulty: number): number {
-    // Expected times in seconds for different difficulty levels
-    const baseTimes = [30, 45, 60, 90, 120, 180]; // 0-5 difficulty scale
-    return baseTimes[Math.min(5, Math.max(0, Math.floor(difficulty)))] || 60;
+    // Expected times in seconds for different difficulty levels (0-5 scale)
+    const baseTimes = [30, 45, 60, 90, 120, 180];
+    const clampedDifficulty = Math.min(5, Math.max(0, Math.floor(difficulty)));
+    return baseTimes[clampedDifficulty] ?? 60;
   }
+
+  // Algorithm constants
+  private static readonly QUALITY_THRESHOLD = 2.5; // Lower threshold for young learners
+  private static readonly EASINESS_PENALTY = 0.15; // Smaller penalty than standard SM-2
+  private static readonly EASINESS_SUCCESS_FORMULA_BASE = 0.1;
+  private static readonly EASINESS_SUCCESS_FORMULA_1 = 0.08;
+  private static readonly EASINESS_SUCCESS_FORMULA_2 = 0.02;
 
   /**
    * Core SuperMemo-2 algorithm implementation
-   * Modified for young learners with more forgiving intervals
+   * Modified for young learners (6-11 years) with more forgiving intervals
+   * 
+   * @param currentCard - Current spaced repetition card data (may be partial for new cards)
+   * @param quality - Quality score (0-5) from calculateQuality()
+   * @returns SuperMemoResult with updated interval, easiness factor, and next review date
    */
   static calculateNextReview(
     currentCard: Partial<SuperMemoCard>, 
     quality: number
   ): SuperMemoResult {
-    // Initialize defaults for new cards
-    const easinessFactor = currentCard.easinessFactor || this.INITIAL_EASINESS_FACTOR;
-    const repetitionNumber = currentCard.repetitionNumber || 0;
-    const lastInterval = currentCard.interval || 0;
+    // Initialize card state with defaults for new cards
+    const easinessFactor = currentCard.easinessFactor ?? this.INITIAL_EASINESS_FACTOR;
+    const repetitionNumber = currentCard.repetitionNumber ?? 0;
+    const lastInterval = currentCard.interval ?? 0;
 
-    let newEasinessFactor = easinessFactor;
-    let newRepetitionNumber = repetitionNumber;
-    let newInterval = 0;
-
-    // Quality threshold for successful review (adjusted for kids)
-    const qualityThreshold = 2.5; // Lower threshold for young learners
-
-    if (quality >= qualityThreshold) {
-      // Successful review
-      newRepetitionNumber++;
-
-      // Calculate new interval based on repetition number
-      if (newRepetitionNumber === 1) {
-        newInterval = this.INITIAL_INTERVAL;
-      } else if (newRepetitionNumber === 2) {
-        newInterval = this.SECOND_INTERVAL;
-      } else {
-        // Standard SuperMemo formula for subsequent reviews
-        newInterval = Math.round(lastInterval * newEasinessFactor);
-      }
-
-      // Update easiness factor
-      newEasinessFactor = Math.max(
-        this.MIN_EASINESS_FACTOR,
-        Math.min(
-          this.MAX_EASINESS_FACTOR,
-          easinessFactor + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02))
-        )
-      );
-
-    } else {
-      // Failed review - reset repetition number but keep some progress
-      newRepetitionNumber = Math.max(0, repetitionNumber - 1); // More forgiving reset
-      newInterval = 1; // Review again tomorrow
-      
-      // Reduce easiness factor more gently for kids
-      newEasinessFactor = Math.max(
-        this.MIN_EASINESS_FACTOR,
-        easinessFactor - 0.15 // Smaller penalty than standard SM-2
-      );
-    }
+    // Process review based on quality
+    const isSuccessful = quality >= this.QUALITY_THRESHOLD;
+    
+    const { newEasinessFactor, newRepetitionNumber, newInterval } = isSuccessful
+      ? this.processSuccessfulReview(easinessFactor, repetitionNumber, lastInterval, quality)
+      : this.processFailedReview(easinessFactor, repetitionNumber);
 
     // Apply maximum interval limits for young learners
-    newInterval = this.applyIntervalLimits(newInterval, newRepetitionNumber);
+    const limitedInterval = this.applyIntervalLimits(newInterval, newRepetitionNumber);
 
     // Calculate next review date
     const nextReviewDate = new Date();
-    nextReviewDate.setDate(nextReviewDate.getDate() + newInterval);
+    nextReviewDate.setDate(nextReviewDate.getDate() + limitedInterval);
 
-    // Determine difficulty level
+    // Determine difficulty level and review status
     const difficulty = this.getDifficultyLevel(newEasinessFactor, newRepetitionNumber);
-
-    // Determine if review is needed now
     const shouldReview = currentCard.nextReview 
-      ? new Date() >= currentCard.nextReview
+      ? new Date() >= new Date(currentCard.nextReview)
       : true;
 
     return {
-      easinessFactor: Math.round(newEasinessFactor * 100) / 100, // Round to 2 decimal places
+      easinessFactor: Math.round(newEasinessFactor * 100) / 100,
       repetitionNumber: newRepetitionNumber,
-      interval: newInterval,
+      interval: limitedInterval,
       nextReviewDate,
       shouldReview,
       difficulty
@@ -183,27 +188,96 @@ export class SuperMemoService {
   }
 
   /**
+   * Process successful review (quality >= threshold)
+   */
+  private static processSuccessfulReview(
+    easinessFactor: number,
+    repetitionNumber: number,
+    lastInterval: number,
+    quality: number
+  ): { newEasinessFactor: number; newRepetitionNumber: number; newInterval: number } {
+    const newRepetitionNumber = repetitionNumber + 1;
+    
+    // Calculate new interval based on repetition number
+    let newInterval: number;
+    if (newRepetitionNumber === 1) {
+      newInterval = this.INITIAL_INTERVAL;
+    } else if (newRepetitionNumber === 2) {
+      newInterval = this.SECOND_INTERVAL;
+    } else {
+      // Standard SuperMemo formula: interval = lastInterval * easinessFactor
+      newInterval = Math.round(lastInterval * easinessFactor);
+    }
+
+    // Update easiness factor using SuperMemo-2 formula
+    // EF' = EF + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02))
+    const qualityDelta = 5 - quality;
+    const easinessDelta = this.EASINESS_SUCCESS_FORMULA_BASE - 
+      (qualityDelta * (this.EASINESS_SUCCESS_FORMULA_1 + qualityDelta * this.EASINESS_SUCCESS_FORMULA_2));
+    
+    const newEasinessFactor = Math.max(
+      this.MIN_EASINESS_FACTOR,
+      Math.min(this.MAX_EASINESS_FACTOR, easinessFactor + easinessDelta)
+    );
+
+    return { newEasinessFactor, newRepetitionNumber, newInterval };
+  }
+
+  /**
+   * Process failed review (quality < threshold)
+   * More forgiving for young learners - keeps partial progress
+   */
+  private static processFailedReview(
+    easinessFactor: number,
+    repetitionNumber: number
+  ): { newEasinessFactor: number; newRepetitionNumber: number; newInterval: number } {
+    // More forgiving reset - keep some progress
+    const newRepetitionNumber = Math.max(0, repetitionNumber - 1);
+    const newInterval = 1; // Review again tomorrow
+    
+    // Reduce easiness factor more gently for kids
+    const newEasinessFactor = Math.max(
+      this.MIN_EASINESS_FACTOR,
+      easinessFactor - this.EASINESS_PENALTY
+    );
+
+    return { newEasinessFactor, newRepetitionNumber, newInterval };
+  }
+
+  // Interval limit constants for young learners (in days)
+  private static readonly MAX_INTERVALS = {
+    BEGINNER: 3,      // First few repetitions (repetitionNumber <= 2)
+    ELEMENTARY: 7,    // Early learning stage (3-4 repetitions)
+    INTERMEDIATE: 14, // Developing mastery (5-8 repetitions)
+    ADVANCED: 30      // Well-learned content (9+ repetitions)
+  } as const;
+
+  /**
    * Apply interval limits appropriate for young learners
+   * Prevents intervals from growing too large for children's attention spans
    */
   private static applyIntervalLimits(interval: number, repetitionNumber: number): number {
-    // Maximum intervals for different stages (in days)
-    const maxIntervals = {
-      beginner: 3,    // First few repetitions
-      elementary: 7,  // Early learning stage
-      intermediate: 14, // Developing mastery
-      advanced: 30    // Well-learned content
-    };
-
+    let maxInterval: number;
+    
     if (repetitionNumber <= 2) {
-      return Math.min(interval, maxIntervals.beginner);
+      maxInterval = this.MAX_INTERVALS.BEGINNER;
     } else if (repetitionNumber <= 4) {
-      return Math.min(interval, maxIntervals.elementary);
+      maxInterval = this.MAX_INTERVALS.ELEMENTARY;
     } else if (repetitionNumber <= 8) {
-      return Math.min(interval, maxIntervals.intermediate);
+      maxInterval = this.MAX_INTERVALS.INTERMEDIATE;
     } else {
-      return Math.min(interval, maxIntervals.advanced);
+      maxInterval = this.MAX_INTERVALS.ADVANCED;
     }
+
+    return Math.min(interval, maxInterval);
   }
+
+  // Difficulty level thresholds
+  private static readonly EASINESS_THRESHOLDS = {
+    EASY: 2.3,
+    MEDIUM: 2.0,
+    HARD: 1.6
+  } as const;
 
   /**
    * Determine difficulty level based on easiness factor and repetition number
@@ -212,27 +286,37 @@ export class SuperMemoService {
     easinessFactor: number, 
     repetitionNumber: number
   ): 'beginner' | 'easy' | 'medium' | 'hard' | 'very_hard' {
+    // Always beginner for first few repetitions
     if (repetitionNumber <= 1) {
       return 'beginner';
     }
     
-    if (easinessFactor >= 2.3) {
+    // Classify by easiness factor
+    if (easinessFactor >= this.EASINESS_THRESHOLDS.EASY) {
       return 'easy';
-    } else if (easinessFactor >= 2.0) {
+    } else if (easinessFactor >= this.EASINESS_THRESHOLDS.MEDIUM) {
       return 'medium';
-    } else if (easinessFactor >= 1.6) {
+    } else if (easinessFactor >= this.EASINESS_THRESHOLDS.HARD) {
       return 'hard';
     } else {
       return 'very_hard';
     }
   }
 
+  // Study schedule constants
+  private static readonly DEFAULT_MAX_CARDS_PER_DAY = 10;
+  private static readonly SCHEDULE_DAYS = 7;
+
   /**
-   * Get recommended study schedule for a competence
+   * Get recommended study schedule for competences
+   * 
+   * @param cards - Array of spaced repetition cards
+   * @param maxCardsPerDay - Maximum cards to review per day (default: 10)
+   * @returns Study schedule with due cards, upcoming cards, and 7-day calendar
    */
   static getStudySchedule(
     cards: SuperMemoCard[], 
-    maxCardsPerDay: number = 10
+    maxCardsPerDay: number = this.DEFAULT_MAX_CARDS_PER_DAY
   ): {
     due: SuperMemoCard[];
     upcoming: SuperMemoCard[];
@@ -241,50 +325,61 @@ export class SuperMemoService {
     const now = new Date();
     now.setHours(0, 0, 0, 0); // Start of today
 
-    // Filter cards due for review
-    const due = cards.filter(card => 
-      new Date(card.nextReview) <= now
-    ).sort((a, b) => 
-      new Date(a.nextReview).getTime() - new Date(b.nextReview).getTime()
-    );
+    // Filter and sort cards due for review
+    const due = cards
+      .filter(card => new Date(card.nextReview) <= now)
+      .sort((a, b) => new Date(a.nextReview).getTime() - new Date(b.nextReview).getTime())
+      .slice(0, maxCardsPerDay);
 
     // Filter upcoming cards (next 7 days)
-    const upcoming = cards.filter(card => {
-      const reviewDate = new Date(card.nextReview);
-      const weekFromNow = new Date(now);
-      weekFromNow.setDate(weekFromNow.getDate() + 7);
-      return reviewDate > now && reviewDate <= weekFromNow;
-    }).sort((a, b) => 
-      new Date(a.nextReview).getTime() - new Date(b.nextReview).getTime()
-    );
+    const weekFromNow = new Date(now);
+    weekFromNow.setDate(weekFromNow.getDate() + this.SCHEDULE_DAYS);
+    
+    const upcoming = cards
+      .filter(card => {
+        const reviewDate = new Date(card.nextReview);
+        return reviewDate > now && reviewDate <= weekFromNow;
+      })
+      .sort((a, b) => new Date(a.nextReview).getTime() - new Date(b.nextReview).getTime());
 
     // Create 7-day schedule
-    const schedule = [];
-    for (let i = 0; i < 7; i++) {
+    const schedule = Array.from({ length: this.SCHEDULE_DAYS }, (_, i) => {
       const date = new Date(now);
       date.setDate(date.getDate() + i);
       
-      const cardsForDate = cards.filter(card => {
-        const reviewDate = new Date(card.nextReview);
-        reviewDate.setHours(0, 0, 0, 0);
-        return reviewDate.getTime() === date.getTime();
-      }).slice(0, maxCardsPerDay); // Limit cards per day
+      const cardsForDate = cards
+        .filter(card => {
+          const reviewDate = new Date(card.nextReview);
+          reviewDate.setHours(0, 0, 0, 0);
+          return reviewDate.getTime() === date.getTime();
+        })
+        .slice(0, maxCardsPerDay);
       
-      schedule.push({
+      return {
         date: date.toISOString().split('T')[0]!,
         cards: cardsForDate
-      });
-    }
+      };
+    });
 
-    return {
-      due: due.slice(0, maxCardsPerDay), // Limit due cards
-      upcoming,
-      schedule
-    };
+    return { due, upcoming, schedule };
   }
+
+  // Progress analysis thresholds
+  private static readonly MASTERED_THRESHOLD = {
+    EASINESS_FACTOR: 2.2,
+    MIN_REPETITIONS: 3
+  } as const;
+  private static readonly DIFFICULT_THRESHOLD = 1.6;
+  private static readonly SUCCESS_THRESHOLD = {
+    EASINESS_FACTOR: 2.0,
+    QUALITY: 3
+  } as const;
 
   /**
    * Analyze learning progress for a student
+   * 
+   * @param cards - Array of spaced repetition cards
+   * @returns Progress metrics including mastery levels and success rates
    */
   static analyzeLearningProgress(cards: SuperMemoCard[]): {
     totalCards: number;
@@ -307,27 +402,26 @@ export class SuperMemoService {
       };
     }
 
+    // Calculate mastery levels
     const mastered = cards.filter(card => 
-      card.easinessFactor >= 2.2 && card.repetitionNumber >= 3
+      card.easinessFactor >= this.MASTERED_THRESHOLD.EASINESS_FACTOR && 
+      card.repetitionNumber >= this.MASTERED_THRESHOLD.MIN_REPETITIONS
     ).length;
 
     const difficult = cards.filter(card => 
-      card.easinessFactor <= 1.6
+      card.easinessFactor <= this.DIFFICULT_THRESHOLD
     ).length;
 
     const learning = cards.length - mastered - difficult;
 
-    const averageEasiness = cards.reduce((sum, card) => 
-      sum + card.easinessFactor, 0
-    ) / cards.length;
+    // Calculate averages
+    const averageEasiness = cards.reduce((sum, card) => sum + card.easinessFactor, 0) / cards.length;
+    const averageInterval = cards.reduce((sum, card) => sum + card.interval, 0) / cards.length;
 
-    const averageInterval = cards.reduce((sum, card) => 
-      sum + card.interval, 0
-    ) / cards.length;
-
-    // Success rate based on easiness factors and repetition numbers
+    // Calculate success rate
     const successfulCards = cards.filter(card => 
-      card.easinessFactor >= 2.0 && card.quality >= 3
+      card.easinessFactor >= this.SUCCESS_THRESHOLD.EASINESS_FACTOR && 
+      card.quality >= this.SUCCESS_THRESHOLD.QUALITY
     ).length;
     
     const successRate = successfulCards / cards.length;
@@ -343,8 +437,17 @@ export class SuperMemoService {
     };
   }
 
+  // Recommendation thresholds
+  private static readonly REVIEW_OVERLOAD_THRESHOLD = 15;
+  private static readonly RECENT_PRACTICE_DAYS = 7;
+  private static readonly MIN_PRACTICE_RATE = 0.3;
+  private static readonly MAX_RECOMMENDATIONS_TO_RETURN = 10;
+
   /**
    * Get personalized recommendations for a student
+   * 
+   * @param cards - Array of spaced repetition cards
+   * @returns Array of personalized learning recommendations
    */
   static getPersonalizedRecommendations(
     cards: SuperMemoCard[]
@@ -353,10 +456,17 @@ export class SuperMemoService {
     reason: string;
     competences?: number[];
   }[] {
-    const recommendations = [];
+    const recommendations: Array<{
+      action: string;
+      reason: string;
+      competences?: number[];
+    }> = [];
+    const now = new Date();
 
     // Check for difficult competences
-    const difficultCards = cards.filter(card => card.easinessFactor <= 1.6);
+    const difficultCards = cards.filter(card => 
+      card.easinessFactor <= this.DIFFICULT_THRESHOLD
+    );
     if (difficultCards.length > 0) {
       recommendations.push({
         action: "Focus on difficult competences with extra practice",
@@ -366,26 +476,27 @@ export class SuperMemoService {
     }
 
     // Check for review overload
-    const now = new Date();
     const dueCards = cards.filter(card => new Date(card.nextReview) <= now);
-    if (dueCards.length > 15) {
+    if (dueCards.length > this.REVIEW_OVERLOAD_THRESHOLD) {
       recommendations.push({
         action: "Prioritize reviews to avoid overload",
         reason: `${dueCards.length} competences are due for review`,
         competences: dueCards
           .sort((a, b) => new Date(a.nextReview).getTime() - new Date(b.nextReview).getTime())
-          .slice(0, 10)
+          .slice(0, this.MAX_RECOMMENDATIONS_TO_RETURN)
           .map(card => card.competenceId)
       });
     }
 
-    // Check for learning plateau
+    // Check for learning plateau (low practice frequency)
     const recentlyPracticedCards = cards.filter(card => {
-      const daysSinceLastReview = (now.getTime() - new Date(card.lastReview).getTime()) / (1000 * 60 * 60 * 24);
-      return daysSinceLastReview <= 7;
+      if (!card.lastReview) return false;
+      const daysSinceLastReview = (now.getTime() - new Date(card.lastReview).getTime()) / 
+                                  (1000 * 60 * 60 * 24);
+      return daysSinceLastReview <= this.RECENT_PRACTICE_DAYS;
     });
 
-    if (recentlyPracticedCards.length < cards.length * 0.3) {
+    if (recentlyPracticedCards.length < cards.length * this.MIN_PRACTICE_RATE) {
       recommendations.push({
         action: "Increase study frequency",
         reason: "Regular practice helps maintain learning progress"

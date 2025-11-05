@@ -2,6 +2,7 @@ import { drizzle } from 'drizzle-orm/mysql2';
 import * as mysql from 'mysql2/promise';
 import { config, dbConfig, isProduction } from '../config/config';
 import { logger } from '../utils/logger';
+import { getOptimizedPoolConfig, poolMonitoringConfig, queryOptimizationConfig } from '../config/optimized-pool';
 
 // Re-export config for other modules
 export { config } from '../config/config';
@@ -18,58 +19,8 @@ function sanitizeDatabaseConfig(config: any) {
   };
 }
 
-// Enhanced MySQL connection pool configuration
-const sanitizedConfig = sanitizeDatabaseConfig(dbConfig);
-
-const poolConfig = {
-  host: sanitizedConfig.host,
-  port: sanitizedConfig.port,
-  user: sanitizedConfig.user,
-  password: sanitizedConfig.password,
-  database: sanitizedConfig.database,
-  
-  // Connection pool settings
-  connectionLimit: sanitizedConfig.connectionLimit,
-  
-  // Performance optimizations
-  multipleStatements: false,    // Security: prevent SQL injection via multiple statements
-  dateStrings: true,           // Return dates as strings for better handling
-  supportBigNumbers: true,      // Support for big integers
-  bigNumberStrings: true,      // Return big numbers as strings
-  
-  // Secure SSL configuration for production
-  ssl: dbConfig.ssl ? {
-    // Enforce SSL certificate validation in production for security
-    rejectUnauthorized: true, 
-    ca: process.env.DB_SSL_CA,
-    key: process.env.DB_SSL_KEY,
-    cert: process.env.DB_SSL_CERT
-  } : undefined,
-  
-  // Development settings
-  ...(!isProduction && {
-    debug: false,
-  }),
-  
-  // Charset and timezone
-  charset: 'utf8mb4',
-  timezone: '+00:00',          // UTC timezone
-  
-  // Type casting for better data handling
-  typeCast: function (field: any, next: any) {
-    if (field.type === 'TINY' && field.length === 1) {
-      return (field.string() === '1'); // Convert TINYINT(1) to boolean
-    }
-    if (field.type === 'JSON') {
-      try {
-        return JSON.parse(field.string());
-      } catch (error) {
-        return field.string();
-      }
-    }
-    return next();
-  }
-};
+// Enhanced MySQL connection pool configuration with production optimizations
+const poolConfig = getOptimizedPoolConfig();
 
 // Create MySQL connection pool
 const connection = mysql.createPool(poolConfig);

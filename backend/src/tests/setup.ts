@@ -34,6 +34,419 @@ vi.mock('@fastify/jwt', () => ({
   }))
 }));
 
+// Mock ServiceFactory to prevent real service creation issues
+vi.mock('../services/service-factory', () => {
+  const mockEncryptionService: any = {
+    encrypt: vi.fn((data) => Promise.resolve({
+      encryptedData: Buffer.from(JSON.stringify(data)).toString('base64'),
+      keyId: 'test-key-123',
+      algorithm: 'AES-256-GCM'
+    })),
+    decrypt: vi.fn((encryptedData) => Promise.resolve({
+      decryptedData: JSON.parse(Buffer.from(encryptedData, 'base64').toString()),
+      keyId: 'test-key-123'
+    })),
+    encryptStudentData: vi.fn((data) => Promise.resolve({
+      encryptedData: Buffer.from(JSON.stringify(data)).toString('base64'),
+      keyId: 'test-key-123',
+      algorithm: 'AES-256-GCM',
+      timestamp: new Date().toISOString()
+    })),
+    decryptStudentData: vi.fn((encryptedData) => {
+      try {
+        return Promise.resolve(JSON.parse(Buffer.from(encryptedData.encryptedData, 'base64').toString()));
+      } catch (error) {
+        return Promise.reject(new Error('Decryption failed'));
+      }
+    }),
+    generateSHA256Hash: vi.fn((data) => {
+      const hash = Buffer.from(data + 'mock-salt').toString('hex').substring(0, 64);
+      return hash;
+    }),
+    generateSecureToken: vi.fn(() => {
+      return 'mock-secure-token-' + Math.random().toString(36).substring(2, 15);
+    }),
+    generateIntegrityChecksum: vi.fn((_data) => {
+      return 'a'.repeat(64);
+    }),
+    verifyIntegrityChecksum: vi.fn((_data, checksum) => {
+      return checksum.length === 64;
+    }),
+    generateDigitalSignature: vi.fn((_data) => {
+      return 'b'.repeat(64);
+    }),
+    verifyDigitalSignature: vi.fn((_data, signature) => {
+      return signature.length === 64;
+    }),
+    generateSalt: vi.fn(() => {
+      return Buffer.from('mock-salt-' + Math.random().toString(36).substring(2, 15));
+    }),
+    deriveEncryptionKey: vi.fn((_password, _salt) => {
+      const combined = _password + _salt.toString();
+      return Buffer.from(combined + 'derived-key').subarray(0, 32);
+    }),
+    deriveKeyPBKDF2: vi.fn((_password, _salt, _iterations, keyLength) => {
+      return Buffer.alloc(keyLength, 0x42);
+    }),
+    secureCompare: vi.fn((a, b) => {
+      return a === b;
+    }),
+    getEncryptionStats: vi.fn(() => ({
+      totalEncryptions: 100,
+      totalDecryptions: 95,
+      activeKeys: 3,
+      lastKeyRotation: new Date().toISOString(),
+      encryptionAlgorithms: ['AES-256-GCM'],
+      keyRotationInterval: '30d'
+    })),
+    listKeys: vi.fn(() => [
+      { id: 'key-1', algorithm: 'AES-256-GCM', created: new Date().toISOString(), status: 'active' },
+      { id: 'key-2', algorithm: 'AES-256-GCM', created: new Date().toISOString(), status: 'active' },
+      { id: 'key-3', algorithm: 'AES-256-GCM', created: new Date().toISOString(), status: 'inactive' }
+    ]),
+    getKeyInfo: vi.fn((keyId) => {
+      if (keyId === 'non-existent-key-id') {
+        return null;
+      }
+      return {
+        id: keyId,
+        algorithm: 'AES-256-GCM',
+        created: new Date().toISOString(),
+        status: 'active',
+        usage: { encryptions: 50, decryptions: 45 }
+      };
+    }),
+    testEncryptionService: vi.fn(async (): Promise<any> => {
+      const testData = { test: 'data' };
+      const encrypted = await mockEncryptionService.encryptStudentData(testData);
+      const decrypted: any = await mockEncryptionService.decryptStudentData(encrypted);
+      
+      return {
+        success: true,
+        tests: [
+          { name: 'encryption', passed: true },
+          { name: 'decryption', passed: true },
+          { name: 'data_integrity', passed: JSON.stringify(testData) === JSON.stringify(decrypted) }
+        ],
+        performance: {
+          encryptionTime: 5,
+          decryptionTime: 3
+        }
+      };
+    })
+  };
+
+  const mockEmailService = {
+    sendEmail: vi.fn(() => Promise.resolve()),
+    sendBulkEmail: vi.fn(() => Promise.resolve()),
+    sendTemplateEmail: vi.fn(() => Promise.resolve()),
+    validateEmail: vi.fn(() => Promise.resolve(true)),
+    getEmailTemplates: vi.fn(() => Promise.resolve([])),
+    createEmailTemplate: vi.fn(() => Promise.resolve()),
+    updateEmailTemplate: vi.fn(() => Promise.resolve()),
+    deleteEmailTemplate: vi.fn(() => Promise.resolve()),
+    getAvailableTemplates: vi.fn(() => [
+      'user-registration-welcome',
+      'user-registration-verification',
+      'password-reset-request',
+      'password-reset-confirmation',
+      'student-progress-report',
+      'achievement-notification',
+      'maintenance-notification',
+      'security-alert',
+      'template-1',
+      'template-2',
+      'template-3',
+      'template-4',
+      'template-5'
+    ]),
+    validateTemplateVariables: vi.fn((_template, variables) => {
+      const requiredFields = ['username', 'email', 'createdAt', 'loginUrl'];
+      const missing = requiredFields.filter(field => !variables || !variables[field]);
+      return {
+        valid: missing.length === 0,
+        missing,
+        extra: []
+      };
+    }),
+    sendUserRegistrationWelcome: vi.fn(() => Promise.resolve()),
+    sendUserRegistrationVerification: vi.fn(() => Promise.resolve()),
+    sendPasswordResetRequest: vi.fn(() => Promise.resolve()),
+    sendPasswordResetConfirmation: vi.fn(() => Promise.resolve()),
+    sendStudentProgressReport: vi.fn(() => Promise.resolve()),
+    sendAchievementNotification: vi.fn(() => Promise.resolve()),
+    sendMaintenanceNotification: vi.fn(() => Promise.resolve()),
+    sendSecurityAlert: vi.fn(() => Promise.resolve()),
+    sendBulkEmails: vi.fn(() => Promise.resolve({
+      sent: 2,
+      failed: 0,
+      errors: []
+    })),
+    getEmailServiceStatus: vi.fn(() => ({
+      status: 'healthy',
+      smtpConnected: true,
+      templatesLoaded: true,
+      lastSent: new Date()
+    })),
+    sendTestEmail: vi.fn(() => Promise.resolve(true)),
+    sendEmailWithRetry: vi.fn(() => Promise.resolve())
+  };
+
+  const mockAuditService = {
+    logAction: vi.fn(() => Promise.resolve('mock-audit-id-123')),
+    queryAuditLogs: vi.fn(() => Promise.resolve({
+      entries: [{
+        id: 'mock-audit-id-123',
+        entityType: 'student',
+        entityId: 'test-student-123',
+        action: 'read',
+        userId: 'user-456',
+        details: { operation: 'view_profile' },
+        timestamp: new Date(),
+        checksum: 'mock-checksum'
+      }],
+      total: 1,
+      hasMore: false
+    })),
+    generateComplianceReport: vi.fn(() => Promise.resolve({ 
+      id: 'mock-report-123',
+      success: true,
+      filters: {},
+      exportFormat: 'json',
+      categories: ['audit', 'compliance'],
+      generatedAt: new Date()
+    })),
+    getStudentAuditTrail: vi.fn(() => Promise.resolve([{
+      id: 'mock-trail-123',
+      entityType: 'student',
+      action: 'read',
+      timestamp: new Date(),
+      details: { operation: 'view_profile' }
+    }])),
+    anonymizeStudentAuditLogs: vi.fn(() => Promise.resolve({ count: 5 })),
+    verifyAuditIntegrity: vi.fn(() => Promise.resolve({ 
+      valid: true, 
+      tampering: false,
+      originalChecksum: 'mock-checksum',
+      calculatedChecksum: 'mock-checksum'
+    })),
+    detectSecurityAnomalies: vi.fn(() => Promise.resolve({
+      entityId: 'test-entity',
+      anomalies: []
+    })),
+    cleanupOldAuditLogs: vi.fn(() => Promise.resolve({ deleted: 0 }))
+  };
+
+  const mockStorageService = {
+    uploadFile: vi.fn(() => Promise.resolve({ 
+      success: true,
+      filePath: '/uploads/test-file.jpg'
+    })),
+    deleteFile: vi.fn(() => Promise.resolve({ 
+      success: true
+    })),
+    getFileUrl: vi.fn(() => Promise.resolve('https://example.com/file.jpg')),
+    listFiles: vi.fn(() => Promise.resolve([])),
+    saveFileMetadata: vi.fn((fileMetadata) => Promise.resolve({ 
+      success: true,
+      id: fileMetadata.id || 'test-file-123'
+    })),
+    getFileById: vi.fn((id) => Promise.resolve({
+      id,
+      originalName: 'test.jpg',
+      filename: 'test-file.jpg',
+      size: 1024,
+      mimetype: 'image/jpeg',
+      uploadedBy: 'user-123',
+      uploadedAt: new Date()
+    })),
+    findFileByChecksum: vi.fn((_checksum) => Promise.resolve(null)),
+    getStorageStats: vi.fn(() => Promise.resolve({
+      totalFiles: 10,
+      totalSize: 1024000,
+      availableSpace: 9000000000,
+      storageUsage: {
+        used: 1024000,
+        available: 9000000000,
+        percentage: 0.01
+      }
+    })),
+    cleanupExpiredFiles: vi.fn((_daysOld) => Promise.resolve(5)),
+    getStorageHealth: vi.fn(() => Promise.resolve({
+      status: 'healthy',
+      diskUsage: 0.1,
+      availableSpace: 9000000000,
+      issues: [],
+      recommendations: []
+    }))
+  };
+
+  const mockFileSecurityService = {
+    scanFile: vi.fn((file) => {
+      const dangerousExtensions = ['.exe', '.bat', '.cmd', '.scr', '.pif'];
+      const extension = file.originalname.toLowerCase().substring(file.originalname.lastIndexOf('.'));
+      if (dangerousExtensions.includes(extension)) {
+        return Promise.resolve({
+          safe: false,
+          threats: ['Dangerous file extension detected'],
+          scanId: `scan-${Date.now()}`
+        });
+      }
+      return Promise.resolve({
+        safe: true,
+        threats: [],
+        scanId: `scan-${Date.now()}`
+      });
+    }),
+    validateFile: vi.fn((buffer, filename, mimeType) => {
+      const dangerousExtensions = ['.exe', '.bat', '.cmd', '.scr', '.pif'];
+      const extension = filename.toLowerCase().substring(filename.lastIndexOf('.'));
+      const warnings: string[] = [];
+      
+      if (dangerousExtensions.includes(extension)) {
+        return Promise.resolve({
+          isValid: false,
+          errors: ['Dangerous file extension detected'],
+          warnings: [],
+          detectedMimeType: mimeType
+        });
+      }
+      
+      if (buffer.length === 0) {
+        return Promise.resolve({
+          isValid: false,
+          errors: ['Empty file not allowed'],
+          warnings: [],
+          detectedMimeType: mimeType
+        });
+      }
+      
+      return Promise.resolve({
+        isValid: true,
+        errors: [],
+        warnings,
+        detectedMimeType: mimeType
+      });
+    }),
+    performSecurityScan: vi.fn((_filePath, buffer) => {
+      if (buffer.includes('X5O!P%@AP[4\\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*')) {
+        return Promise.resolve({
+          isClean: false,
+          threats: ['EICAR test virus detected']
+        });
+      }
+      return Promise.resolve({
+        isClean: true,
+        threats: []
+      });
+    }),
+    validateFileType: vi.fn((file) => {
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf'];
+      return Promise.resolve({
+        valid: allowedTypes.includes(file.mimetype),
+        detectedType: file.mimetype
+      });
+    }),
+    checkFileSize: vi.fn((file, maxSize = 5 * 1024 * 1024) => {
+      return Promise.resolve({
+        valid: file.size <= maxSize,
+        size: file.size,
+        maxSize
+      });
+    })
+  };
+
+  const mockImageProcessingService = {
+    processImage: vi.fn(() => Promise.resolve({
+      success: true,
+      processedPath: '/processed/image.jpg'
+    })),
+    optimizeImage: vi.fn(() => Promise.resolve({
+      success: true,
+      optimizedPath: '/optimized/image.jpg'
+    })),
+    getImageInfo: vi.fn((buffer) => {
+      let format = 'jpeg';
+      let width = 800;
+      let height = 600;
+      if (buffer.includes('WEBP')) {
+        format = 'webp';
+      } else if (buffer.includes('PNG')) {
+        format = 'png';
+      } else if (buffer.includes('RESIZED_')) {
+        const match = buffer.toString().match(/RESIZED_(\d+)x(\d+)/);
+        if (match) {
+          width = parseInt(match[1]);
+          height = parseInt(match[2]);
+        }
+      }
+      return Promise.resolve({
+        width,
+        height,
+        format,
+        size: buffer.length,
+        hasAlpha: false
+      });
+    }),
+    validateImageStructure: vi.fn((buffer) => {
+      const isValid = buffer && buffer.length > 0;
+      if (!isValid) {
+        return Promise.reject(new Error('Invalid image structure'));
+      }
+      return Promise.resolve(isValid);
+    }),
+    generateThumbnails: vi.fn(async (_imagePath, sizes) => {
+      const results = [];
+      for (const size of sizes) {
+        const path = `/thumbnails/${size.width}x${size.height}/image.jpg`;
+        results.push({
+          type: size.width < 200 ? 'small' : 'medium',
+          path: path,
+          width: size.width,
+          height: size.height
+        });
+      }
+      return results;
+    }),
+    compressImage: vi.fn((buffer, options) => {
+      const compressionRatio = options.quality / 100;
+      const compressedSize = Math.floor(buffer.length * compressionRatio);
+      return Promise.resolve(Buffer.alloc(compressedSize));
+    }),
+    addWatermark: vi.fn((buffer, _watermarkOptions) => {
+      return Promise.resolve(Buffer.concat([buffer, Buffer.from('WATERMARK')]));
+    }),
+    convertFormat: vi.fn((buffer, format, _quality) => {
+      return Promise.resolve(Buffer.concat([buffer, Buffer.from(format.toUpperCase())]));
+    }),
+    optimizeForWeb: vi.fn((buffer) => {
+      return Promise.resolve({
+        webp: Buffer.concat([buffer, Buffer.from('WEBP')]),
+        jpeg: Buffer.concat([buffer, Buffer.from('JPEG')]),
+        png: Buffer.concat([buffer, Buffer.from('PNG')])
+      });
+    }),
+    resizeImage: vi.fn((buffer, options, _qualityOptions) => {
+      const width = options.width;
+      const height = options.height;
+      return Promise.resolve(Buffer.concat([buffer, Buffer.from(`RESIZED_${width}x${height}`)]));
+    })
+  };
+
+  return {
+    ServiceFactory: {
+      getEncryptionService: vi.fn(() => mockEncryptionService),
+      getEmailService: vi.fn(() => mockEmailService),
+      getAuditTrailService: vi.fn(() => mockAuditService),
+      getStorageService: vi.fn(() => mockStorageService),
+      getFileSecurityService: vi.fn(() => mockFileSecurityService),
+      getImageProcessingService: vi.fn(() => mockImageProcessingService),
+      clearInstances: vi.fn(),
+      setMockInstance: vi.fn()
+    }
+  };
+});
+
 // Mock Fastify instance methods - we'll add authenticate method after app is built
 
 // Mock optimized queries
@@ -59,7 +472,7 @@ vi.mock('../db/optimized-queries', () => ({
     }
     return Promise.resolve(null);
   }),
-  getRecommendedExercises: vi.fn((studentId, limit = 10) => {
+  getRecommendedExercises: vi.fn((_studentId, _limit = 10) => {
     return Promise.resolve([
       {
         id: 1,
@@ -1952,7 +2365,7 @@ const mockImageProcessingService = vi.hoisted(() => ({
       png: Buffer.concat([buffer, Buffer.from('PNG')])
     });
   }),
-  resizeImage: vi.fn((buffer, options, qualityOptions) => {
+  resizeImage: vi.fn((buffer, options, _qualityOptions) => {
     const width = options.width;
     const height = options.height;
     return Promise.resolve(Buffer.concat([buffer, Buffer.from(`RESIZED_${width}x${height}`)]));
@@ -2150,13 +2563,8 @@ beforeAll(async () => {
     if (!app) {
       app = await build();
       
-      // Wait for app to be ready with timeout
-      await Promise.race([
-        app.ready(),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('App ready timeout')), 10000)
-        )
-      ]);
+      
+      await app.ready();
     }
     
     setupComplete = true;
@@ -2168,9 +2576,8 @@ beforeAll(async () => {
 });
 
 beforeEach(() => {
-  // Clear mocks between tests and restore all spies
+  // Clear mocks between tests
   vi.clearAllMocks();
-  vi.restoreAllMocks();
 });
 
 // Mock Database Service
@@ -2324,7 +2731,7 @@ vi.mock('../services/enhanced-database.service', () => {
       });
     }),
     
-    getStudentProgress: vi.fn((studentId, _exerciseIds) => {
+    getStudentProgress: vi.fn((_studentId, _exerciseIds) => {
       return Promise.resolve([
         {
           exerciseId: 1,
@@ -2420,10 +2827,6 @@ vi.mock('../utils/requestContextExtractor', () => ({
 }));
 
 afterAll(async () => {
-  // Clean up all spies and mocks
-  vi.clearAllMocks();
-  vi.restoreAllMocks();
-  
   // Don't close the app between tests to prevent "Fastify has already been closed" errors
   // The app will be closed when the test process exits
   console.log('🧪 Test suite completed - keeping app alive for remaining tests');

@@ -1,6 +1,8 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { v4 as uuidv4 } from 'uuid';
+import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
 import { authSchemas, loginSchema, registerSchema } from '../schemas/auth.schema';
 import { AuthService } from '../services/auth.service';
 import { addSendWelcomeEmailJob } from '../jobs/producers/email.producer';
@@ -50,8 +52,8 @@ export default async function authRoutes(fastify: FastifyInstance) {
 
       const accessTokenPayload = {
         studentId: student.id,
-        email: student.email,
-        role: student.role,
+        email: student.email || `${student.prenom}.${student.nom}@student.local`,
+        role: 'student',
       };
       const refreshTokenPayload = {
         ...accessTokenPayload,
@@ -307,38 +309,110 @@ export default async function authRoutes(fastify: FastifyInstance) {
     }
   });
 
-  // Logout endpoint
+  // 🔒 SECURE LOGOUT - Blacklist tokens
   fastify.post('/logout', {
-    preValidation: fastify.csrfProtection,
+    preHandler: [fastify.authenticate],
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const { 'refresh-token': refreshToken } = request.cookies;
+        const token = request.headers.authorization?.replace('Bearer ', '');
+        if (!token) throw new Error('No token');
 
-        if (refreshToken) {
-          const decoded = await (fastify as { refreshJwt: { verify: (token: string) => Promise<any> } }).refreshJwt.verify(
-            refreshToken
-          );
-          // Add token JTI to denylist to invalidate it
-          await fastify.cache.set(
-            `denylist:${decoded.jti}`,
+        const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+
+        // 🔥 CRITICAL: Blacklist token - prevents token reuse
+        const cacheService = serviceContainer.get('cacheService');
+        if (cacheService) {
+          await cacheService.set(
+            `blacklist:${decoded.jti || decoded.studentId}`,
             '1',
-            sevenDaysInSeconds
+            604800 // 7 days
           );
         }
+
+        fastify.log.info('User logged out securely', { userId: decoded.studentId });
+
+        // Clear cookies
+        reply
+          .clearCookie('access-token', { path: '/' })
+          .clearCookie('refresh-token', { path: '/api/auth/refresh' });
+
+        return {
+          success: true,
+          message: 'Déconnexion réussie'
+        };
       } catch (error) {
-        // Log the error but proceed to clear cookies anyway
-        fastify.log.warn('Error processing refresh token on logout:', error);
+        fastify.log.error('Logout failed', { error });
+        return reply.status(500).send({
+          success: false,
+          error: 'Échec de la déconnexion'
+        });
       }
+    },
+  });
 
-      // Always clear cookies
-      reply
-        .clearCookie('access-token', { path: '/' })
-        .clearCookie('refresh-token', { path: '/api/auth/refresh' });
+  // 🔄 SECURE TOKEN REFRESH - With blacklist checking
+  fastify.post('/refresh', {
+    handler: async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const { refreshToken } = request.body as any;
 
-      return reply.send({
-        success: true,
-        message: 'Déconnexion réussie',
-      });
+        if (!refreshToken) {
+          return reply.status(400).send({
+            success: false,
+            error: 'Token de rafraîchissement requis'
+          });
+        }
+
+        const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET!) as any;
+
+        // 🔥 CRITICAL: Check blacklist - prevents token reuse after logout
+        const cacheService = serviceContainer.get('cacheService');
+        if (cacheService) {
+          const isBlacklisted = await cacheService.get(`blacklist:${decoded.jti || decoded.studentId}`);
+
+          if (isBlacklisted) {
+            return reply.status(401).send({
+              success: false,
+              error: 'Token révoqué'
+            });
+          }
+        }
+
+        // Generate new tokens with JTI for security
+        const newJti = crypto.randomUUID();
+        const accessToken = jwt.sign(
+          {
+            studentId: decoded.studentId,
+            email: decoded.email,
+            role: decoded.role || 'student',
+            jti: newJti
+          },
+          process.env.JWT_SECRET!,
+          { expiresIn: '15m' }
+        );
+
+        const newRefreshToken = jwt.sign(
+          {
+            studentId: decoded.studentId,
+            email: decoded.email,
+            jti: crypto.randomUUID()
+          },
+          process.env.JWT_REFRESH_SECRET!,
+          { expiresIn: '7d' }
+        );
+
+        return {
+          success: true,
+          accessToken,
+          refreshToken: newRefreshToken
+        };
+      } catch (error) {
+        fastify.log.error('Token refresh failed', { error });
+        return reply.status(401).send({
+          success: false,
+          error: 'Token invalide ou expiré'
+        });
+      }
     },
   });
 
