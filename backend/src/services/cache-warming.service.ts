@@ -3,6 +3,7 @@
 
 import { FastifyInstance } from 'fastify';
 import { AdvancedCacheService } from './advanced-cache.service';
+import { sql } from 'drizzle-orm';
 
 interface WarmingStrategy {
   name: string;
@@ -84,7 +85,8 @@ export class CacheWarmingService {
         ORDER BY niveau, matiere
       `;
 
-      const [competences] = await this.fastify.db.execute(query);
+      const result = await this.fastify.db.execute(sql.raw(query)) as any;
+      const competences = Array.isArray(result) ? result : (result[0] || []);
 
       const warmingPromises = competences.map(async (comp: any) => {
         const cacheKey = `competence:${comp.code}`;
@@ -99,8 +101,9 @@ export class CacheWarmingService {
 
       this.fastify.log.info(`Warmed ${competences.length} core competences`);
 
-    } catch (error) {
-      this.fastify.log.error('Error warming core competences:', error);
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.fastify.log.error(err, 'Error warming core competences:');
     }
   }
 
@@ -121,7 +124,8 @@ export class CacheWarmingService {
         LIMIT 100
       `;
 
-      const [exercises] = await this.fastify.db.execute(query);
+      const result = await this.fastify.db.execute(sql.raw(query)) as any;
+      const exercises = Array.isArray(result) ? result : (result[0] || []);
 
       const warmingPromises = exercises.map(async (exercise: any) => {
         const cacheKey = `exercise:${exercise.id}`;
@@ -133,7 +137,7 @@ export class CacheWarmingService {
 
         // Also cache by competence for quick filtering
         const competenceCacheKey = `exercises:competence:${exercise.competence_id}`;
-        const existingCompetenceExercises = await this.advancedCache.get(competenceCacheKey) || [];
+        const existingCompetenceExercises = (await this.advancedCache.get(competenceCacheKey) || []) as any[];
         if (!existingCompetenceExercises.some((ex: any) => ex.id === exercise.id)) {
           existingCompetenceExercises.push(exercise);
           await this.advancedCache.set(competenceCacheKey, existingCompetenceExercises, {
@@ -148,8 +152,9 @@ export class CacheWarmingService {
 
       this.fastify.log.info(`Warmed ${exercises.length} popular exercises`);
 
-    } catch (error) {
-      this.fastify.log.error('Error warming popular exercises:', error);
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.fastify.log.error(err, 'Error warming popular exercises:');
     }
   }
 
@@ -166,7 +171,8 @@ export class CacheWarmingService {
         LIMIT 50
       `;
 
-      const [activeStudents] = await this.fastify.db.execute(activeStudentsQuery);
+      const result = await this.fastify.db.execute(sql.raw(activeStudentsQuery)) as any;
+      const activeStudents = Array.isArray(result) ? result : (result[0] || []);
 
       const warmingPromises = activeStudents.map(async (student: any) => {
         // Cache student basic info
@@ -186,7 +192,8 @@ export class CacheWarmingService {
           LIMIT 20
         `;
 
-        const [progress] = await this.fastify.db.execute(progressQuery, [student.id]);
+        const progressResult = await this.fastify.db.execute(sql.raw(progressQuery.replace('?', String(student.id)))) as any;
+        const progress = Array.isArray(progressResult) ? progressResult : (progressResult[0] || []);
 
         const progressKey = `student:${student.id}:progress`;
         await this.advancedCache.set(progressKey, progress, {
@@ -200,8 +207,9 @@ export class CacheWarmingService {
 
       this.fastify.log.info(`Warmed progressions for ${activeStudents.length} active students`);
 
-    } catch (error) {
-      this.fastify.log.error('Error warming student progressions:', error);
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.fastify.log.error(err, 'Error warming student progressions:');
     }
   }
 
@@ -225,7 +233,8 @@ export class CacheWarmingService {
           END
       `;
 
-      const [levels] = await this.fastify.db.execute(levelsQuery);
+      const result = await this.fastify.db.execute(sql.raw(levelsQuery)) as any;
+      const levels = Array.isArray(result) ? result : (result[0] || []);
 
       // Cache overall curriculum structure
       await this.advancedCache.set('curriculum:levels', levels, {
@@ -244,7 +253,8 @@ export class CacheWarmingService {
           ORDER BY competence_id
         `;
 
-        const [competences] = await this.fastify.db.execute(competencesQuery, [level.niveau]);
+        const competencesResult = await this.fastify.db.execute(sql.raw(competencesQuery.replace('?', `'${level.niveau}'`))) as any;
+        const competences = Array.isArray(competencesResult) ? competencesResult : (competencesResult[0] || []);
 
         const levelKey = `curriculum:level:${level.niveau}`;
         await this.advancedCache.set(levelKey, {
@@ -261,8 +271,9 @@ export class CacheWarmingService {
 
       this.fastify.log.info(`Warmed curriculum structure for ${levels.length} levels`);
 
-    } catch (error) {
-      this.fastify.log.error('Error warming curriculum levels:', error);
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.fastify.log.error(err, 'Error warming curriculum levels:');
     }
   }
 
@@ -283,7 +294,8 @@ export class CacheWarmingService {
         ORDER BY niveau, matiere
       `;
 
-      const [stats] = await this.fastify.db.execute(statsQuery);
+      const result = await this.fastify.db.execute(sql.raw(statsQuery)) as any;
+      const stats = Array.isArray(result) ? result : (result[0] || []);
 
       const globalStatsKey = 'stats:exercises:global';
       await this.advancedCache.set(globalStatsKey, stats, {
@@ -306,8 +318,9 @@ export class CacheWarmingService {
 
       this.fastify.log.info(`Warmed statistics for ${stats.length} level/subject combinations`);
 
-    } catch (error) {
-      this.fastify.log.error('Error warming exercise statistics:', error);
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.fastify.log.error(err, 'Error warming exercise statistics:');
     }
   }
 
@@ -325,7 +338,8 @@ export class CacheWarmingService {
         LIMIT 100
       `;
 
-      const [authData] = await this.fastify.db.execute(authQuery);
+      const result = await this.fastify.db.execute(sql.raw(authQuery)) as any;
+      const authData = Array.isArray(result) ? result : (result[0] || []);
 
       const authPromises = authData.map(async (student: any) => {
         const authKey = `auth:student:${student.email}`;
@@ -346,8 +360,9 @@ export class CacheWarmingService {
 
       this.fastify.log.info(`Warmed authentication data for ${authData.length} students`);
 
-    } catch (error) {
-      this.fastify.log.error('Error warming authentication data:', error);
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.fastify.log.error(err, 'Error warming authentication data:');
     }
   }
 
@@ -367,8 +382,9 @@ export class CacheWarmingService {
             this.isWarming = true;
             try {
               await strategy.execute();
-            } catch (error) {
-              this.fastify.log.error(`Warming strategy '${strategy.name}' failed:`, error);
+            } catch (error: unknown) {
+              const err = error instanceof Error ? error : new Error(String(error));
+              this.fastify.log.error(err, `Warming strategy '${strategy.name}' failed:`);
             } finally {
               this.isWarming = false;
             }
@@ -383,9 +399,9 @@ export class CacheWarmingService {
   async executeCriticalWarming(strategies?: WarmingStrategy[]): Promise<void> {
     const strategiesToExecute = strategies || this.strategies.filter(s => s.priority === 'critical' && s.enabled);
 
-    this.fastify.log.info('Executing critical cache warming...', {
-      strategies: strategiesToExecute.map(s => s.name)
-    });
+      this.fastify.log.info({
+        strategies: strategiesToExecute.map(s => s.name)
+      }, 'Executing critical cache warming...');
 
     const startTime = Date.now();
 
@@ -396,12 +412,12 @@ export class CacheWarmingService {
     const successful = results.filter(r => r.status === 'fulfilled').length;
     const failed = results.length - successful;
 
-    this.fastify.log.info('Critical cache warming completed:', {
+    this.fastify.log.info({
       total: results.length,
       successful,
       failed,
       duration: Date.now() - startTime
-    });
+    }, 'Critical cache warming completed:');
   }
 
   getWarmingStatus(): { strategies: Array<{ name: string; priority: string; enabled: boolean; interval: number }> } {

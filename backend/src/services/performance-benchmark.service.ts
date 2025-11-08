@@ -399,7 +399,7 @@ class PerformanceBenchmarkService {
         outputPath: this.config.outputPath
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to initialize performance benchmark service', { error });
       throw error;
     }
@@ -418,10 +418,10 @@ class PerformanceBenchmarkService {
         }
         
         logger.info('Loaded performance baselines', { count: this.baselines.size });
-      } catch (error) {
+      } catch (error: unknown) {
         logger.debug('No existing baselines found');
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to load baselines', { error });
     }
   }
@@ -432,7 +432,7 @@ class PerformanceBenchmarkService {
       const baselines = Object.fromEntries(this.baselines.entries());
       await fs.writeFile(baselinePath, JSON.stringify(baselines, null, 2));
       logger.info('Baselines saved', { count: this.baselines.size });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to save baselines', { error });
     }
   }
@@ -490,10 +490,11 @@ class PerformanceBenchmarkService {
             }
             this.results.get(test.id)!.push(result);
 
-          } catch (error) {
+          } catch (error: unknown) {
+            const err = error instanceof Error ? error : new Error(String(error));
             logger.error('Benchmark test failed', {
               testId: test.id,
-              error: error.message
+              error: err.message
             });
           }
         }
@@ -553,7 +554,7 @@ class PerformanceBenchmarkService {
               setTimeout(() => reject(new Error('Warmup timeout')), this.config.timeoutMs)
             )
           ]);
-        } catch (error) {
+        } catch (error: unknown) {
           // Ignore warmup errors
         }
       }
@@ -595,7 +596,7 @@ class PerformanceBenchmarkService {
 
       return result;
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Test execution failed', { testId: test.id, error });
       throw error;
     }
@@ -631,14 +632,15 @@ class PerformanceBenchmarkService {
         error: isValid ? undefined : 'Validation failed'
       };
 
-    } catch (error) {
+    } catch (error: unknown) {
       const executionTime = Date.now() - startTime;
+      const err = error instanceof Error ? error : new Error(String(error));
       
       return {
         iteration,
         executionTime,
         success: false,
-        error: error.message,
+        error: err.message,
         timestamp: new Date()
       };
     }
@@ -837,7 +839,7 @@ class PerformanceBenchmarkService {
     try {
       const [rows] = await connection.execute('SELECT VERSION() as version');
       databaseVersion = (rows as any[])[0]?.version || 'Unknown';
-    } catch (error) {
+    } catch (error: unknown) {
       // Ignore if can't get version
     }
 

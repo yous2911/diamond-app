@@ -18,8 +18,9 @@ const worker = new Worker('email-queue', async job => {
       await emailService.sendUserRegistrationWelcome(email, name, email); // Using email as username for now
       logger.info(`Welcome email sent to ${email}`);
     } catch (error) {
-      logger.error(`Failed to send welcome email to ${email}`, error);
-      throw error; // Throw error to trigger retry mechanism
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error({ err }, `Failed to send welcome email to ${email}`);
+      throw err; // Throw error to trigger retry mechanism
     }
   }
 }, { connection: redis });

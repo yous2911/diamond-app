@@ -1,14 +1,8 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useState, useEffect } from 'react';
 
 // =============================================================================
 // 🎵 MAGICAL SOUND SYSTEM - PERFECT AUDIO FEEDBACK
 // =============================================================================
-
-interface SoundConfig {
-  volume: number;
-  playbackRate: number;
-  loop: boolean;
-}
 
 const SOUND_EFFECTS = {
   correct_answer: {
@@ -51,7 +45,6 @@ const SOUND_EFFECTS = {
 
 export const useMagicalSounds = () => {
   const audioContextRef = useRef<AudioContext | null>(null);
-  const soundCacheRef = useRef<Map<string, AudioBuffer>>(new Map());
 
   // Initialize Web Audio API
   const initAudioContext = useCallback(() => {
@@ -156,6 +149,16 @@ export const useMagicalSounds = () => {
 
   // Sound settings
   const [soundEnabled, setSoundEnabled] = useState(true);
+
+  // Cleanup AudioContext on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+        audioContextRef.current = null;
+      }
+    };
+  }, []);
 
   return {
     playSound,

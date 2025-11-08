@@ -1,6 +1,7 @@
 import React from 'react';
 // import AdvancedParticleEngine from './AdvancedParticleEngine'; // DISABLED for demo - GPU intensive
-import SimpleDragonMascot from './SimpleDragonMascot'; // LIGHTWEIGHT CSS 3D mascot
+// import SimpleDragonMascot from './SimpleDragonMascot'; // REPLACED with MascottePremium
+import MascottePremium from './MascottePremium'; // ENHANCED PREMIUM MASCOT
 import XPCrystalsPremium from './XPCrystalsPremium';
 import { usePremiumFeatures } from '../contexts/PremiumFeaturesContext';
 
@@ -27,7 +28,6 @@ const GlobalPremiumLayout: React.FC<GlobalPremiumLayoutProps> = ({
 }) => {
   const {
     showParticles,
-    particleType,
     mascotEmotion,
     currentXP,
     maxXP,
@@ -35,26 +35,6 @@ const GlobalPremiumLayout: React.FC<GlobalPremiumLayoutProps> = ({
     onLevelUp,
     setMascotEmotion,
   } = usePremiumFeatures();
-
-  // Helper to convert particle types for the engine
-  const getAdvancedParticleType = (type: 'success' | 'levelup' | 'magic') => {
-    switch (type) {
-      case 'success': return 'sparkle';
-      case 'levelup': return 'star';
-      case 'magic': return 'magic';
-      default: return 'sparkle';
-    }
-  };
-
-  // Helper to convert mascot emotions to activities
-  const getMascotActivity = (emotion: string) => {
-    switch (emotion) {
-      case 'excited': case 'celebrating': return 'achievement';
-      case 'thinking': return 'exercise';
-      case 'happy': return 'learning';
-      default: return 'idle';
-    }
-  };
 
   const handleLevelUp = (newLevel: number) => {
     setMascotEmotion('excited');
@@ -108,19 +88,16 @@ const GlobalPremiumLayout: React.FC<GlobalPremiumLayoutProps> = ({
         </div>
       )}
 
-      {/* Simple Dragon Mascot (CSS 3D - Lightweight and impressive) */}
-      <div className="fixed bottom-6 right-6 z-40">
-        <SimpleDragonMascot
-          studentName="Élève"
-          level={level}
-          xp={currentXP}
-          onInteraction={(type) => {
-            if (type === 'click') {
-              setMascotEmotion('excited');
-            }
-          }}
-        />
-      </div>
+      {/* Enhanced Premium Mascot (Lightweight, impressive UX) */}
+      <MascottePremium
+        emotion={mascotEmotion as 'idle' | 'happy' | 'excited' | 'thinking' | 'celebrating' | 'sleepy'}
+        studentName="Élève"
+        level={level}
+        xp={currentXP}
+        onInteraction={() => {
+          setMascotEmotion('excited');
+        }}
+      />
     </div>
   );
 };

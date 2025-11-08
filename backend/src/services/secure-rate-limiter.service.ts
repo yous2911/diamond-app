@@ -64,8 +64,9 @@ export class SecureRateLimiterService {
         await this.redis.ping();
         logger.info('✅ Redis connected for rate limiting');
       }
-    } catch (error) {
-      logger.warn('⚠️ Redis not available, using in-memory rate limiting', { error: error.message });
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.warn('⚠️ Redis not available, using in-memory rate limiting', { error: err.message });
       this.redis = null;
     }
   }
@@ -95,7 +96,7 @@ export class SecureRateLimiterService {
       const allowed = !rateLimitInfo.blocked && rateLimitInfo.count <= config.maxAttempts;
 
       // Headers de rate limiting
-      const headers = {
+      const headers: { [key: string]: string } = {
         'X-RateLimit-Limit': config.maxAttempts.toString(),
         'X-RateLimit-Remaining': Math.max(0, config.maxAttempts - rateLimitInfo.count).toString(),
         'X-RateLimit-Reset': new Date(rateLimitInfo.resetTime).toISOString(),
@@ -107,7 +108,7 @@ export class SecureRateLimiterService {
 
       return { allowed, rateLimitInfo, headers };
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Rate limit check error:', error);
       // En cas d'erreur, autoriser la requête mais logger l'incident
       return {
@@ -251,7 +252,7 @@ export class SecureRateLimiterService {
         this.memoryStore.delete(key);
       }
       logger.info('Rate limit reset', { key });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error resetting rate limit:', error);
     }
   }
@@ -274,7 +275,7 @@ export class SecureRateLimiterService {
       } else {
         return this.memoryStore.get(key) || null;
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error getting rate limit info:', error);
       return null;
     }
@@ -387,7 +388,7 @@ export function createSecureAuthRateLimiter(config?: Partial<RateLimitConfig>) {
         });
         return;
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Rate limiter error:', error);
       // En cas d'erreur, on laisse passer mais on log l'incident
     }

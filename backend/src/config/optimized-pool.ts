@@ -34,8 +34,6 @@ export const optimizedPoolConfig: PoolOptions = {
   idleTimeout: 300000, // 5 minutes idle timeout
 
   // Advanced connection management
-  acquireTimeout: 15000, // 15 seconds to acquire connection
-  timeout: 30000, // 30 seconds query timeout
   keepAliveInitialDelay: 30000, // 30 seconds before first keepalive
   enableKeepAlive: true, // Enable TCP keepalive
 
@@ -51,7 +49,6 @@ export const optimizedPoolConfig: PoolOptions = {
 
   // Connection settings for performance
   connectTimeout: 10000, // 10 seconds connection timeout
-  reconnect: true, // Auto-reconnect on connection loss
 
   // Type casting optimization
   typeCast: function (field: any, next: any) {
@@ -76,12 +73,12 @@ export const optimizedPoolConfig: PoolOptions = {
   },
 
   // SSL Configuration for production
-  ssl: config.NODE_ENV === 'production' && config.DB_SSL ? {
+  ssl: config.NODE_ENV === 'production' && config.DB_SSL_CA ? {
     rejectUnauthorized: true,
     ca: process.env.DB_SSL_CA,
     key: process.env.DB_SSL_KEY,
     cert: process.env.DB_SSL_CERT,
-  } : false,
+  } : undefined,
 
   // Advanced flags for performance
   flags: [
@@ -92,7 +89,7 @@ export const optimizedPoolConfig: PoolOptions = {
     'SECURE_CONNECTION', // Use 4.1 protocol
     'MULTI_RESULTS', // Handle multiple result sets
     'PS_MULTI_RESULTS', // Handle multiple result sets in prepared statements
-  ].join(','),
+  ] as string[],
 };
 
 // Connection pool monitoring configuration
@@ -195,8 +192,6 @@ export function getOptimizedPoolConfig(): PoolOptions {
     return {
       ...baseConfig,
       connectionLimit: productionOptimizations.maxPoolSize,
-      acquireTimeout: 10000, // Tighter timeout in production
-      timeout: 20000, // Tighter query timeout in production
     };
   }
 
@@ -205,8 +200,6 @@ export function getOptimizedPoolConfig(): PoolOptions {
     return {
       ...baseConfig,
       connectionLimit: 5,
-      acquireTimeout: 5000,
-      timeout: 10000,
       enableKeepAlive: false, // Disable keepalive in tests
     };
   }

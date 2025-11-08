@@ -3,7 +3,8 @@ import { eq } from 'drizzle-orm';
 import { getDatabase } from '../db/connection';
 import { students, studentProgress, sessions, gdprFiles } from '../db/schema';
 import { encryptionService } from './encryption.service';
-import { auditTrailService } from './audit-trail.service';
+import { AuditTrailService } from './audit-trail.service';
+const auditTrailService = new AuditTrailService();
 
 interface AnonymizationRule {
   field: string;
@@ -76,6 +77,7 @@ class AnonymizationService {
         userId: 'system',
         details: { reason: 'Student data anonymized' },
         severity: 'high',
+        timestamp: new Date(),
       });
 
       return { success: true, affectedRecords };

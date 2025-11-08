@@ -1,4 +1,4 @@
-﻿{
+{
     "include":  [
                     "src"
                 ],
@@ -14,9 +14,9 @@
                     "drizzle/migrations"
                 ],
     "compilerOptions":  {
-                            "noEmit":  true,
+                            "noEmit": false, "outDir": "dist",
                             "strict":  true,
-                            "module":  "CommonJS",
+                            "module": "CommonJS",
                             "moduleResolution":  "Node",
                             "skipLibCheck":  true,
                             "esModuleInterop":  true,

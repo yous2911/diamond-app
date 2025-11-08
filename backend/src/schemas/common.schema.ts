@@ -16,7 +16,8 @@ export const SanitizedHTML = SanitizedString({ description: 'Contenu HTML qui se
 export const SanitizedText = SanitizedString({ description: 'Texte simple qui sera nettoyé pour éviter les attaques XSS.' });
 
 // General-purpose ID type
-export const IdOrCode = Type.RegEx(/^[a-zA-Z0-9_.-]+$/, {
+export const IdOrCode = Type.String({
+  pattern: '^[a-zA-Z0-9_.-]+$',
   description: 'ID ou code alphanumérique',
   examples: ['CE1.2024.1', 'student-123']
 });

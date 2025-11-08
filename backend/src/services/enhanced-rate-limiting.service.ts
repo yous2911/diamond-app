@@ -1,4 +1,5 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
+// @ts-ignore - geoip-lite doesn't have type definitions
 import * as geoip from 'geoip-lite';
 import ipRangeCheck from 'ip-range-check';
 import { Redis } from 'ioredis';
@@ -104,7 +105,7 @@ export class EnhancedRateLimitingService {
   private cleanupInterval?: NodeJS.Timeout;
 
   constructor(options: RateLimitOptions, private redis?: Redis) {
-    this.options = {
+    const defaultOptions: RateLimitOptions = {
       global: {
         windowMs: 15 * 60 * 1000,
         max: 1000
@@ -129,8 +130,14 @@ export class EnhancedRateLimitingService {
       maxPenaltyTime: 24 * 60 * 60 * 1000,
       headers: true,
       retryAfterHeader: true,
-      redisPrefix: 'rl',
-      ...options
+      redisPrefix: 'rl'
+    };
+    this.options = {
+      ...defaultOptions,
+      ...options,
+      global: { ...defaultOptions.global, ...options.global },
+      perUser: { ...defaultOptions.perUser, ...options.perUser },
+      perIP: { ...defaultOptions.perIP, ...options.perIP }
     };
 
     this.storageType = this.redis ? 'redis' : 'in-memory';

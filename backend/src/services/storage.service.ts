@@ -46,7 +46,7 @@ export class StorageService {
           category: file.category,
           isPublic: file.isPublic,
           status: file.status,
-          checksum: file.checksum
+          checksum: file.checksum || null
         });
 
 
@@ -69,7 +69,7 @@ export class StorageService {
       });
 
       logger.info('File metadata saved to database', { fileId: file.id });
-    } catch (error) {
+    } catch (error: unknown) {
       const err = error as any;
       logger.error('Error saving file metadata:', { fileId: file?.id, error: err?.message });
       throw new Error(`Failed to save file metadata: ${err?.message}`);
@@ -118,21 +118,21 @@ export class StorageService {
         mimetype: file.mimeType,
         size: file.fileSize,
         path: file.filePath,
-        url: file.url || '',
-        thumbnailUrl: file.thumbnailUrl || undefined,
+        url: file.url ? String(file.url) : '',
+        thumbnailUrl: file.thumbnailUrl ?? undefined,
         metadata: (file.metadata as any) || {},
-        uploadedBy: file.uploadedBy,
+        uploadedBy: file.uploadedBy ?? '',
         uploadedAt: new Date(file.uploadedAt),
         category: file.category as FileCategory,
-        isPublic: file.isPublic,
+        isPublic: file.isPublic ?? false,
         status: file.status as any,
-        checksum: file.checksum,
+        checksum: file.checksum ?? '',
         processedVariants
       };
-    } catch (error) {
-      const err = error as any;
-      logger.error('Error getting file by ID:', { fileId, error: err?.message });
-      throw new Error(`Failed to get file: ${err?.message}`);
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('Error getting file by ID:', { fileId, error: err.message });
+      throw new Error(`Failed to get file: ${err.message}`);
     }
   }
 
@@ -155,7 +155,7 @@ export class StorageService {
       }
 
       return this.getFileById(fileData[0].id.toString());
-    } catch (error) {
+    } catch (error: unknown) {
       const err = error as any;
       logger.error('Error finding file by checksum:', { checksum, error: err?.message });
       return null;
@@ -177,7 +177,7 @@ export class StorageService {
     try {
       const { category, limit = 20, offset = 0, includePublic = false } = options;
 
-      let whereConditions = eq(files.uploadedBy, userId);
+      let whereConditions: ReturnType<typeof eq> | ReturnType<typeof and> = eq(files.uploadedBy, userId);
       
       if (category) {
         whereConditions = and(whereConditions, eq(files.category, category));
@@ -211,7 +211,7 @@ export class StorageService {
       }
 
       return { files: filesList, total: count };
-    } catch (error) {
+    } catch (error: unknown) {
       const err = error as any;
       logger.error('Error getting files by user:', { userId, error: err?.message });
       throw new Error(`Failed to get user files: ${err?.message}`);
@@ -229,7 +229,7 @@ export class StorageService {
         .where(eq(files.id, fileId));
 
       logger.info('File status updated', { fileId, status });
-    } catch (error) {
+    } catch (error: unknown) {
       const err = error as any;
       logger.error('Error updating file status:', { fileId, status, error: err?.message });
       throw new Error(`Failed to update file status: ${err?.message}`);
@@ -258,7 +258,7 @@ export class StorageService {
       });
 
       logger.info('File marked as deleted', { fileId });
-    } catch (error) {
+    } catch (error: unknown) {
       const err = error as any;
       logger.error('Error marking file as deleted:', { fileId, error: err?.message });
       throw new Error(`Failed to delete file: ${err?.message}`);
@@ -326,7 +326,7 @@ export class StorageService {
           percentage: Math.min(100, percentage)
         }
       };
-    } catch (error) {
+    } catch (error: unknown) {
       const err = error as any;
       logger.error('Error getting storage stats:', { error: err });
       throw new Error(`Failed to get storage statistics: ${err?.message}`);
@@ -385,7 +385,7 @@ export class StorageService {
 
             deletedCount++;
             logger.debug('Cleaned up expired file', { fileId: file.id });
-          } catch (error) {
+          } catch (error: unknown) {
             const err = error as any;
             logger.warn('Failed to cleanup file:', { 
               fileId: file.id, 
@@ -400,7 +400,7 @@ export class StorageService {
       }
 
       return deletedCount;
-    } catch (error) {
+    } catch (error: unknown) {
       const err = error as any;
       logger.error('Error during cleanup:', { error: err });
       throw new Error(`Cleanup failed: ${err?.message}`);
@@ -459,7 +459,7 @@ export class StorageService {
       }
 
       return cleanedCount;
-    } catch (error) {
+    } catch (error: unknown) {
       const err = error as any;
       logger.error('Error cleaning orphaned files:', { error: err });
       throw new Error(`Orphaned files cleanup failed: ${err?.message}`);
@@ -531,7 +531,7 @@ export class StorageService {
           percentage: stats.storageUsage.percentage
         }
       };
-    } catch (error) {
+    } catch (error: unknown) {
       const err = error as any;
       logger.error('Error getting storage health:', { error: err });
       return {
@@ -588,7 +588,7 @@ export class StorageService {
           
           filesProcessed++;
           // spaceReclaimed += (originalSize - newSize);
-        } catch (error) {
+        } catch (error: unknown) {
           const err = error as any;
           logger.warn('Failed to optimize file:', { 
             fileId: file.id, 
@@ -603,7 +603,7 @@ export class StorageService {
       });
 
       return { filesProcessed, spaceReclaimed };
-    } catch (error) {
+    } catch (error: unknown) {
       const err = error as any;
       logger.error('Error optimizing storage:', { error: err });
       throw new Error(`Storage optimization failed: ${err?.message}`);

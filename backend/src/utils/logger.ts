@@ -1,7 +1,7 @@
 export type LogPayload = any;
 
 class SimpleLogger {
-  info(message: string, payload?: LogPayload): void {
+  info(message: string, payload?: LogPayload | unknown): void {
     if (payload) {
       console.log(message, payload);
     } else {
@@ -9,7 +9,7 @@ class SimpleLogger {
     }
   }
 
-  warn(message: string, payload?: LogPayload): void {
+  warn(message: string, payload?: LogPayload | unknown): void {
     if (payload) {
       console.warn(message, payload);
     } else {
@@ -17,7 +17,7 @@ class SimpleLogger {
     }
   }
 
-  error(message: string, payload?: LogPayload): void {
+  error(message: string, payload?: LogPayload | unknown): void {
     if (payload) {
       console.error(message, payload);
     } else {
@@ -25,7 +25,7 @@ class SimpleLogger {
     }
   }
 
-  debug(message: string, payload?: LogPayload): void {
+  debug(message: string, payload?: LogPayload | unknown): void {
     if (payload) {
       console.debug(message, payload);
     } else {

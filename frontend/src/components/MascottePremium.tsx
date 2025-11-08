@@ -1,31 +1,40 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 
 // =============================================================================
-// 🐸 MASCOTTE PREMIUM DIAMANT AVEC ÉMOTIONS
+// 🐉 MASCOTTE PREMIUM DIAMANT AVEC ÉMOTIONS - ENHANCED
 // =============================================================================
 interface MascottePremiumProps {
   emotion: 'idle' | 'happy' | 'excited' | 'thinking' | 'celebrating' | 'sleepy';
   message?: string;
   onInteraction?: () => void;
+  studentName?: string;
+  level?: number;
+  xp?: number;
 }
 
 const MascottePremium: React.FC<MascottePremiumProps> = ({ 
   emotion, 
   message, 
-  onInteraction 
+  onInteraction,
+  studentName = 'Élève',
+  level = 1,
+  xp = 0
 }) => {
   const [currentEmotion, setCurrentEmotion] = useState(emotion);
   const [showMessage, setShowMessage] = useState(false);
   const [isInteracting, setIsInteracting] = useState(false);
+  const prefersReducedMotion = useReducedMotion();
 
+  // Dragon emoji with emotion-based variations
   const emotionEmojis = {
-    idle: '👤',
-    happy: '😊',
-    excited: '🤩',
-    thinking: '🤔',
-    celebrating: '🎉',
-    sleepy: '😴'
+    idle: '🐉',
+    happy: '🐉',
+    excited: '🐉',
+    thinking: '🐉',
+    celebrating: '🐉',
+    sleepy: '🐉'
   };
 
   const emotionMessages = {
@@ -77,53 +86,67 @@ const MascottePremium: React.FC<MascottePremiumProps> = ({
   return (
     <div className="fixed bottom-6 right-6 z-40">
       {/* Aura magique */}
-      <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-400/20 via-blue-400/20 to-green-400/20 blur-xl animate-pulse" />
+      {!prefersReducedMotion && (
+        <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-400/20 via-blue-400/20 to-green-400/20 blur-xl animate-pulse" />
+      )}
       
       {/* Particules autour de la mascotte */}
-      <div className="absolute inset-0">
-        {[...Array(6)].map((_, i) => (
-          <motion.div
-            key={i}
-            className="absolute w-2 h-2 bg-yellow-400 rounded-full"
-            style={{
-              top: `${20 + Math.sin(i * 60) * 30}%`,
-              left: `${20 + Math.cos(i * 60) * 30}%`,
-            }}
-            animate={{
-              scale: [0, 1, 0],
-              opacity: [0, 1, 0],
-              rotate: [0, 360]
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              delay: i * 0.3,
-            }}
-          />
-        ))}
-      </div>
+      {!prefersReducedMotion && (
+        <div className="absolute inset-0">
+          {[...Array(6)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute w-2 h-2 bg-yellow-400 rounded-full"
+              style={{
+                top: `${20 + Math.sin(i * 60) * 30}%`,
+                left: `${20 + Math.cos(i * 60) * 30}%`,
+              }}
+              animate={{
+                scale: [0, 1, 0],
+                opacity: [0, 1, 0],
+                rotate: [0, 360]
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                delay: i * 0.3,
+              }}
+            />
+          ))}
+        </div>
+      )}
 
-      {/* Mascotte principale */}
+      {/* Mascotte principale avec 3D transforms */}
       <motion.div
         className={`
           text-6xl cursor-pointer relative z-10 filter drop-shadow-lg
-          ${getEmotionAnimation()}
+          ${prefersReducedMotion ? '' : getEmotionAnimation()}
           ${isInteracting ? 'scale-125' : 'hover:scale-110'}
           transition-all duration-300
         `}
         onClick={handleClick}
-        whileHover={{ scale: 1.1, rotate: 5 }}
-        whileTap={{ scale: 0.95 }}
-        initial={{ scale: 0, rotate: -180 }}
-        animate={{ scale: 1, rotate: 0 }}
-        transition={{ 
+        whileHover={prefersReducedMotion ? undefined : { scale: 1.1, rotate: 5 }}
+        whileTap={prefersReducedMotion ? undefined : { scale: 0.95 }}
+        initial={prefersReducedMotion ? { scale: 1 } : { scale: 0, rotate: -180 }}
+        animate={prefersReducedMotion ? { scale: 1 } : { scale: 1, rotate: 0 }}
+        transition={prefersReducedMotion ? { duration: 0.1 } : { 
           type: "spring", 
           stiffness: 260, 
           damping: 20 
         }}
+        style={!prefersReducedMotion ? {
+          transform: 'perspective(1000px) rotateX(20deg) rotateY(15deg)',
+          transformStyle: 'preserve-3d'
+        } : undefined}
       >
         {emotionEmojis[currentEmotion]}
       </motion.div>
+
+      {/* Stats Overlay */}
+      <div className="absolute top-0 right-0 bg-black/70 text-white text-xs px-3 py-2 rounded-bl-xl rounded-tr-xl backdrop-blur-sm">
+        <div className="font-bold">Level: {level}</div>
+        <div className="font-bold">XP: {xp}</div>
+      </div>
 
       {/* Bulle de dialogue */}
       <AnimatePresence>
@@ -147,17 +170,52 @@ const MascottePremium: React.FC<MascottePremiumProps> = ({
       </AnimatePresence>
 
       {/* Effet de clic */}
-      <AnimatePresence>
-        {isInteracting && (
+      {!prefersReducedMotion && (
+        <AnimatePresence>
+          {isInteracting && (
+            <motion.div
+              className="absolute inset-0 rounded-full border-4 border-yellow-400"
+              initial={{ scale: 1, opacity: 1 }}
+              animate={{ scale: 2, opacity: 0 }}
+              exit={{ scale: 2, opacity: 0 }}
+              transition={{ duration: 0.6 }}
+            />
+          )}
+        </AnimatePresence>
+      )}
+
+      {/* Magical Sparkles */}
+      {!prefersReducedMotion && (
+        <>
           <motion.div
-            className="absolute inset-0 rounded-full border-4 border-yellow-400"
-            initial={{ scale: 1, opacity: 1 }}
-            animate={{ scale: 2, opacity: 0 }}
-            exit={{ scale: 2, opacity: 0 }}
-            transition={{ duration: 0.6 }}
+            className="absolute -top-2 -right-2 w-3 h-3 bg-yellow-300 rounded-full"
+            animate={{
+              opacity: [0, 1, 0],
+              scale: [0.5, 1.5, 0.5],
+              rotate: [0, 180, 360]
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
           />
-        )}
-      </AnimatePresence>
+          <motion.div
+            className="absolute -bottom-2 -left-2 w-2 h-2 bg-pink-300 rounded-full"
+            animate={{
+              opacity: [0, 1, 0],
+              scale: [0.5, 1.2, 0.5],
+              rotate: [0, -180, -360]
+            }}
+            transition={{
+              duration: 2.5,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: 0.5
+            }}
+          />
+        </>
+      )}
     </div>
   );
 };

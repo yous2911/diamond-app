@@ -100,7 +100,6 @@ export async function seedDatabase() {
         difficulte: 'decouverte',
         competenceCode: 'MATH_COUNT_01',
         typeExercice: 'multiple-choice',
-        type: 'multiple-choice',
         contenu: {
           question: 'Complète la suite : 10, 20, ___, 40, 50',
           options: ['25', '30', '35', '45'],
@@ -126,7 +125,6 @@ export async function seedDatabase() {
         difficulte: 'decouverte',
         competenceCode: 'MATH_ADD_01',
         typeExercice: 'calculation',
-        type: 'calculation',
         contenu: {
           question: 'Calcule : 15 + 8',
           operand1: 15,
@@ -154,7 +152,6 @@ export async function seedDatabase() {
         difficulte: 'application',
         competenceCode: 'FR_CONJ_01',
         typeExercice: 'text-input',
-        type: 'text-input',
         contenu: {
           question: 'Il/Elle ... (manger)',
           verb: 'manger',

@@ -32,7 +32,7 @@ const curriculumPlugin: FastifyPluginAsync = async (fastify, opts) => {
             id: exercises.id,
             titre: exercises.titre,
             description: exercises.description,
-            type: exercises.type,
+            type: exercises.typeExercice,
             difficulte: exercises.difficulte,
             xp: exercises.xp,
             configuration: exercises.configuration,
@@ -40,7 +40,7 @@ const curriculumPlugin: FastifyPluginAsync = async (fastify, opts) => {
             updatedAt: exercises.updatedAt
           })
           .from(exercises)
-          .orderBy(exercises.type, exercises.difficulte);
+          .orderBy(exercises.typeExercice, exercises.difficulte);
 
         // Return flat array of exercises for frontend compatibility
         return reply.send({
@@ -294,11 +294,11 @@ const curriculumPlugin: FastifyPluginAsync = async (fastify, opts) => {
         // Get exercise type distribution (using type field from exercises)
         const exerciseTypes = await db
           .select({
-            type: exercises.type,
+            type: exercises.typeExercice,
             count: sql<number>`COUNT(*)`
           })
           .from(exercises)
-          .groupBy(exercises.type);
+          .groupBy(exercises.typeExercice);
 
         // Get difficulty distribution
         const difficultyDistribution = await db

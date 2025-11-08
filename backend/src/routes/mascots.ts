@@ -440,7 +440,7 @@ export default async function mascotsRoutes(fastify: FastifyInstance) {
           }
         };
 
-        const mascotDialogues = dialogues[mascot.type] || dialogues.dragon;
+        const mascotDialogues = dialogues[mascot.type || 'dragon'] || dialogues.dragon;
         const dialogue = mascotDialogues[context] || mascotDialogues.greeting;
 
         return reply.send({

@@ -58,7 +58,7 @@ Object.defineProperty(window, 'scrollTo', {
 // Mock requestAnimationFrame and cancelAnimationFrame
 global.requestAnimationFrame = jest.fn((callback) => {
   // Execute immediately in tests to avoid timeouts
-  callback();
+  callback(performance.now());
   return 1;
 });
 

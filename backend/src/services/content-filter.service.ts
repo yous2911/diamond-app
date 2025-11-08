@@ -1,10 +1,10 @@
 import Filter from 'bad-words';
 
 class ContentFilterService {
-  private filter: Filter;
+  private filter: any;
 
   constructor() {
-    this.filter = new Filter();
+    this.filter = new (Filter as any)();
   }
 
   /**

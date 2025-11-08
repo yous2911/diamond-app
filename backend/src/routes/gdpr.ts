@@ -372,13 +372,13 @@ export default async function gdprRoutes(fastify: FastifyInstance) {
         const studentId = parseInt(request.params.studentId);
         const { limit = 50, offset = 0, action } = request.query;
 
-        let whereCondition = eq(gdprDataProcessingLog.studentId, studentId);
+        let whereCondition: any = eq(gdprDataProcessingLog.studentId, studentId);
         
         if (action) {
           whereCondition = and(
             eq(gdprDataProcessingLog.studentId, studentId),
             eq(gdprDataProcessingLog.action, action as any)
-          );
+          ) || whereCondition;
         }
 
         const logs = await fastify.db
@@ -652,12 +652,14 @@ export default async function gdprRoutes(fastify: FastifyInstance) {
   fastify.post('/consent/preferences', {
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
-        const { essential, functional, analytics, marketing, personalization } = request.body as any;
+        const body = request.body as { essential?: boolean; functional?: boolean; analytics?: boolean; marketing?: boolean; personalization?: boolean; [key: string]: any };
+        const { essential, functional, analytics, marketing, personalization } = body;
         
         // Validate that all preference fields are boolean
         const booleanFields = ['essential', 'functional', 'analytics', 'marketing', 'personalization'];
         for (const field of booleanFields) {
-          if (request.body[field] !== undefined && typeof request.body[field] !== 'boolean') {
+          const fieldValue = body[field];
+          if (fieldValue !== undefined && typeof fieldValue !== 'boolean') {
             return reply.status(400).send({
               success: false,
               error: { message: `Field ${field} must be a boolean`, code: 'INVALID_FIELD_TYPE' }
@@ -668,7 +670,7 @@ export default async function gdprRoutes(fastify: FastifyInstance) {
         // Validate that all required fields are present
         const requiredFields = ['essential', 'functional', 'analytics', 'marketing', 'personalization'];
         for (const field of requiredFields) {
-          if (request.body[field] === undefined) {
+          if (body[field] === undefined) {
             return reply.status(400).send({
               success: false,
               error: { message: `Field ${field} is required`, code: 'MISSING_REQUIRED_FIELD' }

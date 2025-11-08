@@ -88,6 +88,7 @@ const gdprPlugin = async (fastify: FastifyInstance, options: GDPRPluginOptions =
             },
             ipAddress: request.ip,
             userAgent: request.headers['user-agent'] || '',
+            timestamp: new Date(),
             severity: 'low' as const,
             category: request.routerPath?.includes('/auth') ? 'user_behavior' as const : 'data_access' as const
           };
@@ -159,6 +160,7 @@ const gdprPlugin = async (fastify: FastifyInstance, options: GDPRPluginOptions =
                 },
                 ipAddress: request.ip,
                 userAgent: request.headers['user-agent'] || '',
+                timestamp: new Date(),
                 severity: 'medium',
                 category: 'consent_management'
               });

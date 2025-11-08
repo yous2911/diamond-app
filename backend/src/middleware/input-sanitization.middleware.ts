@@ -127,7 +127,8 @@ export class InputSanitizationService {
       }
 
     } catch (error) {
-      logger.error('Input sanitization error:', error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('Input sanitization error:', err);
       
       // Log security incident
       logger.warn('Potential security threat detected', {
@@ -135,7 +136,7 @@ export class InputSanitizationService {
         method: request.method,
         userAgent: request.headers['user-agent'],
         ip: request.ip,
-        error: error.message
+        error: err.message
       });
 
       return reply.status(400).send({

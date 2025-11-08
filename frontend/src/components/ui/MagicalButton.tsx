@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useReducedMotion } from '../../hooks/useReducedMotion';
 
 // Types for magical button variants
 export type MagicalButtonVariant = 
@@ -123,17 +124,22 @@ const getSizeClasses = (size: MagicalButtonSize): any => {
 };
 
 // Sparkle component for hover effects
-const Sparkle: React.FC<{ delay: number }> = ({ delay }) => (
+const Sparkle: React.FC<{ delay: number; prefersReducedMotion?: boolean }> = ({ delay, prefersReducedMotion = false }) => (
   <motion.div
     className="absolute w-2 h-2 bg-yellow-300 rounded-full"
     initial={{ scale: 0, opacity: 0 }}
-    animate={{ 
+    animate={prefersReducedMotion ? { 
+      scale: 1, 
+      opacity: 1
+    } : { 
       scale: [0, 1, 0], 
       opacity: [0, 1, 0],
       x: [0, Math.random() * 20 - 10],
       y: [0, Math.random() * 20 - 10]
     }}
-    transition={{ 
+    transition={prefersReducedMotion ? { 
+      duration: 0.01
+    } : { 
       duration: 1, 
       delay,
       repeat: Infinity,
@@ -178,6 +184,7 @@ export const MagicalButton: React.FC<MagicalButtonProps> = ({
   const [ripples, setRipples] = useState<Array<{ id: number; x: number; y: number }>>([]);
   const [rippleId, setRippleId] = useState(0);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const prefersReducedMotion = useReducedMotion();
 
   const handleClick = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
     if (disabled || loading) return;
@@ -242,25 +249,27 @@ export const MagicalButton: React.FC<MagicalButtonProps> = ({
         onMouseUp={handleMouseUp}
         disabled={disabled || loading}
         data-testid={dataTestId}
-        whileHover={!disabled && !loading ? { scale: 1.02 } : {}}
-        whileTap={!disabled && !loading ? { scale: 0.98 } : {}}
+        whileHover={!prefersReducedMotion && !disabled && !loading ? { scale: 1.02 } : {}}
+        whileTap={!prefersReducedMotion && !disabled && !loading ? { scale: 0.98 } : {}}
         title={tooltip}
       >
         {/* Background gradient animation */}
-        <motion.div
-          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
-          initial={{ x: '-100%' }}
-          animate={{ x: isHovered ? '100%' : '-100%' }}
-          transition={{ duration: 0.6, ease: 'easeInOut' }}
-        />
+        {!prefersReducedMotion && (
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+            initial={{ x: '-100%' }}
+            animate={{ x: isHovered ? '100%' : '-100%' }}
+            transition={{ duration: 0.6, ease: 'easeInOut' }}
+          />
+        )}
 
         {/* Content */}
         <div className="relative z-10 flex items-center justify-center gap-2">
           {icon && iconPosition === 'left' && (
             <motion.div
-              initial={{ scale: 0, rotate: -180 }}
+              initial={prefersReducedMotion ? { scale: 1, rotate: 0 } : { scale: 0, rotate: -180 }}
               animate={{ scale: 1, rotate: 0 }}
-              transition={{ duration: 0.3 }}
+              transition={prefersReducedMotion ? { duration: 0.01 } : { duration: 0.3 }}
             >
               {icon}
             </motion.div>
@@ -270,9 +279,9 @@ export const MagicalButton: React.FC<MagicalButtonProps> = ({
           
           {icon && iconPosition === 'right' && (
             <motion.div
-              initial={{ scale: 0, rotate: 180 }}
+              initial={prefersReducedMotion ? { scale: 1, rotate: 0 } : { scale: 0, rotate: 180 }}
               animate={{ scale: 1, rotate: 0 }}
-              transition={{ duration: 0.3 }}
+              transition={prefersReducedMotion ? { duration: 0.01 } : { duration: 0.3 }}
             >
               {icon}
             </motion.div>
@@ -288,8 +297,8 @@ export const MagicalButton: React.FC<MagicalButtonProps> = ({
           >
             <motion.div
               className="w-6 h-6 border-2 border-white border-t-transparent rounded-full"
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              animate={prefersReducedMotion ? { rotate: 0 } : { rotate: 360 }}
+              transition={prefersReducedMotion ? {} : { duration: 1, repeat: Infinity, ease: "linear" }}
             />
           </motion.div>
         )}
@@ -303,10 +312,10 @@ export const MagicalButton: React.FC<MagicalButtonProps> = ({
       </motion.button>
 
       {/* Sparkles on hover */}
-      {sparkleOnHover && isHovered && !disabled && !loading && (
+      {!prefersReducedMotion && sparkleOnHover && isHovered && !disabled && !loading && (
         <div className="absolute inset-0 pointer-events-none">
           {Array.from({ length: 6 }, (_, i) => (
-            <Sparkle key={i} delay={i * 0.1} />
+            <Sparkle key={i} delay={i * 0.1} prefersReducedMotion={prefersReducedMotion} />
           ))}
         </div>
       )}

@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useReducedMotion } from '../../hooks/useReducedMotion';
 
 interface AnimatedCardProps {
   children: React.ReactNode;
@@ -36,6 +37,8 @@ export const AnimatedCard: React.FC<AnimatedCardProps> = ({
   disabled = false,
   variant = 'default'
 }) => {
+  const prefersReducedMotion = useReducedMotion();
+  
   // Apply variant-specific styling
   const getVariantClasses = () => {
     switch (variant) {
@@ -62,7 +65,7 @@ export const AnimatedCard: React.FC<AnimatedCardProps> = ({
   `.trim();
 
   const hoverVariants = {
-    hover: {
+    hover: prefersReducedMotion ? {} : {
       scale: scale ? 1.05 : 1,
       rotate: rotate ? 5 : 0,
       y: bounce ? -5 : 0,
@@ -72,7 +75,7 @@ export const AnimatedCard: React.FC<AnimatedCardProps> = ({
         ease: 'easeInOut' as const
       }
     },
-    tap: {
+    tap: prefersReducedMotion ? {} : {
       scale: 0.95,
       transition: {
         duration: 0.1
@@ -81,7 +84,12 @@ export const AnimatedCard: React.FC<AnimatedCardProps> = ({
   };
 
   const animationVariants = {
-    initial: {
+    initial: prefersReducedMotion ? {
+      opacity: 1,
+      y: 0,
+      scale: 1,
+      rotate: 0
+    } : {
       opacity: 0,
       y: 20,
       scale: 0.9,
@@ -92,13 +100,19 @@ export const AnimatedCard: React.FC<AnimatedCardProps> = ({
       y: 0,
       scale: 1,
       rotate: 0,
-      transition: {
+      transition: prefersReducedMotion ? {
+        duration: 0.01
+      } : {
         duration: duration,
         delay: delay,
         ease: 'easeOut' as const
       }
     },
-    exit: {
+    exit: prefersReducedMotion ? {
+      opacity: 1,
+      y: 0,
+      scale: 1
+    } : {
       opacity: 0,
       y: -20,
       scale: 0.9,
@@ -116,13 +130,13 @@ export const AnimatedCard: React.FC<AnimatedCardProps> = ({
         initial="initial"
         animate="animate"
         exit="exit"
-        whileHover={hover && !disabled ? "hover" : undefined}
-        whileTap={!disabled ? "tap" : undefined}
+        whileHover={!prefersReducedMotion && hover && !disabled ? "hover" : undefined}
+        whileTap={!prefersReducedMotion && !disabled ? "tap" : undefined}
         onClick={!disabled ? onClick : undefined}
         layout
       >
         {/* Glow effect */}
-        {glow && (
+        {glow && !prefersReducedMotion && (
           <motion.div
             className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-400/20 to-purple-400/20 opacity-0"
             animate={{
@@ -142,7 +156,7 @@ export const AnimatedCard: React.FC<AnimatedCardProps> = ({
         </div>
 
         {/* Shimmer effect on hover */}
-        {hover && !disabled && (
+        {!prefersReducedMotion && hover && !disabled && (
           <motion.div
             className="absolute inset-0 rounded-xl bg-gradient-to-r from-transparent via-white/20 to-transparent"
             initial={{ x: '-100%' }}

@@ -144,7 +144,7 @@ class AnalyticsService {
         .select({
           studentId: studentProgress.studentId,
           completionRate: sql<number>`(COUNT(CASE WHEN ${studentProgress.completed} THEN 1 END) * 100.0 / COUNT(*))`,
-          averageScore: avg(sql<number>`CAST(${studentProgress.score} AS DECIMAL(5,2))`),
+          averageScore: avg(studentProgress.averageScore),
           totalXP: sum(sql<number>`COALESCE(SUM(10), 0)`)
         })
         .from(studentProgress)
@@ -176,7 +176,7 @@ class AnalyticsService {
         .select({
           subject: exercises.matiere,
           exerciseCount: count(),
-          averageScore: avg(sql<number>`CAST(${studentProgress.score} AS DECIMAL(5,2))`),
+          averageScore: avg(studentProgress.averageScore),
           completionRate: sql<number>`(COUNT(CASE WHEN ${studentProgress.completed} THEN 1 END) * 100.0 / COUNT(*))`
         })
         .from(exercises)
@@ -189,7 +189,7 @@ class AnalyticsService {
         .select({
           difficulty: exercises.difficulte,
           exerciseCount: count(),
-          averageScore: avg(sql<number>`CAST(${studentProgress.score} AS DECIMAL(5,2))`),
+          averageScore: avg(studentProgress.averageScore),
           averageTime: avg(studentProgress.timeSpent)
         })
         .from(exercises)
@@ -218,7 +218,7 @@ class AnalyticsService {
         }))
       };
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error getting learning insights:', error);
       throw new Error('Failed to generate learning insights');
     }
@@ -244,7 +244,7 @@ class AnalyticsService {
         .select({
           totalExercises: count(),
           completedExercises: sql<number>`COUNT(CASE WHEN ${studentProgress.completed} THEN 1 END)`,
-          averageScore: avg(sql<number>`CAST(${studentProgress.score} AS DECIMAL(5,2))`),
+          averageScore: avg(studentProgress.averageScore),
           totalTimeSpent: sum(studentProgress.timeSpent),
           xpEarned: sum(sql<number>`COALESCE(SUM(10), 0)`)
         })
@@ -293,24 +293,24 @@ class AnalyticsService {
         currentStreak,
         competenceProgress: competenceProgress.map(cp => ({
           competenceCode: cp.competenceCode,
-          masteryLevel: cp.masteryLevel,
-          progress: (cp.successfulAttempts / Math.max(cp.totalAttempts, 1)) * 100
+          masteryLevel: cp.masteryLevel || 'decouverte',
+          progress: ((cp.successfulAttempts || 0) / Math.max(cp.totalAttempts || 1, 1)) * 100
         })),
         recentActivity: recentActivity.map(activity => ({
           date: activity.date,
-          exercisesCompleted: activity.completedExercises,
-          timeSpent: activity.totalTimeMinutes,
+          exercisesCompleted: activity.completedExercises || 0,
+          timeSpent: activity.totalTimeMinutes || 0,
           averageScore: Number(activity.averageScore) || 0
         })),
         achievements: achievements.map(achievement => ({
           title: achievement.title,
           description: achievement.description || '',
           earnedAt: achievement.unlockedAt,
-          xpReward: achievement.xpReward
+          xpReward: achievement.xpReward || 0
         }))
       };
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error getting student analytics:', { studentId, error });
       throw new Error('Failed to generate student analytics');
     }
@@ -329,7 +329,7 @@ class AnalyticsService {
           totalExercises: count(),
           completedExercises: sql<number>`COUNT(CASE WHEN ${studentProgress.completed} THEN 1 END)`,
           totalTimeMinutes: sql<number>`ROUND(SUM(${studentProgress.timeSpent}) / 60)`,
-          averageScore: avg(sql<number>`CAST(${studentProgress.score} AS DECIMAL(5,2))`),
+          averageScore: avg(studentProgress.averageScore),
           competencesWorked: sql<number>`COUNT(DISTINCT ${studentProgress.competenceCode})`
         })
         .from(studentProgress)
@@ -354,7 +354,7 @@ class AnalyticsService {
 
       logger.debug('Daily analytics updated', { studentId, date: dateStr });
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error updating daily analytics:', { studentId, date, error });
     }
   }
@@ -387,7 +387,7 @@ class AnalyticsService {
       }
 
       return streak;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error calculating streak:', { studentId, error });
       return 0;
     }

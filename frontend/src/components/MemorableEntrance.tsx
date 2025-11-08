@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, memo } from 'react';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { useGPUPerformance } from '../hooks/useGPUPerformance';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 import MicroInteraction from './MicroInteractions';
 
 // =============================================================================
@@ -29,6 +30,8 @@ const MemorableEntrance = memo<MemorableEntranceProps>(({
     getOptimalParticleCount 
   } = useGPUPerformance();
   
+  const prefersReducedMotion = useReducedMotion();
+  
   const logoControls = useAnimation();
   const textControls = useAnimation();
   const containerControls = useAnimation();
@@ -36,18 +39,19 @@ const MemorableEntrance = memo<MemorableEntranceProps>(({
   // Memorable entrance sequence
   const playEntranceSequence = useCallback(async () => {
     const baseDuration = getOptimalDuration(1000);
+    const animationDuration = prefersReducedMotion ? 0.1 : baseDuration / 1000;
     
     // Phase 1: Logo reveal with magical entrance
     setPhase('logo');
-    setShowParticles(true);
+    setShowParticles(!prefersReducedMotion);
     
     await logoControls.start({
-      scale: [0, 1.2, 1],
-      rotate: [0, 360, 0],
+      scale: prefersReducedMotion ? [1, 1] : [0, 1.2, 1],
+      rotate: prefersReducedMotion ? 0 : [0, 360, 0],
       opacity: [0, 1, 1],
       transition: { 
-        duration: baseDuration / 1000,
-        type: "spring", 
+        duration: animationDuration,
+        type: prefersReducedMotion ? "tween" : "spring", 
         damping: 20 
       }
     });
@@ -56,12 +60,12 @@ const MemorableEntrance = memo<MemorableEntranceProps>(({
     setTimeout(() => setPhase('greeting'), baseDuration * 0.3);
     
     await textControls.start({
-      y: [50, 0],
+      y: prefersReducedMotion ? 0 : [50, 0],
       opacity: [0, 1],
-      scale: [0.8, 1],
+      scale: prefersReducedMotion ? 1 : [0.8, 1],
       transition: { 
-        duration: baseDuration / 1000 * 0.8,
-        type: "spring"
+        duration: prefersReducedMotion ? 0.1 : baseDuration / 1000 * 0.8,
+        type: prefersReducedMotion ? "tween" : "spring"
       }
     });
 
@@ -86,15 +90,16 @@ const MemorableEntrance = memo<MemorableEntranceProps>(({
     textControls, 
     getOptimalDuration, 
     achievements.length, 
-    onComplete
+    onComplete,
+    prefersReducedMotion
   ]);
 
   useEffect(() => {
     playEntranceSequence();
   }, [playEntranceSequence]);
 
-  // Dynamic particles based on performance
-  const particleCount = getOptimalParticleCount(25);
+  // Dynamic particles based on performance and accessibility
+  const particleCount = prefersReducedMotion ? 0 : getOptimalParticleCount(25);
   
   const MagicalParticles = memo(() => (
     <div className="absolute inset-0 pointer-events-none overflow-hidden">

@@ -349,7 +349,7 @@ class CapacityPlanningService {
       this.isInitialized = true;
       logger.info('Capacity planning service initialized successfully');
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to initialize capacity planning service', { error });
       throw error;
     }
@@ -360,7 +360,7 @@ class CapacityPlanningService {
     const metricsTask = cron.schedule('0 6 * * *', async () => { // 6 AM daily
       try {
         await this.collectCurrentMetrics();
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('Daily metrics collection failed', { error });
       }
     }, { name: 'capacity-metrics' });
@@ -369,7 +369,7 @@ class CapacityPlanningService {
     const planningTask = cron.schedule('0 8 * * 1', async () => { // 8 AM Mondays
       try {
         await this.generateCapacityPlan('90d');
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('Weekly capacity planning failed', { error });
       }
     }, { name: 'capacity-planning' });
@@ -378,7 +378,7 @@ class CapacityPlanningService {
     const comprehensiveTask = cron.schedule('0 9 1 * *', async () => { // 9 AM 1st of month
       try {
         await this.generateCapacityPlan('365d');
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('Monthly capacity planning failed', { error });
       }
     }, { name: 'comprehensive-planning' });
@@ -447,7 +447,7 @@ class CapacityPlanningService {
 
       return metrics;
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to collect capacity metrics', { error });
       throw error;
     }
@@ -516,7 +516,7 @@ class CapacityPlanningService {
         avgResponseTime = monitorMetrics.queries.averageQueryTime;
         throughput = monitorMetrics.queries.queriesPerSecond;
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.debug('Could not get monitoring metrics', { error });
     }
 
@@ -663,7 +663,7 @@ class CapacityPlanningService {
 
       return plan;
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to generate capacity plan', { error });
       throw error;
     }
@@ -839,7 +839,7 @@ class CapacityPlanningService {
     if (this.metrics.length === 0) return scenarios;
     
     const current = this.metrics[this.metrics.length - 1];
-    const timeframes = { '30d': 'in30Days', '90d': 'in90Days', '180d': 'in180Days', '365d': 'in365Days' };
+    const timeframes: Record<string, keyof GrowthProjection['projectedValues']> = { '30d': 'in30Days', '90d': 'in90Days', '180d': 'in180Days', '365d': 'in365Days' };
     const timeframe = timeframes[timeHorizon] as keyof GrowthProjection['projectedValues'];
     
     // Conservative scenario (50% of projected growth)

@@ -5,7 +5,7 @@
  */
 
 import { WebSocket } from 'ws';
-import { db } from '../db/setup.js';
+import { db } from '../db/connection.js';
 import { students, studentProgress, studentAchievements, parentStudentRelations, parents } from '../db/schema.js';
 import { eq, and, desc, gte } from 'drizzle-orm';
 
@@ -206,7 +206,7 @@ class RealTimeProgressService {
       ));
 
     const totalAttempts = competencyProgress.length;
-    const correctAttempts = competencyProgress.filter(p => p.score && parseFloat(p.score.toString()) >= 80).length;
+    const correctAttempts = competencyProgress.filter(p => p.averageScore && parseFloat(p.averageScore.toString()) >= 80).length;
     const masteryRatio = correctAttempts / totalAttempts;
 
     if (totalAttempts >= 3 && masteryRatio >= 0.8) {

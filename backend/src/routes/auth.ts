@@ -31,8 +31,8 @@ interface AuthenticatedRequest extends FastifyRequest {
 }
 
 export default async function authRoutes(fastify: FastifyInstance) {
-  // Use dependency injection instead of manual instantiation
-  const authService = serviceContainer.get('authService') || new AuthService();
+  // Use direct instantiation - serviceContainer doesn't have authService registered
+  const authService = new AuthService();
   const sevenDaysInSeconds = 7 * 24 * 60 * 60;
 
   // Secure login endpoint
@@ -63,7 +63,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
       const accessToken = await reply.jwtSign(accessTokenPayload, {
         expiresIn: '15m',
       });
-      const refreshToken = await (fastify as { refreshJwt: { sign: (payload: any, options: any) => Promise<string> } }).refreshJwt.sign(
+      const refreshToken = await (fastify as unknown as { refreshJwt: { sign: (payload: any, options: any) => Promise<string> } }).refreshJwt.sign(
         refreshTokenPayload,
         { expiresIn: '7d' }
       );
@@ -129,7 +129,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
       const accessToken = await reply.jwtSign(accessTokenPayload, {
         expiresIn: '15m',
       });
-      const refreshToken = await (fastify as { refreshJwt: { sign: (payload: any, options: any) => Promise<string> } }).refreshJwt.sign(
+      const refreshToken = await (fastify as unknown as { refreshJwt: { sign: (payload: any, options: any) => Promise<string> } }).refreshJwt.sign(
         refreshTokenPayload,
         { expiresIn: '7d' }
       );
@@ -185,7 +185,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
             .send({ error: 'Token de rafraîchissement manquant' });
         }
 
-        const decoded = await (fastify as { refreshJwt: { verify: (token: string) => Promise<any> } }).refreshJwt.verify(refreshToken);
+        const decoded = await (fastify as unknown as { refreshJwt: { verify: (token: string) => Promise<any> } }).refreshJwt.verify(refreshToken);
 
         // CRITICAL: Check if token is revoked
         const isRevoked = await fastify.cache.get(`denylist:${decoded.jti}`);
@@ -219,7 +219,8 @@ export default async function authRoutes(fastify: FastifyInstance) {
           message: 'Token rafraîchi avec succès',
         });
       } catch (error) {
-        fastify.log.error('Token refresh error:', error);
+        const err = error instanceof Error ? error : new Error(String(error));
+        fastify.log.error({ err }, 'Token refresh error');
         // Clear potentially invalid cookie
         reply.clearCookie('refresh-token', { path: '/api/auth/refresh' });
         return reply
@@ -254,7 +255,8 @@ export default async function authRoutes(fastify: FastifyInstance) {
         // await emailService.sendPasswordReset(email, resetToken);
 
       } catch (error) {
-        fastify.log.error('Password reset error:', error);
+        const err = error instanceof Error ? error : new Error(String(error));
+        fastify.log.error({ err }, 'Password reset error');
         // Do not send 500 to prevent leaking information
         return reply.send({
           success: true,
@@ -297,7 +299,8 @@ export default async function authRoutes(fastify: FastifyInstance) {
         });
 
       } catch (error) {
-        fastify.log.error('Password reset confirm error:', error);
+        const err = error instanceof Error ? error : new Error(String(error));
+        fastify.log.error({ err }, 'Password reset confirm error');
         return reply.status(500).send({
           success: false,
           error: {
@@ -320,7 +323,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
         const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
 
         // 🔥 CRITICAL: Blacklist token - prevents token reuse
-        const cacheService = serviceContainer.get('cacheService');
+        const cacheService = (serviceContainer as any).get?.('cacheService');
         if (cacheService) {
           await cacheService.set(
             `blacklist:${decoded.jti || decoded.studentId}`,
@@ -329,7 +332,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
           );
         }
 
-        fastify.log.info('User logged out securely', { userId: decoded.studentId });
+        fastify.log.info({ userId: decoded.studentId || decoded.id }, 'User logged out securely');
 
         // Clear cookies
         reply
@@ -341,7 +344,8 @@ export default async function authRoutes(fastify: FastifyInstance) {
           message: 'Déconnexion réussie'
         };
       } catch (error) {
-        fastify.log.error('Logout failed', { error });
+        const err = error instanceof Error ? error : new Error(String(error));
+        fastify.log.error({ err }, 'Logout failed');
         return reply.status(500).send({
           success: false,
           error: 'Échec de la déconnexion'
@@ -350,71 +354,6 @@ export default async function authRoutes(fastify: FastifyInstance) {
     },
   });
 
-  // 🔄 SECURE TOKEN REFRESH - With blacklist checking
-  fastify.post('/refresh', {
-    handler: async (request: FastifyRequest, reply: FastifyReply) => {
-      try {
-        const { refreshToken } = request.body as any;
-
-        if (!refreshToken) {
-          return reply.status(400).send({
-            success: false,
-            error: 'Token de rafraîchissement requis'
-          });
-        }
-
-        const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET!) as any;
-
-        // 🔥 CRITICAL: Check blacklist - prevents token reuse after logout
-        const cacheService = serviceContainer.get('cacheService');
-        if (cacheService) {
-          const isBlacklisted = await cacheService.get(`blacklist:${decoded.jti || decoded.studentId}`);
-
-          if (isBlacklisted) {
-            return reply.status(401).send({
-              success: false,
-              error: 'Token révoqué'
-            });
-          }
-        }
-
-        // Generate new tokens with JTI for security
-        const newJti = crypto.randomUUID();
-        const accessToken = jwt.sign(
-          {
-            studentId: decoded.studentId,
-            email: decoded.email,
-            role: decoded.role || 'student',
-            jti: newJti
-          },
-          process.env.JWT_SECRET!,
-          { expiresIn: '15m' }
-        );
-
-        const newRefreshToken = jwt.sign(
-          {
-            studentId: decoded.studentId,
-            email: decoded.email,
-            jti: crypto.randomUUID()
-          },
-          process.env.JWT_REFRESH_SECRET!,
-          { expiresIn: '7d' }
-        );
-
-        return {
-          success: true,
-          accessToken,
-          refreshToken: newRefreshToken
-        };
-      } catch (error) {
-        fastify.log.error('Token refresh failed', { error });
-        return reply.status(401).send({
-          success: false,
-          error: 'Token invalide ou expiré'
-        });
-      }
-    },
-  });
 
   // Get current user info
   fastify.get('/me', {
@@ -458,7 +397,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
 
   // This endpoint seems for testing/verification, should be secured or removed
   fastify.get('/verify/:studentId', {
-    preHandler: [(fastify as { authenticateAdmin: any }).authenticateAdmin], // Secure this endpoint
+    preHandler: [(fastify as unknown as { authenticateAdmin: any }).authenticateAdmin], // Secure this endpoint
     handler: async (
       request: FastifyRequest<{ Params: { studentId: string } }>,
       reply: FastifyReply

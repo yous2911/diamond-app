@@ -5,6 +5,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { apiService, Student, ApiResponse } from '../services/api';
+import { errorLogger } from '../services/errorLogger';
 
 // =============================================================================
 // TYPE DEFINITIONS
@@ -69,7 +70,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setStudent(response.data.student);
         setError(null);
       } else {
-        setError(response.error?.message || 'Login failed');
+        const errorMessage = response.error?.message || 'Login failed';
+        setError(errorMessage);
+        
+        // Log authentication error
+        errorLogger.logAuthError(
+          new Error(errorMessage),
+          'login',
+          {
+            credentials: { ...credentials, password: '[REDACTED]' }
+          }
+        );
+        
         console.error('❌ Login failed:', response.error);
       }
 
@@ -77,6 +89,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
       setError(errorMessage);
+      
+      // Log authentication error
+      errorLogger.logAuthError(
+        error instanceof Error ? error : new Error(errorMessage),
+        'login',
+        {
+          credentials: { ...credentials, password: '[REDACTED]' }
+        }
+      );
+      
       console.error('❌ Login error:', error);
       
       return {

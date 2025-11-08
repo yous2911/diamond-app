@@ -1,5 +1,6 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { motion } from 'framer-motion';
+import { errorLogger, ErrorSeverity, ErrorCategory } from '../services/errorLogger';
 
 // =============================================================================
 // 🛡️ ERROR BOUNDARY COMPONENT - GRACEFUL ERROR HANDLING
@@ -29,6 +30,16 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    // Log error to error logger service
+    errorLogger.logRenderingError(
+      error,
+      'ErrorBoundary',
+      {
+        componentStack: errorInfo.componentStack,
+        errorBoundary: true
+      }
+    );
+
     // Log error to console in development
     if (process.env.NODE_ENV === 'development') {
       console.error('🚨 Error Boundary caught an error:', error, errorInfo);

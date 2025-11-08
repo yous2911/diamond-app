@@ -1,7 +1,7 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import * as prometheus from 'prom-client';
 import * as Sentry from '@sentry/node';
-import { logger } from '../jobs/logger';
+import { logger } from '../utils/logger';
 
 // Prometheus metrics
 const register = prometheus.register;
@@ -109,8 +109,9 @@ export const initializeMonitoring = (app: FastifyInstance) => {
     try {
       reply.header('Content-Type', register.contentType);
       return await register.metrics();
-    } catch (error) {
-      logger.error('Error generating metrics', { error });
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('Error generating metrics', { error: err });
       return reply.status(500).send({ error: 'Failed to generate metrics' });
     }
   });
@@ -133,8 +134,9 @@ export const initializeMonitoring = (app: FastifyInstance) => {
       };
       
       reply.status(statusCode).send(enhancedHealth);
-    } catch (error) {
-      logger.error('Health check failed', { error });
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('Health check failed', { error: err });
       reply.status(503).send({
         status: 'unhealthy',
         error: 'Health check failed',
@@ -154,8 +156,9 @@ export const initializeMonitoring = (app: FastifyInstance) => {
       const statusCode = health.status === 'healthy' ? 200 : 503;
       
       reply.status(statusCode).send(health);
-    } catch (error) {
-      logger.error('Detailed health check failed', { error });
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('Detailed health check failed', { error: err });
       reply.status(503).send({
         status: 'unhealthy',
         error: 'Detailed health check failed',
@@ -171,8 +174,9 @@ export const initializeMonitoring = (app: FastifyInstance) => {
       const statusCode = readiness.ready ? 200 : 503;
       
       reply.status(statusCode).send(readiness);
-    } catch (error) {
-      logger.error('Readiness check failed', { error });
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('Readiness check failed', { error: err });
       reply.status(503).send({
         ready: false,
         error: 'Readiness check failed',
@@ -382,8 +386,9 @@ const checkDatabaseHealth = async () => {
     // This would use your actual database connection
     // await db.raw('SELECT 1');
     return { status: 'healthy', message: 'Database connection successful' };
-  } catch (error) {
-    logger.error('Database health check failed', { error });
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.error('Database health check failed', { error: err });
     const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
     return { status: 'unhealthy', message: 'Database connection failed', error: errorMessage };
   }
@@ -395,8 +400,9 @@ const checkRedisHealth = async () => {
     // This would use your actual Redis connection
     // await redis.ping();
     return { status: 'healthy', message: 'Redis connection successful' };
-  } catch (error) {
-    logger.error('Redis health check failed', { error });
+  } catch (error: unknown) {
+    const err = error instanceof Error ? error : new Error(String(error));
+    logger.error('Redis health check failed', { error: err });
     const errorMessage = error instanceof Error ? error.message : 'Unknown Redis error';
     return { status: 'unhealthy', message: 'Redis connection failed', error: errorMessage };
   }
@@ -431,7 +437,7 @@ const checkDatabaseHealthDetailed = async () => {
   try {
     // Add more detailed database checks
     return { status: 'healthy', message: 'Database detailed check passed' };
-  } catch (error) {
+  } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
     return { status: 'unhealthy', message: 'Database detailed check failed', error: errorMessage };
   }
@@ -441,7 +447,7 @@ const checkRedisHealthDetailed = async () => {
   try {
     // Add more detailed Redis checks
     return { status: 'healthy', message: 'Redis detailed check passed' };
-  } catch (error) {
+  } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown Redis error';
     return { status: 'unhealthy', message: 'Redis detailed check failed', error: errorMessage };
   }
@@ -488,7 +494,7 @@ const checkDatabaseReadiness = async () => {
   try {
     // Check if database is ready to accept connections
     return { ready: true, message: 'Database ready' };
-  } catch (error) {
+  } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
     return { ready: false, message: 'Database not ready', error: errorMessage };
   }
@@ -498,7 +504,7 @@ const checkRedisReadiness = async () => {
   try {
     // Check if Redis is ready to accept connections
     return { ready: true, message: 'Redis ready' };
-  } catch (error) {
+  } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown Redis error';
     return { ready: false, message: 'Redis not ready', error: errorMessage };
   }

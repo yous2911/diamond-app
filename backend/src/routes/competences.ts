@@ -12,7 +12,7 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
   // GET /api/competences - List all competencies with optional filtering
   fastify.get('/', { schema: GetCompetenciesSchema }, async (request, reply) => {
     try {
-      const filters = request.query;
+      const filters = request.query as any;
       const cacheKey = competenciesService.generateListCacheKey(filters);
 
       let competencies;
@@ -26,7 +26,7 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
         fastify.log.warn('Redis cache miss or error');
       }
 
-      competencies = await competenciesService.getCompetenciesList(fastify.db, filters);
+      competencies = await competenciesService.getCompetenciesList(fastify.db, filters as any);
 
       try {
         await fastify.redis.setex(cacheKey, 300, JSON.stringify(competencies));
@@ -47,7 +47,7 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
   // GET /api/competences/:code - Get specific competency with JSON content
   fastify.get('/:code', { schema: GetCompetenceSchema }, async (request, reply) => {
     try {
-      const { code } = request.params;
+      const { code } = request.params as { code: string };
       const cacheKey = competenciesService.generateItemCacheKey(code);
 
       let competency;
@@ -89,15 +89,15 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
   // GET /api/competences/:code/prerequisites - Get prerequisites for a competence
   fastify.get('/:code/prerequisites', { schema: GetPrerequisitesSchema }, async (request, reply) => {
     try {
-      const { code: competenceCode } = request.params;
-      const { includePrerequisiteDetails, studentId, depth } = request.query;
+      const { code: competenceCode } = request.params as { code: string };
+      const { includePrerequisiteDetails, studentId, depth } = request.query as { includePrerequisiteDetails?: boolean; studentId?: number; depth?: number };
 
       const prerequisites = await databaseService.getCompetencePrerequisites(competenceCode, {
         includeDetails: includePrerequisiteDetails,
         depth
       });
 
-      let studentProgressData = null;
+      let studentProgressData: any[] | null = null;
       if (studentId) {
         const prerequisiteCodes = prerequisites.map(p => p.prerequisiteCode);
         studentProgressData = await databaseService.getStudentCompetenceProgress(studentId, {
@@ -107,7 +107,7 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
 
       const prerequisiteTree = await Promise.all(prerequisites.map(async prereq => {
         const studentProgress = studentProgressData?.find(
-          sp => sp.competenceCode === prereq.prerequisiteCode
+          (sp: any) => sp.competenceCode === prereq.prerequisiteCode
         );
         
         return {
@@ -132,13 +132,13 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
         requiredPrerequisites: prerequisites.length,
         studentReadiness: studentProgressData ? {
           requiredMet: prerequisites.every(p => {
-              const progress = studentProgressData.find(sp => sp.competenceCode === p.prerequisiteCode);
+              const progress = studentProgressData?.find((sp: any) => sp.competenceCode === p.prerequisiteCode);
               return progress && progress.masteryLevel !== 'decouverte';
             }),
           readinessScore: calculateReadinessScore(prerequisites, studentProgressData),
           blockers: prerequisites
             .filter(p => {
-              const progress = studentProgressData.find(sp => sp.competenceCode === p.prerequisiteCode);
+              const progress = studentProgressData?.find((sp: any) => sp.competenceCode === p.prerequisiteCode);
               return !progress || progress.masteryLevel === 'decouverte';
             })
             .map(p => p.prerequisiteCode)
@@ -160,7 +160,8 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
       });
 
     } catch (error) {
-      fastify.log.error('Error getting competence prerequisites:', error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      fastify.log.error({ err }, 'Error getting competence prerequisites');
       reply.status(500).send({
         success: false,
         error: {
@@ -174,8 +175,8 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
   // GET /api/competences/:code/progress - Get competence progress
   fastify.get('/:code/progress', { schema: GetProgressSchema }, async (request, reply) => {
     try {
-      const { code: competenceCode } = request.params;
-      const { studentId } = request.query;
+      const { code: competenceCode } = request.params as { code: string };
+      const { studentId } = request.query as { studentId?: number };
 
       if (studentId) {
         const progress = await databaseService.getStudentCompetenceProgress(studentId, {
@@ -201,7 +202,7 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
             studentId,
             progress: {
               masteryLevel: studentProgress.masteryLevel,
-              currentScore: parseFloat(studentProgress.currentScore.toString()),
+              currentScore: parseFloat((studentProgress.currentScore ?? 0).toString()),
               totalAttempts: studentProgress.totalAttempts,
               successfulAttempts: studentProgress.successfulAttempts,
               lastAttemptAt: studentProgress.lastAttemptAt,
@@ -221,7 +222,8 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
       }
 
     } catch (error) {
-      fastify.log.error('Error getting competence progress:', error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      fastify.log.error({ err }, 'Error getting competence progress');
       reply.status(500).send({
         success: false,
         error: {
@@ -246,17 +248,19 @@ function calculateReadinessScore(prerequisites: any[], studentProgress: any[]): 
     const weight = parseFloat((prereq.weight || 1).toString());
     totalWeight += weight;
 
-    const progress = studentProgress.find(p => p.competenceCode === prereq.prerequisiteCode);
+    const progress = studentProgress.find((p: any) => p.competenceCode === prereq.prerequisiteCode);
     if (progress && progress.masteryLevel !== 'decouverte') {
       // Give partial credit based on mastery level
-      const masteryMultiplier = {
+      const masteryLevel = progress.masteryLevel as 'decouverte' | 'apprentissage' | 'maitrise' | 'expertise';
+      const masteryMultiplier: Record<string, number> = {
         'decouverte': 0,
         'apprentissage': 0.4,
         'maitrise': 0.8,
         'expertise': 1.0
-      }[progress.masteryLevel] || 0;
+      };
+      const multiplier = masteryMultiplier[masteryLevel] || 0;
 
-      achievedWeight += weight * masteryMultiplier;
+      achievedWeight += weight * multiplier;
     }
   });
 

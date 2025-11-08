@@ -35,9 +35,14 @@ const ExercisePage = () => {
   // Local state for showing XP after exercise completion
   const [showXPAfterCompletion, setShowXPAfterCompletion] = useState(false);
 
-  const studentData = useMemo(() => ({
-    stars: statsData?.stats?.totalCorrectAnswers || 0,
-  }), [statsData]);
+  const studentData = useMemo(() => {
+    const stars = typeof statsData?.stats?.totalCorrectAnswers === 'number' 
+      ? statsData.stats.totalCorrectAnswers 
+      : 0;
+    return {
+      stars,
+    };
+  }, [statsData]);
 
   const handleAnswerSubmit = async (answer: any, isCorrect: boolean) => {
     const startTime = Date.now();
@@ -75,7 +80,9 @@ const ExercisePage = () => {
             streakAfter: (student?.currentStreak || 0) + 1
           }, {
             totalExercises: statsData?.stats?.totalExercises || 1,
-            correctAnswers: (statsData?.stats?.totalCorrectAnswers || 0) + 1,
+            correctAnswers: (typeof statsData?.stats?.totalCorrectAnswers === 'number' 
+              ? statsData.stats.totalCorrectAnswers 
+              : 0) + 1,
             currentLevel: level,
             previousLevel: Math.max(1, level - (submission.masteryLevelChanged ? 1 : 0)) // Detect level ups properly
           });

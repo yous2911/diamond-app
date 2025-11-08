@@ -125,7 +125,7 @@ class SlowQueryOptimizerService {
       this.isInitialized = true;
       logger.info('Slow query optimizer service initialized successfully');
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to initialize slow query optimizer service', { error });
       throw error;
     }
@@ -152,7 +152,7 @@ class SlowQueryOptimizerService {
         threshold: this.config.logThreshold,
         logQueriesNotUsingIndexes: true
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.warn('Could not configure MySQL slow query logging - insufficient privileges', { error });
     }
   }
@@ -207,8 +207,9 @@ class SlowQueryOptimizerService {
       logger.info('Loaded existing slow queries from performance schema', {
         queriesLoaded: this.queryStats.size
       });
-    } catch (error) {
-      logger.debug('Could not load from performance schema', { error: error.message });
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.debug('Could not load from performance schema', { error: err.message });
     }
   }
 
@@ -234,8 +235,9 @@ class SlowQueryOptimizerService {
       `);
 
       logger.info('Performance Schema enabled for statement monitoring');
-    } catch (error) {
-      logger.debug('Could not configure Performance Schema', { error: error.message });
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.debug('Could not configure Performance Schema', { error: err.message });
     }
   }
 
@@ -244,7 +246,7 @@ class SlowQueryOptimizerService {
     const analyzeTask = cron.schedule('0 * * * *', async () => {
       try {
         await this.analyzeSlowQueries();
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('Scheduled slow query analysis failed', { error });
       }
     }, { name: 'slow-query-analysis' });
@@ -253,7 +255,7 @@ class SlowQueryOptimizerService {
     const optimizeTask = cron.schedule('0 2 * * *', async () => {
       try {
         await this.generateOptimizationRecommendations();
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('Scheduled optimization generation failed', { error });
       }
     }, { name: 'optimization-recommendations' });
@@ -262,7 +264,7 @@ class SlowQueryOptimizerService {
     const cleanupTask = cron.schedule('0 1 * * *', async () => {
       try {
         await this.cleanupOldLogs();
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('Scheduled log cleanup failed', { error });
       }
     }, { name: 'log-cleanup' });
@@ -300,7 +302,7 @@ class SlowQueryOptimizerService {
         recentQueries: recentQueries.length
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Slow query analysis failed', { error });
     }
   }
@@ -342,7 +344,7 @@ class SlowQueryOptimizerService {
         thread: row.THREAD_ID,
         fingerprint: this.generateQueryFingerprint(row.query)
       }));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.debug('Could not get recent slow queries from performance schema', { error });
       return [];
     }
@@ -467,7 +469,7 @@ class SlowQueryOptimizerService {
         indexRecommendations: this.indexRecommendations.length
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to generate optimization recommendations', { error });
     }
   }
@@ -483,10 +485,11 @@ class SlowQueryOptimizerService {
       if (optimization) {
         this.optimizations.set(stats.queryFingerprint, optimization);
       }
-    } catch (error) {
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
       logger.debug('Could not analyze query for optimization', {
         fingerprint: stats.queryFingerprint,
-        error: error.message
+        error: err.message
       });
     }
   }
@@ -495,7 +498,7 @@ class SlowQueryOptimizerService {
     try {
       const [rows] = await connection.execute(`EXPLAIN FORMAT=JSON ${query}`);
       return rows as any[];
-    } catch (error) {
+    } catch (error: unknown) {
       // Try simple EXPLAIN if JSON format fails
       try {
         const [rows] = await connection.execute(`EXPLAIN ${query}`);
@@ -613,7 +616,7 @@ class SlowQueryOptimizerService {
           this.indexRecommendations.push(recommendation);
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to generate index recommendations', { error });
     }
   }
@@ -645,7 +648,7 @@ class SlowQueryOptimizerService {
           };
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.debug('Could not analyze index needs for table', { tableName, error });
     }
     
@@ -699,7 +702,7 @@ class SlowQueryOptimizerService {
           retentionDays: this.config.retentionDays
         });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to cleanup old logs', { error });
     }
   }

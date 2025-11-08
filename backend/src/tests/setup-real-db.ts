@@ -4,6 +4,8 @@ import { build } from '../app-test';
 import type { FastifyInstance } from 'fastify';
 import { connectDatabase, disconnectDatabase, getDatabase } from '../db/connection';
 import { setupDatabase, resetDatabase } from '../db/setup';
+import { students, competences, exercises } from '../db/schema';
+import { sql } from 'drizzle-orm';
 
 // Load test environment variables
 process.env.NODE_ENV = 'test';
@@ -105,8 +107,8 @@ export const testUtils = {
 
     for (const table of tables) {
       try {
-        await db.execute(`DELETE FROM ${table} WHERE 1=1`);
-      } catch (error) {
+        await db.execute(sql.raw(`DELETE FROM ${table} WHERE 1=1`));
+      } catch (error: unknown) {
         // Table might not exist, continue
         console.log(`Warning: Could not clean table ${table}:`, error);
       }
@@ -117,7 +119,7 @@ export const testUtils = {
     const db = getDatabase();
 
     // Insert test student
-    await db.insert({
+    await db.insert(students).values({
       id: 1,
       prenom: 'Alice',
       nom: 'Test',
@@ -130,10 +132,10 @@ export const testUtils = {
       mascotteType: 'dragon',
       createdAt: new Date(),
       updatedAt: new Date()
-    }).into('students');
+    });
 
     // Insert test competency
-    await db.insert({
+    await db.insert(competences).values({
       id: 1,
       code: 'CP.MA.NUM.01',
       titre: 'Compter jusqu\'à 10',
@@ -141,25 +143,27 @@ export const testUtils = {
       niveau: 'CP',
       matiere: 'mathematiques',
       createdAt: new Date()
-    }).into('competencies');
+    });
 
     // Insert test exercise
-    await db.insert({
+    await db.insert(exercises).values({
       id: 1,
       titre: 'Compter les pommes',
-      competenceId: 1,
+      competenceCode: 'CP.MA.NUM.01',
       niveau: 'CP',
-      type: 'qcm',
+      matiere: 'mathematiques',
       difficulte: 'decouverte',
-      pointsMax: 10,
+      typeExercice: 'qcm',
+      pointsRecompense: 10,
       tempsEstime: 120,
       contenu: JSON.stringify({
         question: 'Combien y a-t-il de pommes ?',
         reponses: ['5', '6', '7', '8'],
         bonneReponse: 1
       }),
+      solution: JSON.stringify({ bonneReponse: 1 }),
       createdAt: new Date()
-    }).into('exercises');
+    });
   }
 };
 

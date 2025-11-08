@@ -160,6 +160,7 @@ export const useGPUPerformance = () => {
     };
     
     animationFrameRef.current = requestAnimationFrame(measure);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Remove performanceTier from dependencies to prevent infinite loop
 
   // Cleanup on unmount

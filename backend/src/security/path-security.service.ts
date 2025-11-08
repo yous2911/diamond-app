@@ -30,7 +30,7 @@ export class PathSecurityService {
     this.securityConfig = {
       // Only allow access to these base directories
       allowedDirectories: [
-        path.resolve(config.upload?.path || './uploads'),
+        path.resolve(config.UPLOAD_PATH || './uploads'),
         path.resolve('./public'),
         path.resolve('./temp'),
         path.resolve('./cache')

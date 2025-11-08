@@ -119,10 +119,11 @@ export class FileSecurityService {
 
       result.isValid = result.errors.length === 0;
 
-    } catch (error) {
-      logger.error('File validation error:', error);
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('File validation error:', err);
       result.isValid = false;
-      result.errors.push(`Validation failed: ${error.message}`);
+      result.errors.push(`Validation failed: ${err.message}`);
     }
 
     return result;
@@ -171,10 +172,11 @@ export class FileSecurityService {
         quarantined: result.quarantined
       });
 
-    } catch (error) {
-      logger.error('Security scan failed:', error);
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('Security scan failed:', err);
       result.isClean = false;
-      result.threats.push(`Scan error: ${error.message}`);
+      result.threats.push(`Scan error: ${err.message}`);
     }
 
     return result;
@@ -275,8 +277,9 @@ export class FileSecurityService {
           result.threats.push(`Dangerous file type disguised as ${fileType.mime}`);
         }
       }
-    } catch (error) {
-      logger.warn('Metadata scanning failed:', error.message);
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.warn('Metadata scanning failed:', err.message);
     }
   }
 
@@ -376,8 +379,9 @@ export class FileSecurityService {
       if (!this.isMimeTypeAllowed(declaredMimeType)) {
         result.errors.push(`Declared MIME type not allowed: ${declaredMimeType}`);
       }
-    } catch (error) {
-      result.warnings.push(`MIME type detection failed: ${error.message}`);
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      result.warnings.push(`MIME type detection failed: ${err.message}`);
     }
   }
 
@@ -423,8 +427,9 @@ export class FileSecurityService {
       if (!hasValidHeader) {
         result.warnings.push('Invalid image file header');
       }
-    } catch (error) {
-      result.warnings.push(`Image metadata validation failed: ${error.message}`);
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      result.warnings.push(`Image metadata validation failed: ${err.message}`);
     }
   }
 

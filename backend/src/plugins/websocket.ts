@@ -1,6 +1,10 @@
 // src/plugins/websocket.ts
+// DISABLED: Plugin désactivé temporairement - @fastify/websocket incompatible avec Fastify 4.x
+// TODO: Réactiver quand @fastify/websocket sera compatible avec Fastify 4.x
+
+/*
 import fp from 'fastify-plugin';
-import websocket from '@fastify/websocket';
+// import websocket from '@fastify/websocket'; // DISABLED
 import { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import { config } from '../config/config';
 import { realTimeProgressService } from '../services/real-time-progress.service.js';
@@ -106,3 +110,17 @@ const websocketPlugin: FastifyPluginAsync = async (fastify: FastifyInstance) => 
 };
 
 export default fp(websocketPlugin, { name: 'websocket' });
+*/
+
+// Plugin désactivé - export vide pour éviter les erreurs d'import
+import fp from 'fastify-plugin';
+
+const websocketPlugin = fp(async () => {
+  // Plugin désactivé - ne fait rien
+  // @fastify/websocket n'est pas installé car incompatible avec Fastify 4.x
+}, {
+  name: 'websocket',
+  dependencies: []
+});
+
+export default websocketPlugin;

@@ -176,10 +176,11 @@ const fileUploadPlugin: FastifyPluginAsync<FileUploadPluginOptions> = async (
             timestamp: new Date().toISOString()
           });
         } catch (error) {
-          logger.error('Upload health check failed:', error);
+          const err = error instanceof Error ? error : new Error(String(error));
+          logger.error('Upload health check failed:', err);
           return reply.status(500).send({
             status: 'unhealthy',
-            error: error.message,
+            error: err.message,
             timestamp: new Date().toISOString()
           });
         }
@@ -214,10 +215,11 @@ const fileUploadPlugin: FastifyPluginAsync<FileUploadPluginOptions> = async (
             ...result
           });
         } catch (error) {
-          logger.error('Storage optimization failed:', error);
+          const err = error instanceof Error ? error : new Error(String(error));
+          logger.error('Storage optimization failed:', err);
           return reply.status(500).send({
             success: false,
-            error: error.message
+            error: err.message
           });
         }
       }

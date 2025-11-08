@@ -184,6 +184,7 @@ export class GDPRRightsService {
         },
         ipAddress: validatedData.ipAddress,
         userAgent: validatedData.userAgent,
+        timestamp: new Date(),
         severity: 'medium',
         category: 'compliance'
       });
@@ -262,6 +263,7 @@ export class GDPRRightsService {
           verificationToken,
           verifiedAt: new Date()
         },
+        timestamp: new Date(),
         severity: 'medium',
         category: 'compliance'
       });
@@ -322,6 +324,7 @@ export class GDPRRightsService {
           dataExported: true,
           portfolioSections: Object.keys(portfolio.personalData)
         },
+        timestamp: new Date(),
         severity: 'high',
         category: 'data_access'
       });
@@ -401,6 +404,7 @@ export class GDPRRightsService {
           retainedData: erasureAnalysis.retainedData,
           reason
         },
+        timestamp: new Date(),
         severity: 'high',
         category: 'compliance'
       });
@@ -478,6 +482,7 @@ export class GDPRRightsService {
           exportFile,
           dataCategories: Object.keys(portableData)
         },
+        timestamp: new Date(),
         severity: 'medium',
         category: 'data_access'
       });

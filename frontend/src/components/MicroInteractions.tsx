@@ -1,6 +1,7 @@
 import React, { useCallback, useState, memo } from 'react';
 import { motion, useAnimation, useTransform, useMotionValue } from 'framer-motion';
 import { useGPUPerformance } from '../hooks/useGPUPerformance';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 
 // =============================================================================
 // 🎭 WORLD-CLASS MICRO-INTERACTIONS SYSTEM
@@ -83,8 +84,11 @@ const MicroInteraction = memo<MicroInteractionProps>(({
     performanceTier 
   } = useGPUPerformance();
   
+  const prefersReducedMotion = useReducedMotion();
+  
   const [isHovered, setIsHovered] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [isPressed, setIsPressed] = useState(false);
   
   // Motion values for smooth interactions
@@ -103,10 +107,20 @@ const MicroInteraction = memo<MicroInteractionProps>(({
   const controls = useAnimation();
   const rippleControls = useAnimation();
   
-  // Adaptive animation configurations based on performance
+  // Adaptive animation configurations based on performance and accessibility
   const getAnimationConfig = useCallback(() => {
     const baseDuration = 0.3;
     const duration = getOptimalDuration(baseDuration * 1000) / 1000;
+    
+    // If reduced motion, return minimal animations
+    if (prefersReducedMotion) {
+      return {
+        scale: { hover: 1, press: 1 },
+        rotate: { hover: 0, press: 0 },
+        duration: 0.1,
+        spring: { damping: 20, stiffness: 300 }
+      };
+    }
     
     const configs = {
       subtle: {
@@ -136,7 +150,7 @@ const MicroInteraction = memo<MicroInteractionProps>(({
     };
     
     return configs[intensity];
-  }, [intensity, getOptimalDuration]);
+  }, [intensity, getOptimalDuration, prefersReducedMotion]);
 
   // Mouse enter handler with performance-adaptive effects
   const handleMouseEnter = useCallback((e: React.MouseEvent) => {
@@ -349,13 +363,13 @@ const MicroInteraction = memo<MicroInteractionProps>(({
       onClick={handleClick}
       style={{
         scale,
-        rotateX: shouldUseComplexAnimation() && intensity === 'epic' ? rotateX : 0,
-        rotateY: shouldUseComplexAnimation() && intensity === 'epic' ? rotateY : 0,
+        rotateX: !prefersReducedMotion && shouldUseComplexAnimation() && intensity === 'epic' ? rotateX : 0,
+        rotateY: !prefersReducedMotion && shouldUseComplexAnimation() && intensity === 'epic' ? rotateY : 0,
         filter: canUseBlur ? `brightness(${brightness.get()}) blur(${blur.get()}px)` : `brightness(${brightness.get()})`,
         transformStyle: 'preserve-3d',
         transformOrigin: 'center center'
       }}
-      whileTap={performanceTier !== 'low' ? { scale: getAnimationConfig().scale.press } : undefined}
+      whileTap={!prefersReducedMotion && performanceTier !== 'low' ? { scale: getAnimationConfig().scale.press } : undefined}
     >
       {/* Content */}
       {children}

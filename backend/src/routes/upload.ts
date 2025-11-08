@@ -3,7 +3,7 @@ import { MultipartFile } from '@fastify/multipart';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import { z } from 'zod';
-import { config } from '../config/config';
+import { config, uploadConfig } from '../config/config';
 import { FileUploadService } from '../services/file-upload.service';
 import { ImageProcessingService } from '../services/image-processing.service';
 import { StorageService } from '../services/storage.service';
@@ -99,7 +99,7 @@ const uploadRoutes: FastifyPluginAsync = async (fastify) => {
     userId?: string
   ): Promise<string | null> => {
     // Use comprehensive path security validation
-    const validation = pathSecurity.validatePath(filename, config.upload?.path);
+    const validation = pathSecurity.validatePath(filename, uploadConfig.uploadPath);
 
     if (!validation.isValid) {
       logger.warn('Path security validation failed', {
@@ -148,6 +148,7 @@ const uploadRoutes: FastifyPluginAsync = async (fastify) => {
    */
   fastify.post('/upload', {
     preValidation: fastify.csrfProtection,
+    preHandler: [fastify.authenticate],
     schema: {
       description: 'Upload files with metadata and processing options',
       tags: ['Upload'],
@@ -186,11 +187,11 @@ const uploadRoutes: FastifyPluginAsync = async (fastify) => {
           }
         }
       }
-    },
-    preHandler: [fastify.authenticate], // Require authentication
-    handler: async (request: FastifyRequest<{ Body: Record<string, { value?: string; data?: Buffer; filename?: string; mimetype?: string; encoding?: string }> }>, reply) => {
-        const studentId = (request as AuthenticatedRequest).user?.studentId || 'anonymous';
-        const data = request.body;
+    }
+  }, async (request, reply) => {
+        const user = (request as AuthenticatedRequest).user;
+        const studentId = user?.studentId ? String(user.studentId) : 'anonymous';
+        const data = request.body as Record<string, { value?: string; data?: Buffer; filename?: string; mimetype?: string; encoding?: string }>;
 
         const params: UploadParams = uploadParamsSchema.parse({
             category: data.category?.value,
@@ -242,7 +243,6 @@ const uploadRoutes: FastifyPluginAsync = async (fastify) => {
 
         const result = await uploadService.processUpload(uploadRequest, studentId);
         return reply.send(result);
-    }
   });
 
   /**
@@ -285,22 +285,22 @@ const uploadRoutes: FastifyPluginAsync = async (fastify) => {
         }
       }
     },
-    preHandler: [fastify.authenticate],
-    handler: async (request: FastifyRequest<{ Params: FileIdParams }>, reply) => {
-      const { fileId } = request.params;
+    preHandler: [fastify.authenticate]
+  }, async (request, reply) => {
+      const { fileId } = request.params as { fileId: string };
       const file = await uploadService.getFile(fileId);
 
       if (!file) {
         return reply.status(404).send({ success: false, error: 'File not found' });
       }
 
-      const studentId = (request as AuthenticatedRequest).user?.studentId;
+      const user = (request as AuthenticatedRequest).user;
+      const studentId = user?.studentId ? String(user.studentId) : undefined;
       if (!file.isPublic && file.uploadedBy !== studentId) {
         return reply.status(403).send({ success: false, error: 'Access denied' });
       }
 
       return reply.send({ success: true, file });
-    },
   });
 
   /**
@@ -318,11 +318,12 @@ const uploadRoutes: FastifyPluginAsync = async (fastify) => {
         }
       }
     },
-    preHandler: [fastify.authenticate],
-    handler: async (request: FastifyRequest<{ Params: FileIdParams, Querystring: DownloadQuery }>, reply) => {
-        const { fileId } = request.params;
-        const { variant } = request.query;
-        const studentId = (request as AuthenticatedRequest).user?.studentId;
+    preHandler: [fastify.authenticate]
+  }, async (request, reply) => {
+        const { fileId } = request.params as { fileId: string };
+        const { variant } = request.query as { variant?: 'original' | 'thumbnail' | 'small' | 'medium' | 'large' };
+        const user = (request as AuthenticatedRequest).user;
+        const studentId = user?.studentId ? String(user.studentId) : undefined;
 
         const file = await uploadService.getFile(fileId);
         if (!file) {
@@ -353,7 +354,6 @@ const uploadRoutes: FastifyPluginAsync = async (fastify) => {
         reply.header('Content-Disposition', `attachment; filename="${filename}"`);
         const stream = fastify.fs.createReadStream(resolvedPath);
         return reply.send(stream);
-    },
   });
 
   /**
@@ -375,10 +375,11 @@ const uploadRoutes: FastifyPluginAsync = async (fastify) => {
         }
       }
     },
-    preHandler: [fastify.authenticate],
-    handler: async (request: FastifyRequest<{ Params: FileIdParams }>, reply) => {
-      const { fileId } = request.params;
-      const studentId = (request as AuthenticatedRequest).user?.studentId;
+    preHandler: [fastify.authenticate]
+  }, async (request, reply) => {
+      const { fileId } = request.params as { fileId: string };
+      const user = (request as AuthenticatedRequest).user;
+      const studentId = user?.studentId ? String(user.studentId) : undefined;
 
       if (!studentId) {
         return reply.status(401).send({ success: false, error: 'Authentication required' });
@@ -390,7 +391,6 @@ const uploadRoutes: FastifyPluginAsync = async (fastify) => {
       } else {
         return reply.status(404).send({ success: false, error: 'File not found or access denied' });
       }
-    },
   });
 
   /**
@@ -436,16 +436,17 @@ const uploadRoutes: FastifyPluginAsync = async (fastify) => {
         }
       }
     },
-    preHandler: [fastify.authenticate],
-    handler: async (request: FastifyRequest<{ Querystring: ListFilesQuery }>, reply) => {
-        const studentId = (request as AuthenticatedRequest).user?.studentId;
+    preHandler: [fastify.authenticate]
+  }, async (request, reply) => {
+        const user = (request as AuthenticatedRequest).user;
+        const studentId = user?.studentId ? String(user.studentId) : undefined;
         if (!studentId) {
             return reply.status(401).send({ success: false, error: 'Authentication required' });
         }
         
-        const result = await storageService.getFilesByUser(studentId, request.query);
+        const query = request.query as { category?: FileCategory; limit?: number; offset?: number; includePublic?: boolean };
+        const result = await storageService.getFilesByUser(studentId, query);
         return reply.send({ success: true, ...result });
-    },
   });
 
   /**
@@ -479,8 +480,8 @@ const uploadRoutes: FastifyPluginAsync = async (fastify) => {
         }
       }
     },
-    preHandler: [fastify.authenticate],
-    handler: async (request, reply) => {
+    preHandler: [fastify.authenticate]
+  }, async (request, reply) => {
       try {
         const stats = await uploadService.getStorageStats();
 
@@ -489,14 +490,13 @@ const uploadRoutes: FastifyPluginAsync = async (fastify) => {
           stats
         });
 
-      } catch (error) {
-        logger.error('Error getting storage stats:', error);
+      } catch (error: unknown) {
+        logger.error('Error getting storage stats:', { error });
         return reply.status(500).send({
           success: false,
           error: 'Internal server error'
         });
       }
-    }
   });
 
   /**
@@ -527,11 +527,12 @@ const uploadRoutes: FastifyPluginAsync = async (fastify) => {
         required: ['operation']
       }
     },
-    preHandler: [fastify.authenticate],
-    handler: async (request: FastifyRequest<{ Params: FileIdParams, Body: ProcessImageBody }>, reply) => {
-        const { fileId } = request.params;
-        const { operation, options = {} } = request.body;
-        const studentId = (request as AuthenticatedRequest).user?.studentId;
+    preHandler: [fastify.authenticate]
+  }, async (request, reply) => {
+        const { fileId } = request.params as { fileId: string };
+        const { operation, options } = request.body as { operation: 'resize' | 'compress' | 'convert' | 'watermark'; options?: { width?: number; height?: number; quality?: number; format?: 'jpeg' | 'png' | 'webp' | 'avif'; watermarkText?: string; watermarkPosition?: 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'center' } };
+        const user = (request as AuthenticatedRequest).user;
+        const studentId = user?.studentId ? String(user.studentId) : undefined;
 
         const file = await uploadService.getFile(fileId);
         if (!file) {
@@ -551,30 +552,39 @@ const uploadRoutes: FastifyPluginAsync = async (fastify) => {
             return reply.status(400).send({ success: false, error: 'Invalid or non-existent file path for processing' });
         }
 
+        const opts = options || {};
         let result: Buffer;
         switch (operation) {
             case 'resize':
-                result = await imageProcessor.resizeImage(resolvedPath, { width: options.width, height: options.height, fit: 'cover' }, { quality: options.quality });
+                if (!opts.width || !opts.height) {
+                    return reply.status(400).send({ success: false, error: 'Width and height are required for resize operation' });
+                }
+                result = await imageProcessor.resizeImage(resolvedPath, { width: opts.width, height: opts.height, fit: 'cover' }, { quality: opts.quality || 80 });
                 break;
             case 'compress':
-                result = await imageProcessor.compressImage(resolvedPath, { quality: options.quality });
+                result = await imageProcessor.compressImage(resolvedPath, { quality: opts.quality || 80 });
                 break;
             case 'convert':
-                result = await imageProcessor.convertFormat(resolvedPath, options.format || 'webp', options.quality);
+                result = await imageProcessor.convertFormat(resolvedPath, opts.format || 'webp', opts.quality || 80);
                 break;
             case 'watermark':
-                 if (!options.watermarkText) {
+                 if (!opts.watermarkText) {
                     return reply.status(400).send({ success: false, error: 'Watermark text is required' });
                 }
-                result = await imageProcessor.addWatermark(resolvedPath, { text: options.watermarkText, position: options.watermarkPosition });
+                result = await imageProcessor.addWatermark(resolvedPath, { 
+                  text: opts.watermarkText, 
+                  position: opts.watermarkPosition || 'center',
+                  opacity: 0.7,
+                  fontSize: 24,
+                  color: '#FFFFFF'
+                });
                 break;
             default:
                 return reply.status(400).send({ success: false, error: 'Invalid operation' });
         }
 
-        reply.header('Content-Type', `image/${options.format || 'jpeg'}`);
+        reply.header('Content-Type', `image/${opts.format || 'jpeg'}`);
         return reply.send(result);
-    },
   });
 
   /**
@@ -608,8 +618,8 @@ const uploadRoutes: FastifyPluginAsync = async (fastify) => {
           }
         }
       }
-    },
-    handler: async (request, reply) => {
+    }
+  }, async (request, reply) => {
       return reply.send({
         success: true,
         supportedTypes: {
@@ -623,7 +633,6 @@ const uploadRoutes: FastifyPluginAsync = async (fastify) => {
           maxFilesPerUpload: DEFAULT_UPLOAD_CONFIG.maxFilesPerUpload
         }
       });
-    }
   });
 };
 

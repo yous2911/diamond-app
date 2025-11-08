@@ -1,0 +1,274 @@
+"use strict";
+// src/server.ts - Mise à jour pour inclure les routes GDPR
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const fastify_1 = __importDefault(require("fastify"));
+const config_1 = require("./config/config");
+const connection_1 = require("./db/connection");
+const crypto_1 = require("crypto");
+// Build Fastify instance
+const fastify = (0, fastify_1.default)({
+    logger: {
+        level: process.env.LOG_LEVEL || 'info',
+        transport: process.env.NODE_ENV !== 'production' ? {
+            target: 'pino-pretty',
+            options: {
+                colorize: true,
+                translateTime: 'HH:MM:ss Z',
+                ignore: 'pid,hostname',
+            },
+        } : undefined,
+    },
+    trustProxy: true,
+    bodyLimit: 10485760, // 10MB
+    keepAliveTimeout: 5000,
+    requestIdHeader: 'x-request-id',
+    genReqId: () => (0, crypto_1.randomUUID)(),
+});
+const logger = fastify.log;
+// Register plugins
+async function registerPlugins() {
+    try {
+        logger.info('🔧 Starting plugin registration...');
+        // Core plugins
+        logger.info('📦 Registering database plugin...');
+        await fastify.register(Promise.resolve().then(() => __importStar(require('./plugins/database'))));
+        logger.info('📦 Registering redis plugin...');
+        await fastify.register(Promise.resolve().then(() => __importStar(require('./plugins/redis'))));
+        logger.info('📦 Registering cors plugin...');
+        await fastify.register(Promise.resolve().then(() => __importStar(require('./plugins/cors'))));
+        logger.info('📦 Registering security plugin (Helmet)...');
+        await fastify.register(Promise.resolve().then(() => __importStar(require('./plugins/security'))));
+        // Temporarily disabled for demo - requires @fastify/cookie to be registered first
+        // logger.info('📦 Registering CSRF protection plugin...');
+        // await fastify.register(import('./plugins/csrf'));
+        // Temporarily disabled for demo - requires authenticateAdmin decorator
+        // logger.info('📦 Registering rate-limit plugin...');
+        // await fastify.register(import('./plugins/rate-limit'));
+        logger.info('📦 Registering auth plugin...');
+        await fastify.register(Promise.resolve().then(() => __importStar(require('./plugins/auth'))));
+        // Temporarily disabled for demo - package version incompatible with Fastify 4.x
+        // logger.info('📦 Registering websocket plugin...');
+        // await fastify.register(import('./plugins/websocket'));
+        logger.info('📦 Registering swagger plugin...');
+        await fastify.register(Promise.resolve().then(() => __importStar(require('./plugins/swagger'))));
+        logger.info('📦 Registering monitoring plugin...');
+        await fastify.register(Promise.resolve().then(() => __importStar(require('./plugins/monitoring'))));
+        logger.info('📦 Registering validation plugin...');
+        await fastify.register(Promise.resolve().then(() => __importStar(require('./plugins/validation'))));
+        logger.info('🔧 Plugin registration completed successfully');
+        // Routes - ORDRE IMPORTANT: GDPR en premier pour la sécurité
+        logger.info('🛣️ Starting route registration...');
+        logger.info('🛣️ Registering GDPR routes...');
+        await fastify.register(Promise.resolve().then(() => __importStar(require('./routes/gdpr'))), { prefix: '/api/gdpr' });
+        logger.info('🛣️ Registering auth routes...');
+        await fastify.register(Promise.resolve().then(() => __importStar(require('./routes/auth'))), { prefix: '/api/auth' });
+        logger.info('🛣️ Registering students routes...');
+        await fastify.register(Promise.resolve().then(() => __importStar(require('./routes/students'))), { prefix: '/api/students' });
+        logger.info('🛣️ Registering exercises routes...');
+        await fastify.register(Promise.resolve().then(() => __importStar(require('./routes/exercises'))), { prefix: '/api/exercises' });
+        logger.info('🛣️ Registering legacy exercises routes...');
+        await fastify.register(Promise.resolve().then(() => __importStar(require('./routes/legacy-exercises'))), { prefix: '/api/legacy-exercises' });
+        logger.info('🛣️ Registering curriculum routes...');
+        await fastify.register(Promise.resolve().then(() => __importStar(require('./routes/curriculum'))), { prefix: '/api/curriculum' });
+        logger.info('🛣️ Registering competences routes...');
+        await fastify.register(Promise.resolve().then(() => __importStar(require('./routes/competences'))), { prefix: '/api/competences' });
+        logger.info('🛣️ Registering mascots routes...');
+        await fastify.register(Promise.resolve().then(() => __importStar(require('./routes/mascots'))), { prefix: '/api/mascots' });
+        logger.info('🛣️ Registering wardrobe routes...');
+        await fastify.register(Promise.resolve().then(() => __importStar(require('./routes/wardrobe'))), { prefix: '/api/wardrobe' });
+        logger.info('🛣️ Registering sessions routes...');
+        await fastify.register(Promise.resolve().then(() => __importStar(require('./routes/sessions'))), { prefix: '/api/sessions' });
+        logger.info('🛣️ Registering analytics routes...');
+        await fastify.register(Promise.resolve().then(() => __importStar(require('./routes/analytics'))), { prefix: '/api/analytics' });
+        logger.info('🛣️ Registering monitoring routes...');
+        await fastify.register(Promise.resolve().then(() => __importStar(require('./routes/monitoring'))), { prefix: '/api/monitoring' });
+        logger.info('🛣️ Registering leaderboard routes...');
+        await fastify.register(Promise.resolve().then(() => __importStar(require('./routes/leaderboard'))));
+        logger.info('🛣️ Registering parent authentication routes...');
+        await fastify.register(Promise.resolve().then(() => __importStar(require('./routes/parent-auth'))), { prefix: '/api/parent-auth' });
+        logger.info('🛣️ Registering parent dashboard routes...');
+        await fastify.register(Promise.resolve().then(() => __importStar(require('./routes/parents'))), { prefix: '/api/parents' });
+        logger.info('🛣️ Registering gamification routes...');
+        await fastify.register(Promise.resolve().then(() => __importStar(require('./routes/gamification'))));
+        logger.info('🛣️ Route registration completed successfully');
+        // Health check route
+        fastify.get('/api/health', async () => {
+            const uptime = process.uptime();
+            const memory = process.memoryUsage();
+            return {
+                status: 'healthy',
+                timestamp: new Date().toISOString(),
+                uptime: Math.floor(uptime),
+                environment: config_1.config.NODE_ENV,
+                version: '2.0.0',
+                features: {
+                    gdpr: config_1.config.GDPR_ENABLED,
+                    redis: fastify.redis ? 'connected' : 'disconnected',
+                    database: 'connected',
+                },
+                memory: {
+                    used: Math.round(memory.heapUsed / 1024 / 1024),
+                    total: Math.round(memory.heapTotal / 1024 / 1024),
+                    external: Math.round(memory.external / 1024 / 1024)
+                },
+                compliance: {
+                    gdpr: 'enabled',
+                    dataProtection: 'active',
+                    auditTrail: 'logging',
+                },
+            };
+        });
+        // Root endpoint
+        fastify.get('/', async () => {
+            return {
+                success: true,
+                message: 'RevEd Kids Fastify API',
+                version: '2.0.0',
+                environment: config_1.config.NODE_ENV,
+                timestamp: new Date().toISOString(),
+                endpoints: {
+                    health: '/api/health',
+                    auth: '/api/auth',
+                    students: '/api/students',
+                    exercises: '/api/exercises',
+                    competences: '/api/competences',
+                    mascots: '/api/mascots',
+                    wardrobe: '/api/wardrobe',
+                    sessions: '/api/sessions',
+                    analytics: '/api/analytics',
+                    monitoring: '/api/monitoring',
+                    leaderboards: '/api/leaderboards',
+                    badges: '/api/badges',
+                    competitions: '/api/competitions',
+                    parents: '/api/parents',
+                    gdpr: '/api/gdpr',
+                    docs: '/docs',
+                    enhanced: {
+                        competenceProgress: '/api/students/:id/competence-progress',
+                        recordProgress: '/api/students/:id/record-progress',
+                        prerequisites: '/api/competences/:code/prerequisites',
+                        achievements: '/api/students/:id/achievements',
+                        dailyProgress: '/api/analytics/daily-progress',
+                        mascotEmotion: '/api/mascots/:studentId/emotion',
+                        wardrobeUnlock: '/api/wardrobe/:studentId/unlock/:itemId',
+                        sessionStart: '/api/sessions/start',
+                        sessionEnd: '/api/sessions/:id/end'
+                    }
+                },
+                compliance: {
+                    gdpr: config_1.config.GDPR_ENABLED ? 'active' : 'disabled',
+                    dataRetention: 'configured',
+                    consentManagement: 'available',
+                }
+            };
+        });
+        logger.info('✅ All routes registered successfully');
+        // Register global error handler
+        logger.info('📦 Registering global error handler...');
+        const { errorHandler } = await Promise.resolve().then(() => __importStar(require('./middleware/errorHandler.middleware')));
+        fastify.setErrorHandler(errorHandler);
+        logger.info('🔧 Error handler registered successfully');
+    }
+    catch (error) {
+        logger.error({ err: error }, '❌ Error during plugin/route registration:');
+        throw error;
+    }
+}
+// Graceful shutdown
+async function gracefulShutdown() {
+    try {
+        logger.info('Starting graceful shutdown...');
+        // Close Fastify server (this also closes all plugins)
+        await fastify.close();
+        // Close database connections
+        await (0, connection_1.disconnectDatabase)();
+        logger.info('Graceful shutdown completed');
+        process.exit(0);
+    }
+    catch (error) {
+        logger.error({ err: error }, 'Error during graceful shutdown:');
+        process.exit(1);
+    }
+}
+// Start server
+async function start() {
+    try {
+        logger.info('🚀 Starting RevEd Kids Fastify server...');
+        // Validate environment first
+        if (!config_1.config.JWT_SECRET || !config_1.config.ENCRYPTION_KEY) {
+            throw new Error('Missing required environment variables: JWT_SECRET, ENCRYPTION_KEY');
+        }
+        logger.info('✅ Environment variables validated');
+        // Test database connection
+        logger.info('🔗 Testing database connection...');
+        await (0, connection_1.connectDatabase)();
+        logger.info('Database connected successfully');
+        // Register all plugins and routes
+        logger.info('🔧 Registering plugins and routes...');
+        await registerPlugins();
+        // Start the server
+        logger.info(`🌐 Starting server on port ${config_1.config.PORT}`);
+        const address = await fastify.listen({
+            port: config_1.config.PORT,
+            host: config_1.config.HOST
+        });
+        logger.info(`🚀 RevEd Kids Fastify server started successfully!`);
+        logger.info(`📍 Server listening on: ${address}`);
+        logger.info(`🌍 Environment: ${config_1.config.NODE_ENV}`);
+        logger.info(`📊 Health Check: ${address}/api/health`);
+        logger.info(`📚 API Documentation: ${address}/docs`);
+        logger.info(`🔒 GDPR Compliance: ${config_1.config.GDPR_ENABLED ? 'ENABLED' : 'DISABLED'}`);
+        logger.info(`🛡️ GDPR Endpoints: ${address}/api/gdpr`);
+    }
+    catch (error) {
+        // Use console.error here as the logger might not be initialized
+        console.error('❌ Error starting server:', error);
+        console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+        process.exit(1);
+    }
+}
+// Handle process signals
+process.on('SIGTERM', gracefulShutdown);
+process.on('SIGINT', gracefulShutdown);
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+    // Use console.error here as the logger might be in an unknown state
+    console.error('❌ Uncaught Exception:', error);
+    console.error('❌ Error stack:', error.stack);
+    gracefulShutdown();
+});
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+    // Use console.error here as the logger might be in an unknown state
+    console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+    gracefulShutdown();
+});
+// Start the server
+start();
+exports.default = fastify;

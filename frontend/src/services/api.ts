@@ -39,19 +39,34 @@ export interface Competence {
   xpReward: number;
 }
 
+export interface ExerciseOptions {
+  choices?: string[];
+  dragItems?: Array<{ id: string; label: string }>;
+  dropZones?: Array<{ id: string; label: string }>;
+  [key: string]: unknown;
+}
+
+export interface ExerciseMetadata {
+  subject?: string;
+  explanation?: string;
+  imageUrl?: string;
+  audioUrl?: string;
+  [key: string]: unknown;
+}
+
 export interface Exercise {
   id: number;
   competenceId: number;
   type: 'CALCUL' | 'MENTAL_MATH' | 'DRAG_DROP' | 'QCM' | 'LECTURE' | 'ECRITURE' | 'COMPREHENSION';
   question: string;
   correctAnswer: string;
-  options?: any;
+  options?: ExerciseOptions;
   difficultyLevel: number;
   xpReward: number;
   timeLimit: number;
   hintsAvailable: number;
-  hintsText?: any;
-  metadata?: any;
+  hintsText?: string | string[];
+  metadata?: ExerciseMetadata;
 }
 
 export interface StudentProgress {
@@ -70,6 +85,13 @@ export interface StudentProgress {
   totalTimeSpent: number;
 }
 
+export interface MascotAIState {
+  personality?: string;
+  preferences?: Record<string, unknown>;
+  interactionHistory?: Array<{ timestamp: string; type: string; data?: unknown }>;
+  [key: string]: unknown;
+}
+
 export interface Mascot {
   id: number;
   studentId: number;
@@ -77,7 +99,7 @@ export interface Mascot {
   currentEmotion: 'idle' | 'happy' | 'thinking' | 'celebrating' | 'oops';
   xpLevel: number;
   equippedItems: number[];
-  aiState: any;
+  aiState?: MascotAIState;
   lastInteraction?: string;
 }
 
@@ -123,15 +145,113 @@ export interface Achievement {
   completedAt?: string;
 }
 
+export interface ApiErrorDetails {
+  field?: string;
+  value?: unknown;
+  constraint?: string;
+  [key: string]: unknown;
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   data?: T;
   error?: {
     message: string;
     code: string;
-    details?: any;
+    details?: ApiErrorDetails;
   };
   message?: string;
+}
+
+// =============================================================================
+// ADDITIONAL TYPE DEFINITIONS
+// =============================================================================
+
+export interface ProgressSummary {
+  totalCompetences: number;
+  masteredCompetences: number;
+  inProgressCompetences: number;
+  notStartedCompetences: number;
+  averageSuccessRate: number;
+  totalTimeSpent: number;
+}
+
+export interface StudentStats {
+  totalXp: number;
+  currentLevel: number;
+  currentStreak: number;
+  totalExercisesCompleted: number;
+  totalTimeSpent: number;
+  averageScore: number;
+  achievementsUnlocked: number;
+  [key: string]: unknown;
+}
+
+export interface AchievementSummary {
+  total: number;
+  completed: number;
+  inProgress: number;
+  byCategory: Record<string, number>;
+  byDifficulty: Record<string, number>;
+}
+
+export interface ExerciseAttempt {
+  id: number;
+  exerciseId: number;
+  studentId: number;
+  score: number;
+  completed: boolean;
+  timeSpent: number;
+  attempts: number;
+  hintsUsed: number;
+  submittedAt: string;
+  [key: string]: unknown;
+}
+
+export interface ProgressRecord {
+  competenceId: number;
+  competenceCode: string;
+  currentLevel: number;
+  successRate: number;
+  attemptsCount: number;
+  masteryLevel: 'not_started' | 'learning' | 'mastered' | 'failed';
+  [key: string]: unknown;
+}
+
+export interface SessionMetrics {
+  duration: number;
+  exercisesCompleted: number;
+  xpGained: number;
+  averageScore: number;
+  timeSpent: number;
+  focusScore?: number;
+  [key: string]: unknown;
+}
+
+export interface ExerciseResult {
+  exerciseId: number;
+  score: number;
+  completed: boolean;
+  timeSpent: number;
+  submittedAt: string;
+  [key: string]: unknown;
+}
+
+export interface SessionSummary {
+  totalSessions: number;
+  totalTimeSpent: number;
+  totalXpGained: number;
+  averageScore: number;
+  [key: string]: unknown;
+}
+
+export interface PaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
 }
 
 // =============================================================================
@@ -170,6 +290,21 @@ class APIService {
       const data = await response.json();
 
       if (!response.ok) {
+        // Log API error
+        const error = new Error(data.error?.message || `HTTP Error ${response.status}`);
+        if (typeof window !== 'undefined') {
+          const { errorLogger } = await import('./errorLogger');
+          errorLogger.logApiError(
+            error,
+            endpoint,
+            response.status,
+            {
+              method: options.method || 'GET',
+              requestBody: options.body
+            }
+          );
+        }
+
         return {
           success: false,
           error: {
@@ -182,13 +317,23 @@ class APIService {
 
       return data;
     } catch (error) {
+      // Log network error
+      if (typeof window !== 'undefined') {
+        const { errorLogger } = await import('./errorLogger');
+        errorLogger.logNetworkError(
+          error instanceof Error ? error : new Error('Network error'),
+          `${this.baseURL}${endpoint}`,
+          options.method || 'GET'
+        );
+      }
+
       return {
         success: false,
-        error: {
-          message: error instanceof Error ? error.message : 'Network error',
-          code: 'NETWORK_ERROR',
-        },
-      };
+          error: {
+            message: error instanceof Error ? error.message : 'Network error',
+            code: 'NETWORK_ERROR',
+          },
+        };
     }
   }
 
@@ -291,7 +436,7 @@ class APIService {
       limit?: number;
       offset?: number;
     }
-  ): Promise<ApiResponse<{ competenceProgress: StudentProgress[]; summary: any }>> {
+  ): Promise<ApiResponse<{ competenceProgress: StudentProgress[]; summary: ProgressSummary }>> {
     const id = studentId || this.currentStudent?.id;
     if (!id) {
       return {
@@ -310,12 +455,12 @@ class APIService {
     }
 
     const endpoint = `/students/${id}/competence-progress${queryParams.toString() ? `?${queryParams}` : ''}`;
-    return this.makeRequest<{ competenceProgress: StudentProgress[]; summary: any }>(endpoint);
+    return this.makeRequest<{ competenceProgress: StudentProgress[]; summary: ProgressSummary }>(endpoint);
   }
 
-  async getStudentStats(studentId?: number): Promise<ApiResponse<{ stats: any }>> {
+  async getStudentStats(studentId?: number): Promise<ApiResponse<{ stats: StudentStats }>> {
     // const id = studentId || this.currentStudent?.id; // Unused variable
-    return this.makeRequest<{ stats: any }>(`/students/stats`);
+    return this.makeRequest<{ stats: StudentStats }>(`/students/stats`);
   }
 
   async getStudentAchievements(
@@ -327,7 +472,7 @@ class APIService {
       limit?: number;
       offset?: number;
     }
-  ): Promise<ApiResponse<{ achievements: Achievement[]; summary: any }>> {
+  ): Promise<ApiResponse<{ achievements: Achievement[]; summary: AchievementSummary }>> {
     const id = studentId || this.currentStudent?.id;
     if (!id) {
       return {
@@ -346,7 +491,7 @@ class APIService {
     }
 
     const endpoint = `/students/${id}/achievements${queryParams.toString() ? `?${queryParams}` : ''}`;
-    return this.makeRequest<{ achievements: Achievement[]; summary: any }>(endpoint);
+    return this.makeRequest<{ achievements: Achievement[]; summary: AchievementSummary }>(endpoint);
   }
 
   // =============================================================================
@@ -464,8 +609,8 @@ class APIService {
       hintsUsed?: number;
       answerGiven?: string;
     }
-  ): Promise<ApiResponse<{ attempt: any; xpEarned: number; masteryLevelChanged?: boolean }>> {
-    return this.makeRequest<{ attempt: any; xpEarned: number; masteryLevelChanged?: boolean }>(
+  ): Promise<ApiResponse<{ attempt: ExerciseAttempt; xpEarned: number; masteryLevelChanged?: boolean }>> {
+    return this.makeRequest<{ attempt: ExerciseAttempt; xpEarned: number; masteryLevelChanged?: boolean }>(
       '/exercises/attempt',
       {
         method: 'POST',
@@ -496,7 +641,7 @@ class APIService {
       focusScore?: number;
     }
   ): Promise<ApiResponse<{
-    progress: any;
+    progress: ProgressRecord;
     newAchievements: Achievement[];
     xpEarned: number;
     masteryLevelChanged: boolean;
@@ -510,7 +655,7 @@ class APIService {
     }
 
     return this.makeRequest<{
-      progress: any;
+      progress: ProgressRecord;
       newAchievements: Achievement[];
       xpEarned: number;
       masteryLevelChanged: boolean;
@@ -545,7 +690,7 @@ class APIService {
       type?: Mascot['type'];
       currentEmotion?: Mascot['currentEmotion'];
       equippedItems?: number[];
-      aiState?: any;
+      aiState?: MascotAIState;
     },
     studentId?: number
   ): Promise<ApiResponse<{ mascot: Mascot }>> {
@@ -569,7 +714,7 @@ class APIService {
     studentId?: number
   ): Promise<ApiResponse<{
     emotion: Mascot['currentEmotion'];
-    aiState: any;
+    aiState: MascotAIState;
     message: string;
   }>> {
     const id = studentId || this.currentStudent?.id;
@@ -582,7 +727,7 @@ class APIService {
 
     return this.makeRequest<{
       emotion: Mascot['currentEmotion'];
-      aiState: any;
+      aiState: MascotAIState;
       message: string;
     }>(`/mascots/${id}/emotion`, {
       method: 'POST',
@@ -659,8 +804,14 @@ class APIService {
     const endpoint = `/wardrobe/${id}${queryParams.toString() ? `?${queryParams}` : ''}`;
     return this.makeRequest<{
       items: WardrobeItem[];
-      summary: any;
-      studentStats: any;
+      summary: {
+        total: number;
+        unlocked: number;
+        equipped: number;
+        canUnlock: number;
+        byRarity?: Record<string, number>;
+      };
+      studentStats: StudentStats;
     }>(endpoint);
   }
 
@@ -787,7 +938,7 @@ class APIService {
   }>> {
     return this.makeRequest<{
       session: LearningSession;
-      metrics: any;
+      metrics: SessionMetrics;
     }>(`/sessions/${sessionId}/end`, {
       method: 'POST',
       body: JSON.stringify({ summary }),
@@ -806,13 +957,13 @@ class APIService {
 
   async getSession(sessionId: number): Promise<ApiResponse<{
     session: LearningSession;
-    exerciseResults: any[];
-    summary: any;
+    exerciseResults: ExerciseResult[];
+    summary: SessionSummary;
   }>> {
     return this.makeRequest<{
       session: LearningSession;
-      exerciseResults: any[];
-      summary: any;
+      exerciseResults: ExerciseResult[];
+      summary: SessionSummary;
     }>(`/sessions/${sessionId}`);
   }
 
@@ -825,8 +976,8 @@ class APIService {
     }
   ): Promise<ApiResponse<{
     sessions: LearningSession[];
-    pagination: { limit: number; offset: number; total: number };
-    summary: any;
+    pagination: PaginationInfo;
+    summary: SessionSummary;
   }>> {
     const id = studentId || this.currentStudent?.id;
     if (!id) {
@@ -848,8 +999,8 @@ class APIService {
     const endpoint = `/sessions/student/${id}${queryParams.toString() ? `?${queryParams}` : ''}`;
     return this.makeRequest<{
       sessions: LearningSession[];
-      pagination: any;
-      summary: any;
+      pagination: PaginationInfo;
+      summary: SessionSummary;
     }>(endpoint);
   }
 
@@ -865,8 +1016,8 @@ class APIService {
     return this.currentStudent;
   }
 
-  async healthCheck(): Promise<ApiResponse<any>> {
-    return this.makeRequest<any>('/health');
+  async healthCheck(): Promise<ApiResponse<{ status: string; timestamp: string; version?: string }>> {
+    return this.makeRequest<{ status: string; timestamp: string; version?: string }>('/health');
   }
 }
 

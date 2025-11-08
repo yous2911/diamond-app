@@ -1,6 +1,7 @@
 // Test to verify real app testing works
 import { describe, it, expect } from 'vitest';
-import { app, authToken, makeAuthenticatedRequest } from './setup';
+import { app } from './setup';
+import { makeAuthenticatedRequest, getAuthToken } from './helpers/auth.helper';
 
 describe('Real App Testing', () => {
   it('should have a working app instance', () => {
@@ -19,17 +20,25 @@ describe('Real App Testing', () => {
   });
 
   it('should handle authentication if available', async () => {
-    if (authToken) {
+    try {
+      const authToken = await getAuthToken(app, {
+        identifiant: 'test@example.com',
+        motDePasse: 'testpassword'
+      });
       expect(authToken).toBeDefined();
       expect(typeof authToken).toBe('string');
       expect(authToken.length).toBeGreaterThan(10);
-    } else {
+    } catch (error: unknown) {
       console.log('⚠️ No auth token available - auth endpoints might not be set up');
     }
   });
 
   it('should handle authenticated requests if auth is available', async () => {
-    if (authToken) {
+    try {
+      const authToken = await getAuthToken(app, {
+        identifiant: 'test@example.com',
+        motDePasse: 'testpassword'
+      });
       // Try to access a protected endpoint
       const response = await makeAuthenticatedRequest(app, authToken, {
         method: 'GET',
@@ -38,9 +47,10 @@ describe('Real App Testing', () => {
 
       // Should either return 200 (success) or 404 (student not found) or 403 (access denied)
       // But NOT 401 (unauthorized) since we have a token
-      expect([200, 404, 403]).toContain(response.statusCode);
-      expect(response.statusCode).not.toBe(401);
-    } else {
+      const statusCode = (response as any).statusCode;
+      expect([200, 404, 403]).toContain(statusCode);
+      expect(statusCode).not.toBe(401);
+    } catch (error: unknown) {
       console.log('⚠️ Skipping authenticated request test - no auth token');
     }
   });

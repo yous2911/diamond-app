@@ -113,7 +113,8 @@ export default async function legacyExercisesRoutes(fastify: FastifyInstance) {
         });
 
       } catch (error) {
-        fastify.log.error('Get legacy exercises error:', error);
+        const err = error instanceof Error ? error : new Error(String(error));
+        fastify.log.error({ err }, 'Get legacy exercises error');
         return reply.status(500).send({
           success: false,
           error: {
@@ -180,7 +181,8 @@ export default async function legacyExercisesRoutes(fastify: FastifyInstance) {
         });
 
       } catch (error) {
-        fastify.log.error('Get exercises by level error:', error);
+        const err = error instanceof Error ? error : new Error(String(error));
+        fastify.log.error({ err }, 'Get exercises by level error');
         return reply.status(500).send({
           success: false,
           error: {
@@ -245,7 +247,8 @@ export default async function legacyExercisesRoutes(fastify: FastifyInstance) {
         });
 
       } catch (error) {
-        fastify.log.error('Get random exercises error:', error);
+        const err = error instanceof Error ? error : new Error(String(error));
+        fastify.log.error({ err }, 'Get random exercises error');
         return reply.status(500).send({
           success: false,
           error: {
@@ -302,7 +305,8 @@ export default async function legacyExercisesRoutes(fastify: FastifyInstance) {
         });
 
       } catch (error) {
-        fastify.log.error('Get exercise by ID error:', error);
+        const err = error instanceof Error ? error : new Error(String(error));
+        fastify.log.error({ err }, 'Get exercise by ID error');
         return reply.status(500).send({
           success: false,
           error: {
@@ -366,7 +370,8 @@ export default async function legacyExercisesRoutes(fastify: FastifyInstance) {
         });
 
       } catch (error) {
-        fastify.log.error('Get exercise stats error:', error);
+        const err = error instanceof Error ? error : new Error(String(error));
+        fastify.log.error({ err }, 'Get exercise stats error');
         return reply.status(500).send({
           success: false,
           error: {

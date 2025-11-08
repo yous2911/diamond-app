@@ -44,6 +44,9 @@ class ConsentService {
     
     const consent = results[0];
     const now = new Date();
+    if (!consent.expiresAt) {
+      return null;
+    }
     const expiresAt = new Date(consent.expiresAt);
     
     // Check if token is expired
@@ -82,6 +85,9 @@ class ConsentService {
     
     // Check each request and delete if expired
     for (const request of pendingRequests) {
+      if (!request.expiresAt) {
+        continue;
+      }
       const expiresAt = new Date(request.expiresAt);
       if (expiresAt < now) {
         await this.db

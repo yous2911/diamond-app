@@ -172,7 +172,8 @@ const configSchema = z.object({
 );
 
 // Directly parse the environment. If it fails, the app will crash. This is what we want.
-let config;
+type ConfigType = z.infer<typeof configSchema>;
+let config: ConfigType;
 try {
   config = configSchema.parse(process.env);
 } catch (error) {

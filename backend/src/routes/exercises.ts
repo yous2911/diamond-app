@@ -31,7 +31,8 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
         error: { message: 'Not implemented', code: 'NOT_IMPLEMENTED' }
       });
     } catch (error) {
-      fastify.log.error('Create module error:', error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      fastify.log.error({ err }, 'Create module error');
       return reply.status(500).send({
         success: false,
         error: { message: 'Internal error', code: 'INTERNAL_ERROR' }
@@ -53,7 +54,8 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
         error: { message: 'Not implemented', code: 'NOT_IMPLEMENTED' }
       });
     } catch (error) {
-      fastify.log.error('Generate exercises error:', error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      fastify.log.error({ err }, 'Generate exercises error');
       return reply.status(500).send({
         success: false,
         error: { message: 'Internal error', code: 'INTERNAL_ERROR' }
@@ -66,11 +68,12 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
     schema: GetExercisesSchema,
     handler: async (request, reply) => {
       try {
+        const queryParams = request.query as { page?: number; limit?: number; difficulte?: string };
         const {
-          page,
-          limit,
+          page = 1,
+          limit = 20,
           difficulte,
-        } = request.query;
+        } = queryParams;
 
         const offset = (page - 1) * limit;
 
@@ -79,10 +82,15 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
           whereConditions.push(eq(exercises.difficulte, difficulte));
         }
 
-        const allExercises = await fastify.db
+        let dbQuery = fastify.db
           .select()
-          .from(exercises)
-          .where(and(...whereConditions))
+          .from(exercises);
+        
+        if (whereConditions.length > 0) {
+          dbQuery = dbQuery.where(and(...whereConditions)) as any;
+        }
+        
+        const allExercises = await (dbQuery as any)
           .limit(limit)
           .offset(offset);
 
@@ -91,7 +99,8 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
           data: allExercises
         });
       } catch (error) {
-        fastify.log.error('Get exercises error:', error);
+        const err = error instanceof Error ? error : new Error(String(error));
+        fastify.log.error({ err }, 'Get exercises error');
         return reply.status(500).send({
           success: false,
           error: {
@@ -117,7 +126,8 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
         error: { message: 'Not implemented', code: 'NOT_IMPLEMENTED' }
       });
     } catch (error) {
-      fastify.log.error('Create exercise error:', error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      fastify.log.error({ err }, 'Create exercise error');
       return reply.status(500).send({
         success: false,
         error: { message: 'Internal error', code: 'INTERNAL_ERROR' }
@@ -132,7 +142,7 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
     schema: UpdateExerciseSchema,
   }, async (request, reply) => {
     try {
-      const { id } = request.params;
+      const { id } = request.params as { id: string };
       const updateData = request.body;
       // Production logic would go here
       return reply.status(501).send({
@@ -140,7 +150,8 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
         error: { message: 'Not implemented', code: 'NOT_IMPLEMENTED' }
       });
     } catch (error) {
-      fastify.log.error('Update exercise error:', error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      fastify.log.error({ err }, 'Update exercise error');
       return reply.status(500).send({
         success: false,
         error: { message: 'Internal error', code: 'INTERNAL_ERROR' }
@@ -155,14 +166,15 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
     schema: { params: CommonIdParams },
   }, async (request, reply) => {
     try {
-      const { id } = request.params;
+      const { id } = request.params as { id: string };
       // Production logic would go here
       return reply.status(501).send({
         success: false,
         error: { message: 'Not implemented', code: 'NOT_IMPLEMENTED' }
       });
     } catch (error) {
-      fastify.log.error('Delete exercise error:', error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      fastify.log.error({ err }, 'Delete exercise error');
       return reply.status(500).send({
         success: false,
         error: { message: 'Internal error', code: 'INTERNAL_ERROR' }
@@ -210,7 +222,7 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
     schema: AttemptExerciseSchema,
   }, async (request, reply) => {
     try {
-      const attemptData = request.body;
+      const attemptData = request.body as { exerciseId?: number; [key: string]: any };
       const user = request.user as any;
       const studentId = user.studentId;
       const exerciseId = attemptData.exerciseId;
@@ -223,7 +235,8 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
         message: 'Tentative enregistrée avec succès',
       });
     } catch (error) {
-      fastify.log.error('Create attempt error:', error);
+      const err = error instanceof Error ? error : new Error(String(error));
+      fastify.log.error({ err }, 'Create attempt error');
       return reply.status(500).send({
         success: false,
         error: {
@@ -255,12 +268,12 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
     schema: { params: CommonIdParams },
     handler: async (request, reply) => {
       try {
-        const { id } = request.params;
+        const { id } = request.params as { id: string };
 
         const exercise = await fastify.db
           .select()
           .from(exercises)
-          .where(eq(exercises.id, id))
+          .where(eq(exercises.id, parseInt(id)))
           .limit(1);
 
         if (exercise.length === 0) {
@@ -282,7 +295,8 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
           message: 'Exercice récupéré avec succès',
         });
       } catch (error) {
-        fastify.log.error('Get exercise by ID error:', error);
+        const err = error instanceof Error ? error : new Error(String(error));
+        fastify.log.error({ err }, 'Get exercise by ID error');
         return reply.status(500).send({
           success: false,
           error: {

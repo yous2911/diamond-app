@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, Heart, Home, Volume2, VolumeX, Trophy, Sparkles, LogOut } from 'lucide-react';
+import { Volume2, VolumeX, LogOut } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useExercisesByLevel } from '../hooks/useApiData';
@@ -307,22 +307,31 @@ const HomePage = () => {
   const navigate = useNavigate();
   
   // Advanced state management
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [currentView, setCurrentView] = useState('home');
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [currentExercise, setCurrentExercise] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [mascotEmotion, setMascotEmotion] = useState<'idle' | 'happy' | 'excited' | 'thinking' | 'celebrating' | 'sleepy'>('happy');
   const [mascotMessage, setMascotMessage] = useState('');
   const [showParticles, setShowParticles] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [particleType, setParticleType] = useState<'success' | 'levelup' | 'magic'>('magic');
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [showCelebration, setShowCelebration] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [celebrationType, setCelebrationType] = useState<'exercise_complete' | 'level_up' | 'streak' | 'first_time' | 'perfect_score' | 'comeback' | 'milestone' | 'achievement_unlocked' | 'daily_goal' | 'weekly_champion'>('exercise_complete');
   const [showEntrance, setShowEntrance] = useState(() => {
     return !localStorage.getItem('diamond-app-visited');
   });
   
   // Wardrobe state
-  const [equippedItems, setEquippedItems] = useState<string[]>(['golden_crown', 'magic_cape']);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [equippedItems] = useState<string[]>(['golden_crown', 'magic_cape']);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [selectedMascot, setSelectedMascot] = useState<'dragon' | 'fairy' | 'robot'>('dragon');
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [studentData, setStudentData] = useState({
     prenom: student?.prenom || 'Élève',
     niveau: student?.niveau || 'CP',
@@ -335,7 +344,7 @@ const HomePage = () => {
   });
 
   // Load exercises data
-  const { data: exercisesData, isLoading: isLoadingExercises, error: exercisesError } = useExercisesByLevel(student?.niveau || 'CP', {
+  const { data: exercisesData, isLoading: isLoadingExercises } = useExercisesByLevel(student?.niveau || 'CP', {
     limit: 20
   });
 

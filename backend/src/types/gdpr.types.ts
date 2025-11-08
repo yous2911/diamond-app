@@ -282,12 +282,13 @@ export interface AuditLogRequest {
   entityType: EntityType;
   entityId: string;
   action: AuditAction;
-  userId?: string;
+  userId?: string | null;
   parentId?: string;
   studentId?: string;
   details: Record<string, any>;
   ipAddress?: string;
   userAgent?: string;
+  timestamp?: Date;
   severity?: Severity;
   category?: AuditCategory;
 }

@@ -160,9 +160,20 @@ export class AuthService {
       totalPoints: 0,
       serieJours: 0,
       mascotteType: 'dragon'
-    }).returning({ id: students.id });
+    });
 
-    const studentId = newStudentResult[0].id;
+    // Get the newly created student
+    const [newStudent] = await db
+      .select()
+      .from(students)
+      .where(eq(students.email, data.email))
+      .limit(1);
+
+    if (!newStudent) {
+      throw new Error('Failed to create student account');
+    }
+
+    const studentId = newStudent.id;
 
     // The service now returns the student data, not tokens.
     return {
@@ -231,7 +242,6 @@ export class AuthService {
       prenom: student.prenom,
       nom: student.nom,
       email: student.email,
-      role: student.role,
       niveauActuel: student.niveauActuel,
       totalPoints: student.totalPoints,
       serieJours: student.serieJours,

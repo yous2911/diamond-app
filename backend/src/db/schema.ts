@@ -719,8 +719,25 @@ export type NewParentStudentRelation = InferInsertModel<typeof parentStudentRela
 export type ParentalConsent = InferSelectModel<typeof parentalConsent>;
 export type NewParentalConsent = InferInsertModel<typeof parentalConsent>;
 
+// Competences table (CP2025)
+export const competences = mysqlTable('competences', {
+  id: int('id').primaryKey().autoincrement(),
+  code: varchar('code', { length: 20 }).notNull().unique(),
+  titre: varchar('titre', { length: 200 }).notNull(),
+  matiere: varchar('matiere', { length: 50 }).notNull(),
+  domaine: varchar('domaine', { length: 50 }),
+  description: text('description'),
+  niveau: varchar('niveau', { length: 20 }),
+  est_actif: boolean('est_actif').default(true),
+  xp_reward: int('xp_reward').default(10),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow().onUpdateNow()
+});
+
 // GDPR type exports  
 export type GdprConsentRequest = InferSelectModel<typeof gdprConsentRequests>;
 export type NewGdprConsentRequest = InferInsertModel<typeof gdprConsentRequests>;
+export type Competence = InferSelectModel<typeof competences>;
+export type NewCompetence = InferInsertModel<typeof competences>;
 
 

@@ -533,15 +533,15 @@ export class GracefulShutdownService extends EventEmitter {
       if (v8.getHeapStatistics) {
         const originalGC = global.gc;
         if (originalGC) {
-          global.gc = () => {
+          global.gc = (() => {
             const start = Date.now();
             originalGC();
             this.gcStats.collections++;
             this.gcStats.duration += Date.now() - start;
-          };
+          }) as typeof originalGC;
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
       // v8 module not available, skip GC monitoring
     }
 

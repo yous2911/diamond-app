@@ -263,7 +263,6 @@ export class ExerciseGeneratorService {
       if (template) {
         const configuration = template.generator();
         exercises.push({
-          type: template.matiere,
           titre: configuration.titre || `Exercice ${template.type}`,
           matiere: template.matiere,
           niveau: 'CP',

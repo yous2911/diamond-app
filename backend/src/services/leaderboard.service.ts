@@ -35,7 +35,7 @@ export interface LeaderboardEntry {
   rank: number;
   score: number;
   previousRank?: number;
-  rankChange: number;
+  rankChange: number | null;
   student: {
     prenom: string;
     nom: string;
@@ -139,7 +139,7 @@ export class LeaderboardService {
         : [];
 
       // Format entries
-      const formattedEntries: LeaderboardEntry[] = entries.map(entry => {
+      const formattedEntries = entries.map(entry => {
         const studentBadges = badges.filter(badge => badge.studentId === entry.student.id);
         const streak = streakData.find(s => s.studentId === entry.student.id);
         
@@ -149,11 +149,17 @@ export class LeaderboardService {
           score: entry.leaderboard.score,
           previousRank: entry.leaderboard.previousRank || undefined,
           rankChange: entry.leaderboard.rankChange,
-          student: entry.student,
+          student: {
+            prenom: entry.student.prenom,
+            nom: entry.student.nom,
+            mascotteType: entry.student.mascotteType || 'dragon',
+            mascotteColor: entry.student.mascotteColor || '#ff6b35',
+            niveauScolaire: entry.student.niveauScolaire
+          },
           badges: studentBadges,
           streak: streak?.currentStreak,
-          metadata: entry.leaderboard.metadata
-        };
+          metadata: entry.leaderboard.metadata as any
+        } as LeaderboardEntry;
       });
 
       // Calculate stats
@@ -185,8 +191,9 @@ export class LeaderboardService {
 
       return { entries: formattedEntries, stats };
       
-    } catch (error) {
-      logger.error('Error fetching leaderboard:', { type, category, error: error.message });
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('Error fetching leaderboard:', { type, category, error: err.message });
       return { entries: [], stats: { totalParticipants: 0, averageScore: 0, topScore: 0 } };
     }
   }
@@ -210,8 +217,9 @@ export class LeaderboardService {
 
       logger.info('✅ All leaderboards updated successfully');
       
-    } catch (error) {
-      logger.error('❌ Error updating leaderboards:', { error: error.message });
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('❌ Error updating leaderboards:', { error: err.message });
       throw error;
     }
   }
@@ -403,8 +411,9 @@ export class LeaderboardService {
         logger.info(`Updated ${type} ${category} leaderboard: ${newEntries.length} entries`);
       }
 
-    } catch (error) {
-      logger.error(`Error updating ${type} ${category} leaderboard:`, { error: error.message });
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error(`Error updating ${type} ${category} leaderboard:`, { error: err.message });
     }
   }
 
@@ -424,8 +433,9 @@ export class LeaderboardService {
       
       logger.info('✅ All badges updated');
       
-    } catch (error) {
-      logger.error('❌ Error updating badges:', { error: error.message });
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('❌ Error updating badges:', { error: err.message });
     }
   }
 
@@ -457,8 +467,9 @@ export class LeaderboardService {
         }
       }
       
-    } catch (error) {
-      logger.error(`Error updating badges for student ${studentId}:`, { error: error.message });
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error(`Error updating badges for student ${studentId}:`, { error: err.message });
     }
   }
 
@@ -512,8 +523,9 @@ export class LeaderboardService {
           (Number(progressStats[0].completedExercises) / Number(progressStats[0].totalExercises)) * 100 : 0
       };
       
-    } catch (error) {
-      logger.error(`Error getting student stats for ${studentId}:`, { error: error.message });
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error(`Error getting student stats for ${studentId}:`, { error: err.message });
       return {};
     }
   }
@@ -675,8 +687,9 @@ export class LeaderboardService {
         totalParticipants: Number(totalParticipants[0]?.count) || 0
       };
       
-    } catch (error) {
-      logger.error('Error getting student rank:', { studentId, type, category, error: error.message });
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('Error getting student rank:', { studentId, type, category, error: err.message });
       return null;
     }
   }
@@ -763,13 +776,19 @@ export class LeaderboardService {
           score: entry.leaderboard.score,
           previousRank: entry.leaderboard.previousRank || undefined,
           rankChange: entry.leaderboard.rankChange,
-          student: entry.student,
+          student: {
+            prenom: entry.student.prenom,
+            nom: entry.student.nom,
+            mascotteType: entry.student.mascotteType || 'dragon',
+            mascotteColor: entry.student.mascotteColor || '#ff6b35',
+            niveauScolaire: entry.student.niveauScolaire
+          },
           badges: studentBadges,
           metadata: entry.leaderboard.metadata
         };
       });
 
-      const userEntry = formattedEntries.find(entry => entry.studentId === studentId);
+      const userEntry = formattedEntries.find(entry => entry.studentId === studentId) || null;
       const competitors = formattedEntries.filter(entry => entry.studentId !== studentId);
       
       // Find next target (person directly above user)
@@ -793,8 +812,9 @@ export class LeaderboardService {
         }
       };
       
-    } catch (error) {
-      logger.error('Error getting user-centric leaderboard:', { studentId, error: error.message });
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('Error getting user-centric leaderboard:', { studentId, error: err.message });
       return {
         userEntry: null,
         competitors: [],
@@ -833,8 +853,9 @@ export class LeaderboardService {
         entry.rank >= startRank && entry.rank <= endRank
       );
       
-    } catch (error) {
-      logger.error('Error getting nearby competitors:', { studentId, error: error.message });
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('Error getting nearby competitors:', { studentId, error: err.message });
       return [];
     }
   }

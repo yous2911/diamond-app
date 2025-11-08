@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useEffect } from 'react';
 
 // =============================================================================
 // 🎵 VOICE SYSTEM - ELEVENLABS MP3 INTEGRATION
@@ -53,6 +53,7 @@ const VOICE_FILES = {
 export const useVoiceSystem = () => {
   const audioCache = useRef<Map<string, HTMLAudioElement>>(new Map());
   const currentAudio = useRef<HTMLAudioElement | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
 
   // Preload voice files for instant playback
   const preloadVoices = useCallback(() => {
@@ -102,8 +103,11 @@ export const useVoiceSystem = () => {
 
   // Fallback synthetic sounds
   const playFallbackSound = useCallback((voiceKey: string) => {
-    // Create simple beep sounds as fallback
-    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+    // Reuse or create AudioContext
+    if (!audioContextRef.current) {
+      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+    }
+    const audioContext = audioContextRef.current;
     const oscillator = audioContext.createOscillator();
     const gainNode = audioContext.createGain();
     
@@ -192,6 +196,23 @@ export const useVoiceSystem = () => {
     const randomVoice = motivationalVoices[Math.floor(Math.random() * motivationalVoices.length)];
     playVoice(randomVoice as keyof typeof VOICE_FILES);
   }, [playVoice]);
+
+  // Cleanup AudioContext and audio elements on unmount
+  useEffect(() => {
+    return () => {
+      // Close AudioContext
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+        audioContextRef.current = null;
+      }
+      // Pause and cleanup all cached audio elements
+      if (currentAudio.current) {
+        currentAudio.current.pause();
+        currentAudio.current = null;
+      }
+      audioCache.current.clear();
+    };
+  }, []);
 
   return {
     preloadVoices,

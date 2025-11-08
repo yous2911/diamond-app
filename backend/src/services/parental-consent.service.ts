@@ -128,7 +128,10 @@ export class ParentalConsentService {
           consentTypes: validatedData.consentTypes
         },
         ipAddress: validatedData.ipAddress,
-        userAgent: validatedData.userAgent
+        userAgent: validatedData.userAgent,
+        timestamp: new Date(),
+        severity: 'medium',
+        category: 'consent_management'
       });
 
       // Send first consent email
@@ -195,7 +198,10 @@ export class ParentalConsentService {
           firstConsentDate: new Date()
         },
         ipAddress: validatedData.ipAddress,
-        userAgent: validatedData.userAgent
+        userAgent: validatedData.userAgent,
+        timestamp: new Date(),
+        severity: 'medium',
+        category: 'consent_management'
       });
 
       // Send second consent email
@@ -274,7 +280,10 @@ export class ParentalConsentService {
           verificationDate
         },
         ipAddress: validatedData.ipAddress,
-        userAgent: validatedData.userAgent
+        userAgent: validatedData.userAgent,
+        timestamp: new Date(),
+        severity: 'medium',
+        category: 'consent_management'
       });
 
       // Send confirmation email
@@ -334,7 +343,10 @@ export class ParentalConsentService {
           revokedAt: new Date()
         },
         ipAddress: '',
-        userAgent: ''
+        userAgent: '',
+        timestamp: new Date(),
+        severity: 'medium',
+        category: 'consent_management'
       });
 
       // If consent was verified, anonymize student data
@@ -552,6 +564,7 @@ export class ParentalConsentService {
           parentEmail: consent.parentEmail,
           studentId: studentRecord?.id
         },
+        timestamp: new Date(),
         severity: 'high',
         category: 'compliance'
       });
@@ -590,7 +603,8 @@ export class ParentalConsentService {
         entityId: consentId,
         action: 'verified',
         includeDetails: true,
-        limit: 1
+        limit: 1,
+        offset: 0
       });
 
       if (auditResult.entries.length > 0) {
@@ -639,6 +653,7 @@ export class ParentalConsentService {
           },
           ipAddress: consent.ipAddress,
           userAgent: consent.userAgent,
+          timestamp: new Date(),
           severity: 'medium',
           category: 'compliance'
         });
@@ -686,6 +701,7 @@ export class ParentalConsentService {
             updates,
             updatedAt: new Date()
           },
+          timestamp: new Date(),
           severity: 'low',
           category: 'compliance'
         });
@@ -707,7 +723,8 @@ export class ParentalConsentService {
         entityId: id,
         action: 'create',
         includeDetails: true,
-        limit: 1
+        limit: 1,
+        offset: 0
       });
 
       if (auditResult.entries.length === 0) {
@@ -722,7 +739,8 @@ export class ParentalConsentService {
         entityType: 'parental_consent',
         entityId: id,
         includeDetails: true,
-        limit: 10
+        limit: 10,
+        offset: 0
       });
 
       let currentStatus = 'pending';
@@ -789,7 +807,8 @@ export class ParentalConsentService {
         entityType: 'parental_consent',
         action: 'create',
         includeDetails: true,
-        limit: 20
+        limit: 20,
+        offset: 0
       });
 
       // Filter by parent email and pending status

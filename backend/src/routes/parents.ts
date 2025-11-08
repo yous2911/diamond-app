@@ -7,7 +7,7 @@
 import { FastifyPluginAsync, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { eq, and, desc, gte, lte, count, avg, sum } from 'drizzle-orm';
-import { db } from '../db/setup.js';
+import { db } from '../db/connection.js';
 import { 
   students, 
   parents,
@@ -98,11 +98,11 @@ const parentsRoutes: FastifyPluginAsync = async (fastify) => {
 
           // Get mastered competencies count
           const [competencyStats] = await db
-            .select({ count: count(competencies_progress.id) })
-            .from(competencies_progress)
+            .select({ count: count(studentCompetenceProgress.id) })
+            .from(studentCompetenceProgress)
             .where(and(
-              eq(competencies_progress.studentId, child.id),
-              gte(competencies_progress.masteryLevel, 0.8)
+              eq(studentCompetenceProgress.studentId, child.id),
+              eq(studentCompetenceProgress.masteryLevel, 'maitrise')
             ));
 
           // Calculate age from date of birth
@@ -127,8 +127,9 @@ const parentsRoutes: FastifyPluginAsync = async (fastify) => {
       );
 
       return reply.code(200).send(childrenWithStats);
-    } catch (error) {
-      fastify.log.error('Error fetching children:', error);
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      fastify.log.error({ err }, 'Error fetching children');
       return reply.code(500).send({ error: 'Internal server error' });
     }
   });
@@ -139,31 +140,9 @@ const parentsRoutes: FastifyPluginAsync = async (fastify) => {
       params: z.object({ childId: z.string() }),
       querystring: z.object({ 
         timeframe: z.enum(['week', 'month', 'year']).default('week') 
-      }),
-      response: {
-        200: z.object({
-          weeklyProgress: z.array(z.number()),
-          recentAchievements: z.array(z.object({
-            id: z.number(),
-            title: z.string(),
-            icon: z.string(),
-            date: z.string(),
-            color: z.string()
-          })),
-          competencyProgress: z.array(z.object({
-            domain: z.string(),
-            progress: z.number(),
-            total: z.number(),
-            mastered: z.number()
-          })),
-          learningPattern: z.object({
-            bestTime: z.string(),
-            averageSession: z.string(),
-            preferredSubject: z.string(),
-            difficultyTrend: z.string()
-          })
-        })
-      }
+      })
+      // Response schema removed - Fastify expects JSON Schema format, not Zod
+      // Response validation is disabled by default in the validation plugin
     }
   }, async (request: FastifyRequest<{ 
     Params: { childId: string }, 
@@ -199,17 +178,27 @@ const parentsRoutes: FastifyPluginAsync = async (fastify) => {
         const dayEnd = new Date(dayStart);
         dayEnd.setHours(23, 59, 59, 999);
 
-        const [dayStats] = await db
-          .select({ 
-            count: count(exercises.id),
-            avgScore: avg(exercises.score)
+        // Get exercises completed by this student on this day
+        const completedExercises = await db
+          .select({
+            exerciseId: studentProgress.exerciseId,
+            averageScore: studentProgress.averageScore,
+            completedAt: studentProgress.completedAt
           })
-          .from(exercises)
+          .from(studentProgress)
           .where(and(
-            eq(exercises.studentId, childId),
-            gte(exercises.completedAt, dayStart),
-            lte(exercises.completedAt, dayEnd)
+            eq(studentProgress.studentId, childId),
+            eq(studentProgress.completed, true),
+            gte(studentProgress.completedAt || studentProgress.updatedAt, dayStart),
+            lte(studentProgress.completedAt || studentProgress.updatedAt, dayEnd)
           ));
+
+        const dayStats = {
+          count: completedExercises.length,
+          avgScore: completedExercises.length > 0 
+            ? completedExercises.reduce((sum, e) => sum + parseFloat((e.averageScore ?? 0).toString()), 0) / completedExercises.length 
+            : 0
+        };
 
         // Convert to percentage (assuming 100% is 10 exercises with 90%+ score)
         const score = dayStats.avgScore || 0;
@@ -222,22 +211,24 @@ const parentsRoutes: FastifyPluginAsync = async (fastify) => {
       // Get recent achievements
       const achievements = await db
         .select({
-          id: student_achievements.id,
-          achievementType: student_achievements.achievementType,
-          achievementData: student_achievements.achievementData,
-          earnedAt: student_achievements.earnedAt
+          id: studentAchievements.id,
+          achievementType: studentAchievements.achievementType,
+          title: studentAchievements.title,
+          description: studentAchievements.description,
+          earnedAt: studentAchievements.unlockedAt
         })
-        .from(student_achievements)
-        .where(eq(student_achievements.studentId, childId))
-        .orderBy(desc(student_achievements.earnedAt))
+        .from(studentAchievements)
+        .where(eq(studentAchievements.studentId, childId))
+        .orderBy(desc(studentAchievements.unlockedAt))
         .limit(5);
 
       const recentAchievements = achievements.map((ach, index) => ({
         id: ach.id,
-        title: ach.achievementType === 'streak' ? `${ach.achievementData} jours consécutifs` : 
+        title: ach.title || (ach.achievementType === 'streak' ? 'Série de jours' : 
                ach.achievementType === 'level_up' ? 'Niveau supérieur!' :
                ach.achievementType === 'competency_master' ? 'Compétence maîtrisée' :
-               'Récompense spéciale',
+               'Récompense spéciale'),
+        description: ach.description || 'Achievement débloqué',
         icon: ach.achievementType === 'streak' ? '🔥' :
               ach.achievementType === 'level_up' ? '⭐' :
               ach.achievementType === 'competency_master' ? '🎯' : '🏆',
@@ -248,12 +239,12 @@ const parentsRoutes: FastifyPluginAsync = async (fastify) => {
       // Get competency progress by domain
       const competencyProgress = await db
         .select({
-          competencyCode: competencies_progress.competencyCode,
-          masteryLevel: competencies_progress.masteryLevel,
-          practiceCount: competencies_progress.practiceCount
+          competencyCode: studentCompetenceProgress.competenceCode,
+          masteryLevel: studentCompetenceProgress.masteryLevel,
+          practiceCount: studentCompetenceProgress.progressPercent
         })
-        .from(competencies_progress)
-        .where(eq(competencies_progress.studentId, childId));
+        .from(studentCompetenceProgress)
+        .where(eq(studentCompetenceProgress.studentId, childId));
 
       // Group by domain (first 2 characters of competency code)
       const domainStats: Record<string, { total: number, mastered: number, avgMastery: number }> = {};
@@ -268,9 +259,18 @@ const parentsRoutes: FastifyPluginAsync = async (fastify) => {
           domainStats[domainName] = { total: 0, mastered: 0, avgMastery: 0 };
         }
         
+        // Convert masteryLevel string to number (decouverte=0, apprentissage=0.33, maitrise=0.66, expertise=1.0)
+        const masteryLevelMap: Record<string, number> = {
+          'decouverte': 0,
+          'apprentissage': 0.33,
+          'maitrise': 0.66,
+          'expertise': 1.0
+        };
+        const masteryValue = masteryLevelMap[comp.masteryLevel || 'decouverte'] || 0;
+        
         domainStats[domainName].total++;
-        domainStats[domainName].avgMastery += comp.masteryLevel;
-        if (comp.masteryLevel >= 0.8) {
+        domainStats[domainName].avgMastery += masteryValue;
+        if (masteryValue >= 0.8) {
           domainStats[domainName].mastered++;
         }
       });
@@ -283,18 +283,33 @@ const parentsRoutes: FastifyPluginAsync = async (fastify) => {
       }));
 
       // Calculate learning patterns
-      const [sessionStats] = await db
+      // Note: sessions table only has id, studentId, expiresAt, createdAt
+      // We'll use createdAt as session start and expiresAt as session end
+      const sessionData = await db
         .select({
-          avgDuration: avg(sessions.duration),
-          totalSessions: count(sessions.id)
+          id: sessions.id,
+          createdAt: sessions.createdAt,
+          expiresAt: sessions.expiresAt
         })
         .from(sessions)
         .where(and(
           eq(sessions.studentId, childId),
-          gte(sessions.startTime, startDate)
+          gte(sessions.createdAt, startDate)
         ));
 
-      const averageSessionMinutes = sessionStats.avgDuration ? Math.round(sessionStats.avgDuration / 60) : 15;
+      // Calculate average duration from createdAt and expiresAt
+      const totalDuration = sessionData.reduce((sum, session) => {
+        if (session.expiresAt && session.createdAt) {
+          return sum + (session.expiresAt.getTime() - session.createdAt.getTime());
+        }
+        return sum;
+      }, 0);
+      const avgDurationMs = sessionData.length > 0 ? totalDuration / sessionData.length : 0;
+      const averageSessionMinutes = Math.round(avgDurationMs / 60000) || 15;
+      const sessionStats = {
+        avgDuration: avgDurationMs,
+        totalSessions: sessionData.length
+      };
 
       return reply.code(200).send({
         weeklyProgress,
@@ -308,8 +323,9 @@ const parentsRoutes: FastifyPluginAsync = async (fastify) => {
         }
       });
 
-    } catch (error) {
-      fastify.log.error('Error fetching child analytics:', error);
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      fastify.log.error({ err }, 'Error fetching child analytics');
       return reply.code(500).send({ error: 'Internal server error' });
     }
   });
@@ -320,17 +336,8 @@ const parentsRoutes: FastifyPluginAsync = async (fastify) => {
       params: z.object({ childId: z.string() }),
       querystring: z.object({ 
         days: z.string().optional().transform(val => val ? parseInt(val) : 30)
-      }),
-      response: {
-        200: z.object({
-          retention: z.number(),
-          averageInterval: z.number(),
-          stabilityIndex: z.number(),
-          retrievalStrength: z.number(),
-          totalReviews: z.number(),
-          successRate: z.number()
-        })
-      }
+      })
+      // Response schema removed - Fastify expects JSON Schema format, not Zod
     }
   }, async (request: FastifyRequest<{ 
     Params: { childId: string }, 
@@ -343,19 +350,28 @@ const parentsRoutes: FastifyPluginAsync = async (fastify) => {
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - days);
 
-      // Get SuperMemo performance data from exercises
-      const [superMemoStats] = await db
+      // Get SuperMemo performance data from studentProgress
+      const progressData = await db
         .select({
-          avgScore: avg(exercises.score),
-          totalExercises: count(exercises.id),
-          avgDifficulty: avg(exercises.difficulty),
-          successCount: sum(exercises.isCorrect)
+          averageScore: studentProgress.averageScore,
+          exerciseId: studentProgress.exerciseId,
+          completedAt: studentProgress.completedAt
         })
-        .from(exercises)
+        .from(studentProgress)
         .where(and(
-          eq(exercises.studentId, childId),
-          gte(exercises.completedAt, startDate)
+          eq(studentProgress.studentId, childId),
+          eq(studentProgress.completed, true),
+          gte(studentProgress.completedAt || studentProgress.updatedAt, startDate)
         ));
+
+      const superMemoStats = {
+        avgScore: progressData.length > 0 
+          ? progressData.reduce((sum, p) => sum + parseFloat((p.averageScore ?? 0).toString()), 0) / progressData.length 
+          : 0,
+        totalExercises: progressData.length,
+        avgDifficulty: 0, // Not available in studentProgress
+        successCount: progressData.length // All completed exercises are considered successful
+      };
 
       const retention = superMemoStats.avgScore || 85;
       const totalReviews = superMemoStats.totalExercises || 0;
@@ -371,8 +387,8 @@ const parentsRoutes: FastifyPluginAsync = async (fastify) => {
         successRate: Math.round(successRate * 10) / 10
       });
 
-    } catch (error) {
-      fastify.log.error('Error fetching SuperMemo stats:', error);
+    } catch (error: unknown) {
+      fastify.log.error(error as Error, 'Error fetching SuperMemo stats');
       return reply.code(500).send({ error: 'Internal server error' });
     }
   });
@@ -422,8 +438,8 @@ const parentsRoutes: FastifyPluginAsync = async (fastify) => {
 
       return reply.code(200).send(reportData);
 
-    } catch (error) {
-      fastify.log.error('Error generating report:', error);
+    } catch (error: unknown) {
+      fastify.log.error(error as Error, 'Error generating report');
       return reply.code(500).send({ error: 'Internal server error' });
     }
   });

@@ -142,9 +142,10 @@ class ConnectionResilienceService extends EventEmitter {
       logger.info('Connection resilience service initialized successfully');
       this.emit('initialized');
 
-    } catch (error) {
-      logger.error('Failed to initialize connection resilience service', { error });
-      throw error;
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('Failed to initialize connection resilience service', { error: err });
+      throw err;
     }
   }
 
@@ -152,8 +153,9 @@ class ConnectionResilienceService extends EventEmitter {
     this.healthCheckInterval = setInterval(async () => {
       try {
         await this.performHealthCheck();
-      } catch (error) {
-        logger.debug('Health check interval error', { error });
+      } catch (error: unknown) {
+        const err = error instanceof Error ? error : new Error(String(error));
+        logger.debug('Health check interval error', { error: err });
       }
     }, this.config.healthCheck.interval);
 
@@ -189,8 +191,9 @@ class ConnectionResilienceService extends EventEmitter {
         this.recordFailedHealthCheck(new Error('Health check returned false'));
       }
 
-    } catch (error) {
-      this.recordFailedHealthCheck(error);
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.recordFailedHealthCheck(err);
     }
   }
 
@@ -218,7 +221,7 @@ class ConnectionResilienceService extends EventEmitter {
     }
   }
 
-  private recordFailedHealthCheck(error: any): void {
+  private recordFailedHealthCheck(error: Error): void {
     this.consecutiveHealthFailures++;
     
     if (this.isHealthy && this.consecutiveHealthFailures >= this.config.healthCheck.failureThreshold) {
@@ -306,10 +309,11 @@ class ConnectionResilienceService extends EventEmitter {
       
       return result;
 
-    } catch (error) {
+    } catch (error: unknown) {
       // Record failure
-      this.recordOperationFailure(error);
-      throw error;
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.recordOperationFailure(err);
+      throw err;
       
     } finally {
       this.activeOperations.delete(operationId);
@@ -348,19 +352,20 @@ class ConnectionResilienceService extends EventEmitter {
 
         return result;
 
-      } catch (error) {
-        retryOperation.lastError = error;
+      } catch (error: unknown) {
+        const err = error instanceof Error ? error : new Error(String(error));
+        retryOperation.lastError = err;
 
         // Check if error is timeout
-        if (error.message.includes('timeout')) {
+        if (err.message.includes('timeout')) {
           this.timeoutErrors++;
         } else {
           this.connectionErrors++;
         }
 
         // Check if we should retry
-        if (!this.shouldRetry(error, retryOperation, options.customRetryCondition)) {
-          throw error;
+        if (!this.shouldRetry(err, retryOperation, options.customRetryCondition)) {
+          throw err;
         }
 
         // Calculate delay for next retry
@@ -372,7 +377,7 @@ class ConnectionResilienceService extends EventEmitter {
             operationId: retryOperation.id,
             attempt: retryOperation.attempts,
             maxAttempts: retryOperation.maxAttempts,
-            error: error.message,
+            error: err.message,
             retryDelay: delay
           });
 
@@ -539,10 +544,11 @@ class ConnectionResilienceService extends EventEmitter {
           return true;
         }
 
-      } catch (error) {
+      } catch (error: unknown) {
+        const err = error instanceof Error ? error : new Error(String(error));
         logger.warn('Recovery attempt failed', {
           attempt,
-          error: error.message
+          error: err.message
         });
       }
 
@@ -560,8 +566,9 @@ class ConnectionResilienceService extends EventEmitter {
       try {
         await connection.execute(query);
         logger.debug('Warmup query successful', { query });
-      } catch (error) {
-        logger.warn('Warmup query failed', { query, error: error.message });
+      } catch (error: unknown) {
+        const err = error instanceof Error ? error : new Error(String(error));
+        logger.warn('Warmup query failed', { query, error: err.message });
       }
     }
   }

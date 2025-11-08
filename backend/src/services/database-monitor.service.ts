@@ -185,7 +185,7 @@ class DatabaseMonitorService extends EventEmitter {
       
       this.emit('initialized');
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to initialize database monitoring service', { error });
       throw error;
     }
@@ -199,7 +199,7 @@ class DatabaseMonitorService extends EventEmitter {
     this.monitoringInterval = setInterval(async () => {
       try {
         await this.collectMetrics();
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('Error collecting database metrics', { error });
       }
     }, this.config.collectionInterval * 1000);
@@ -214,7 +214,7 @@ class DatabaseMonitorService extends EventEmitter {
     const dailyAnalysis = cron.schedule('0 2 * * *', async () => {
       try {
         await this.performComprehensiveAnalysis();
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('Daily database analysis failed', { error });
       }
     }, { name: 'daily-db-analysis' });
@@ -223,7 +223,7 @@ class DatabaseMonitorService extends EventEmitter {
     const hourlyQueryAnalysis = cron.schedule('0 * * * *', async () => {
       try {
         await this.analyzeSlowQueries();
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('Hourly query analysis failed', { error });
       }
     }, { name: 'hourly-query-analysis' });
@@ -232,7 +232,7 @@ class DatabaseMonitorService extends EventEmitter {
     const cleanupTask = cron.schedule('0 3 * * *', async () => {
       try {
         await this.cleanupOldMetrics();
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('Metrics cleanup failed', { error });
       }
     }, { name: 'metrics-cleanup' });
@@ -255,7 +255,7 @@ class DatabaseMonitorService extends EventEmitter {
       logger.info('Slow query logging enabled', { 
         threshold: slowQueryThreshold 
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.warn('Could not enable slow query logging - insufficient privileges', { error });
     }
   }
@@ -307,7 +307,7 @@ class DatabaseMonitorService extends EventEmitter {
 
       this.emit('metricsCollected', metrics);
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to collect database metrics', { error });
     }
   }
@@ -354,7 +354,7 @@ class DatabaseMonitorService extends EventEmitter {
         averageQueryTime: avgQueryTime,
         queriesPerSecond
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to get query metrics', { error });
       return this.getDefaultQueryMetrics();
     }
@@ -394,7 +394,7 @@ class DatabaseMonitorService extends EventEmitter {
         bufferPoolHitRate,
         lockWaitTime: lockWaitTime / 1000 // Convert to seconds
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to get performance metrics', { error });
       return this.getDefaultPerformanceMetrics();
     }
@@ -407,11 +407,13 @@ class DatabaseMonitorService extends EventEmitter {
     let totalIdle = 0;
     let totalTick = 0;
 
-    cpus.forEach(cpu => {
-      for (const type in cpu.times) {
-        totalTick += cpu.times[type];
+    cpus.forEach((cpu: any) => {
+      if (cpu.times) {
+        for (const type in cpu.times) {
+          totalTick += cpu.times[type];
+        }
+        totalIdle += cpu.times.idle;
       }
-      totalIdle += cpu.times.idle;
     });
 
     return ((totalTick - totalIdle) / totalTick) * 100;
@@ -426,7 +428,7 @@ class DatabaseMonitorService extends EventEmitter {
       `);
 
       return (rows as any[])[0]?.estimated_memory_gb || 0;
-    } catch (error) {
+    } catch (error: unknown) {
       return 0;
     }
   }
@@ -462,7 +464,7 @@ class DatabaseMonitorService extends EventEmitter {
         freeSpace: parseInt(freeSpace),
         tableCount: parseInt(result.table_count || '0')
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to get storage metrics', { error });
       return this.getDefaultStorageMetrics();
     }
@@ -487,7 +489,7 @@ class DatabaseMonitorService extends EventEmitter {
           io: status.Slave_IO_Running === 'Yes'
         }
       };
-    } catch (error) {
+    } catch (error: unknown) {
       // Not a replication setup or insufficient privileges
       return undefined;
     }
@@ -613,7 +615,7 @@ class DatabaseMonitorService extends EventEmitter {
         alertId: alert.id,
         webhookUrl: this.config.notifications.webhook!.url 
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to send webhook notification', { alertId: alert.id, error });
     }
   }
@@ -643,8 +645,9 @@ class DatabaseMonitorService extends EventEmitter {
       });
 
       this.emit('slowQueryAnalysis', slowQueries);
-    } catch (error) {
-      logger.debug('Slow query analysis not available', { error: error.message });
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.debug('Slow query analysis not available', { error: err.message });
     }
   }
 
@@ -669,7 +672,7 @@ class DatabaseMonitorService extends EventEmitter {
       });
 
       this.emit('comprehensiveAnalysis', analysis);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Comprehensive database analysis failed', { error });
     }
   }
@@ -719,7 +722,7 @@ class DatabaseMonitorService extends EventEmitter {
           recommendedActions
         };
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Table health analysis failed', { error });
       return [];
     }
@@ -759,7 +762,7 @@ class DatabaseMonitorService extends EventEmitter {
       });
 
       return Array.from(indexMap.values());
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Index usage analysis failed', { error });
       return [];
     }

@@ -86,15 +86,16 @@ export class AdvancedCacheService {
   // TIER 2: REDIS DISTRIBUTED CACHE (L2)
   private async getFromRedis<T>(key: string): Promise<T | null> {
     try {
-      const cached = await this.fastify.cache.getJSON<CacheEntry<T>>(key);
+      const cached = await this.fastify.cache.getJSON(key) as CacheEntry<T> | null;
       if (cached) {
         // Promote to L1 cache for faster future access
         this.setToLocalCache(key, cached.data, { tags: cached.tags, version: cached.version });
         return cached.data;
       }
       return null;
-    } catch (error) {
-      this.fastify.log.warn('Redis get error:', error);
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.fastify.log.warn(err, 'Redis get error');
       return null;
     }
   }
@@ -111,8 +112,9 @@ export class AdvancedCacheService {
       };
 
       await this.fastify.cache.setJSON(key, entry, options.ttl);
-    } catch (error) {
-      this.fastify.log.warn('Redis set error:', error);
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.fastify.log.warn(err, 'Redis set error');
     }
   }
 
@@ -140,7 +142,7 @@ export class AdvancedCacheService {
 
       // TIER 3: Execute fallback function if provided
       if (options.fallback) {
-        this.fastify.log.debug('Cache miss, executing fallback for key:', prefixedKey);
+        this.fastify.log.debug({ key: prefixedKey }, 'Cache miss, executing fallback for key');
 
         data = await options.fallback();
         if (data !== null) {
@@ -156,8 +158,9 @@ export class AdvancedCacheService {
       this.recordCacheMiss(startTime);
       return null;
 
-    } catch (error) {
-      this.fastify.log.error('Cache get error:', { key: prefixedKey, error });
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.fastify.log.error({ key: prefixedKey, error: err }, 'Cache get error');
       this.recordCacheMiss(startTime);
       return null;
     }
@@ -172,14 +175,15 @@ export class AdvancedCacheService {
       this.setToLocalCache(prefixedKey, data, options);
       await this.setToRedis(prefixedKey, data, options);
 
-      this.fastify.log.debug('Data cached successfully:', {
+      this.fastify.log.debug({
         key: prefixedKey,
         ttl: options.ttl,
         tags: options.tags
-      });
+      }, 'Data cached successfully');
 
-    } catch (error) {
-      this.fastify.log.error('Cache set error:', { key: prefixedKey, error });
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.fastify.log.error({ key: prefixedKey, error: err }, 'Cache set error');
     }
   }
 
@@ -213,11 +217,12 @@ export class AdvancedCacheService {
           if (redisData) {
             try {
               const parsed = JSON.parse(redisData) as CacheEntry<T>;
-              localData[originalIndex] = parsed.data;
+              localData[originalIndex] = parsed.data as Awaited<T> | null;
               // Promote to L1 cache
               this.setToLocalCache(prefixedKeys[originalIndex], parsed.data, options);
-            } catch (error) {
-              this.fastify.log.warn('JSON parse error in mget:', error);
+            } catch (error: unknown) {
+              const err = error instanceof Error ? error : new Error(String(error));
+              this.fastify.log.warn(err, 'JSON parse error in mget');
             }
           }
         });
@@ -230,8 +235,9 @@ export class AdvancedCacheService {
 
       return localData;
 
-    } catch (error) {
-      this.fastify.log.error('Cache mget error:', { keys: prefixedKeys, error });
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.fastify.log.error({ keys: prefixedKeys, error: err }, 'Cache mget error');
       return new Array(keys.length).fill(null);
     }
   }
@@ -255,34 +261,36 @@ export class AdvancedCacheService {
         }
       }
 
-      this.fastify.log.info('Cache invalidated by tags:', tags);
+      this.fastify.log.info({ tags }, 'Cache invalidated by tags');
 
-    } catch (error) {
-      this.fastify.log.error('Cache invalidation error:', { tags, error });
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.fastify.log.error({ tags, error: err }, 'Cache invalidation error');
     }
   }
 
   // CACHE WARMING FOR CRITICAL DATA
   async warmCache(warmingStrategies: Array<{ key: string; data: any; options?: CacheOptions }>): Promise<void> {
-    this.fastify.log.info('Starting cache warming...', { strategies: warmingStrategies.length });
+    this.fastify.log.info({ strategies: warmingStrategies.length }, 'Starting cache warming...');
 
     const warmingPromises = warmingStrategies.map(async ({ key, data, options }) => {
       try {
         await this.set(key, data, options);
         return { key, success: true };
-      } catch (error) {
-        this.fastify.log.warn('Cache warming failed for key:', { key, error });
-        return { key, success: false, error };
+      } catch (error: unknown) {
+        const err = error instanceof Error ? error : new Error(String(error));
+        this.fastify.log.warn({ key, error: err }, 'Cache warming failed for key');
+        return { key, success: false, error: err };
       }
     });
 
     const results = await Promise.allSettled(warmingPromises);
     const successful = results.filter(r => r.status === 'fulfilled').length;
 
-    this.fastify.log.info('Cache warming completed:', {
+    this.fastify.log.info({
       total: warmingStrategies.length,
       successful
-    });
+    }, 'Cache warming completed');
   }
 
   // PERFORMANCE MONITORING AND OPTIMIZATION
@@ -361,7 +369,7 @@ export class AdvancedCacheService {
     const toEvict = entries.slice(0, 100); // Remove oldest 100 entries
     toEvict.forEach(([key]) => this.localCache.delete(key));
 
-    this.fastify.log.debug('Evicted LRU entries from local cache:', toEvict.length);
+    this.fastify.log.debug({ count: toEvict.length }, 'Evicted LRU entries from local cache');
   }
 
   private recordCacheHit(startTime: number): void {
@@ -411,7 +419,7 @@ export class AdvancedCacheService {
       }
 
       if (cleanedCount > 0) {
-        this.fastify.log.debug('Cleaned up expired local cache entries:', cleanedCount);
+        this.fastify.log.debug({ count: cleanedCount }, 'Cleaned up expired local cache entries');
       }
     }, 300000); // 5 minutes
 

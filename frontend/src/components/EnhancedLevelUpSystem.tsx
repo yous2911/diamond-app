@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMagicalSounds } from '../hooks/useMagicalSounds';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 
 // =============================================================================
 // 🎉 SYSTÈME DE LEVEL UP AMÉLIORÉ AVEC CÉLÉBRATIONS ÉPIQUES
@@ -33,9 +34,12 @@ const EnhancedLevelUpSystem: React.FC<EnhancedLevelUpSystemProps> = ({
   const [showModal, setShowModal] = useState(false);
   const [currentAchievement, setCurrentAchievement] = useState(0);
   const { playLevelUpFanfare, playSparkleSound } = useMagicalSounds();
+  const prefersReducedMotion = useReducedMotion();
 
   // Create celebration effects
   const createCelebrations = useCallback(() => {
+    if (prefersReducedMotion) return; // Skip celebrations for reduced motion
+    
     const newCelebrations: LevelUpCelebration[] = [];
     
     // Fireworks
@@ -75,7 +79,7 @@ const EnhancedLevelUpSystem: React.FC<EnhancedLevelUpSystemProps> = ({
     }
 
     setCelebrations(newCelebrations);
-  }, []);
+  }, [prefersReducedMotion]);
 
   // Trigger level up sequence
   useEffect(() => {
@@ -104,7 +108,7 @@ const EnhancedLevelUpSystem: React.FC<EnhancedLevelUpSystemProps> = ({
         onLevelUpComplete?.();
       }, 4000);
     }
-  }, [isLevelingUp, newLevel, achievements.length]); // Simplified dependencies
+  }, [isLevelingUp, newLevel, achievements, prefersReducedMotion, createCelebrations, playLevelUpFanfare, playSparkleSound, onLevelUpComplete]);
 
   const renderCelebration = (celebration: LevelUpCelebration) => {
     const { type, x, y, delay } = celebration;
@@ -117,14 +121,17 @@ const EnhancedLevelUpSystem: React.FC<EnhancedLevelUpSystemProps> = ({
             className="absolute pointer-events-none"
             style={{ left: x, top: y }}
             initial={{ scale: 0, opacity: 0 }}
-            animate={{ 
+            animate={prefersReducedMotion ? { 
+              scale: 1,
+              opacity: 1
+            } : { 
               scale: [0, 1.5, 0.8, 0],
               opacity: [0, 1, 1, 0],
               rotate: [0, 180, 360]
             }}
             transition={{ 
-              delay: delay / 1000,
-              duration: 2,
+              delay: prefersReducedMotion ? 0 : delay / 1000,
+              duration: prefersReducedMotion ? 0.01 : 2,
               ease: "easeOut"
             }}
           >
@@ -141,14 +148,16 @@ const EnhancedLevelUpSystem: React.FC<EnhancedLevelUpSystemProps> = ({
             className="absolute pointer-events-none"
             style={{ left: x, top: y }}
             initial={{ y: -50, rotate: 0, opacity: 1 }}
-            animate={{ 
+            animate={prefersReducedMotion ? { 
+              opacity: 1
+            } : { 
               y: window.innerHeight + 50,
               rotate: 720,
               opacity: [1, 1, 0]
             }}
             transition={{ 
-              delay: delay / 1000,
-              duration: 3,
+              delay: prefersReducedMotion ? 0 : delay / 1000,
+              duration: prefersReducedMotion ? 0.01 : 3,
               ease: "easeIn"
             }}
           >
@@ -165,14 +174,17 @@ const EnhancedLevelUpSystem: React.FC<EnhancedLevelUpSystemProps> = ({
             className="absolute pointer-events-none"
             style={{ left: x, top: y }}
             initial={{ scale: 0, opacity: 0 }}
-            animate={{ 
+            animate={prefersReducedMotion ? { 
+              scale: 1,
+              opacity: 1
+            } : { 
               scale: [0, 1, 0],
               opacity: [0, 1, 0],
               rotate: [0, 180, 360]
             }}
             transition={{ 
-              delay: delay / 1000,
-              duration: 1.5,
+              delay: prefersReducedMotion ? 0 : delay / 1000,
+              duration: prefersReducedMotion ? 0.01 : 1.5,
               ease: "easeInOut"
             }}
           >
@@ -203,19 +215,22 @@ const EnhancedLevelUpSystem: React.FC<EnhancedLevelUpSystemProps> = ({
           {/* Level Up Modal */}
           <motion.div
             className="relative bg-white/95 backdrop-blur-sm rounded-3xl p-8 max-w-md mx-auto text-center shadow-2xl border-4 border-yellow-400"
-            initial={{ scale: 0, rotate: -180 }}
+            initial={prefersReducedMotion ? { scale: 1, rotate: 0 } : { scale: 0, rotate: -180 }}
             animate={{ scale: 1, rotate: 0 }}
-            exit={{ scale: 0, rotate: 180 }}
-            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+            exit={prefersReducedMotion ? { scale: 1, rotate: 0 } : { scale: 0, rotate: 180 }}
+            transition={prefersReducedMotion ? { duration: 0.01 } : { type: "spring", stiffness: 300, damping: 20 }}
           >
             {/* Crown */}
             <motion.div
               className="text-6xl mb-4"
-              animate={{ 
+              animate={prefersReducedMotion ? { 
+                rotate: 0,
+                scale: 1
+              } : { 
                 rotate: [0, 10, -10, 0],
                 scale: [1, 1.1, 1]
               }}
-              transition={{ 
+              transition={prefersReducedMotion ? { duration: 0.01 } : { 
                 duration: 2, 
                 repeat: Infinity,
                 ease: "easeInOut"
@@ -293,9 +308,9 @@ const EnhancedLevelUpSystem: React.FC<EnhancedLevelUpSystemProps> = ({
               <div className="w-full bg-gray-200 rounded-full h-3">
                 <motion.div
                   className="bg-gradient-to-r from-purple-500 to-pink-500 h-3 rounded-full"
-                  initial={{ width: '0%' }}
-                  animate={{ width: '15%' }}
-                  transition={{ delay: 2, duration: 1 }}
+              initial={{ width: '0%' }}
+              animate={{ width: '15%' }}
+              transition={prefersReducedMotion ? { delay: 0, duration: 0.01 } : { delay: 2, duration: 1 }}
                 />
               </div>
             </motion.div>

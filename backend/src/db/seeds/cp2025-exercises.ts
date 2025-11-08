@@ -16,7 +16,6 @@ async function seedCP2025Exercises(): Promise<void> {
         difficulte: 'decouverte',
         competenceCode: 'MATH_ADD_01',
         typeExercice: 'multiple-choice',
-        type: 'multiple-choice',
         contenu: {
           question: 'Combien font 2 + 3 ?',
           options: ['4', '5', '6', '7'],
@@ -42,7 +41,6 @@ async function seedCP2025Exercises(): Promise<void> {
         difficulte: 'decouverte',
         competenceCode: 'MATH_SUB_01',
         typeExercice: 'fill-in-blank',
-        type: 'fill-in-blank',
         contenu: {
           question: 'Combien font 10 - 4 ?',
           type: 'calculation'
@@ -67,7 +65,6 @@ async function seedCP2025Exercises(): Promise<void> {
         difficulte: 'decouverte',
         competenceCode: 'FR_READ_01',
         typeExercice: 'text-input',
-        type: 'text-input',
         contenu: {
           question: 'Lis ce mot : "CHAT"',
           word: 'chat',

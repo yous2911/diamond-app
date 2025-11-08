@@ -43,8 +43,8 @@ export class ModernController {
 // === EXAMPLE 3: Dependency Injection in Service Constructor ===
 
 export class UserService {
-  private encryptionService;
-  private emailService;
+  private encryptionService: any;
+  private emailService: any;
   
   constructor(container: ServiceContainer = serviceContainer) {
     // Services are resolved lazily when needed
@@ -52,10 +52,10 @@ export class UserService {
     this.emailService = container.resolve(SERVICE_TOKENS.EMAIL);
   }
 
-  async createUser(userData: any) {
+  async createUser(userData: { sensitive: string; email: string }) {
     // Use injected services
-    const encryptedData = await this.encryptionService.encrypt(userData.sensitive);
-    await this.emailService.sendWelcomeEmail(userData.email);
+    const encryptedData = await (this.encryptionService as any).encrypt(userData.sensitive);
+    await (this.emailService as any).sendWelcomeEmail(userData.email);
     
     return { success: true };
   }
@@ -68,6 +68,8 @@ export function createMockContainer() {
   testContainer.enableTestMode();
   
   // Mock specific services
+  // @ts-ignore - jest is not available in this context
+  const jest = globalThis.jest || { fn: () => ({ mockResolvedValue: () => {} }) };
   testContainer.mock(SERVICE_TOKENS.EMAIL, {
     sendWelcomeEmail: jest.fn().mockResolvedValue(true),
     sendPasswordReset: jest.fn().mockResolvedValue(true)

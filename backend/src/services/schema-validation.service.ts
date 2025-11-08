@@ -163,7 +163,7 @@ class SchemaValidationService {
       this.isInitialized = true;
       logger.info('Schema validation service initialized successfully');
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to initialize schema validation service', { error });
       throw error;
     }
@@ -182,7 +182,7 @@ class SchemaValidationService {
         logger.warn('Schema definition file not found, generating from current database...');
         await this.generateSchemaDefinition();
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to load expected schema', { error });
       throw error;
     }
@@ -226,7 +226,7 @@ class SchemaValidationService {
         indexes: schema.indexes.length
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to generate schema definition', { error });
       throw error;
     }
@@ -416,8 +416,9 @@ class SchemaValidationService {
           body: row.ACTION_STATEMENT
         });
       }
-    } catch (error) {
-      logger.debug('Could not extract triggers', { error: error.message });
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.debug('Could not extract triggers', { error: err.message });
     }
 
     return triggers;
@@ -451,8 +452,9 @@ class SchemaValidationService {
           comment: row.ROUTINE_COMMENT
         });
       }
-    } catch (error) {
-      logger.debug('Could not extract procedures', { error: error.message });
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.debug('Could not extract procedures', { error: err.message });
     }
 
     return procedures;
@@ -476,7 +478,7 @@ class SchemaValidationService {
         type: row.DATA_TYPE,
         direction: row.PARAMETER_MODE || 'IN'
       }));
-    } catch (error) {
+    } catch (error: unknown) {
       return [];
     }
   }
@@ -558,7 +560,7 @@ class SchemaValidationService {
 
       return result;
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Schema validation failed', { error });
       throw error;
     }
@@ -823,7 +825,7 @@ class SchemaValidationService {
             warnings: result.warnings.length
           });
         }
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('Scheduled schema validation failed', { error });
       }
     }, { name: 'schema-validation' });
@@ -843,7 +845,7 @@ class SchemaValidationService {
             tables: [...new Set(drifts.map(d => d.tableName))]
           });
         }
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('Schema drift detection failed', { error });
       }
     }, { name: 'drift-monitoring' });

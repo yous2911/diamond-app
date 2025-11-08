@@ -1,0 +1,170 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const fastify_plugin_1 = __importDefault(require("fastify-plugin"));
+const connection_1 = require("../db/connection");
+const config_1 = require("../config/config");
+// Database plugin with enhanced error handling and monitoring
+const databasePlugin = async (fastify) => {
+    let isConnected = false;
+    let connectionAttempts = 0;
+    const maxConnectionAttempts = process.env.NODE_ENV === 'test' ? 1 : 5;
+    // Enhanced connection function with retry logic
+    async function ensureConnection(attempt = 1) {
+        try {
+            fastify.log.info(`🔄 Database connection attempt ${attempt}/${maxConnectionAttempts}...`);
+            await (0, connection_1.connectDatabase)();
+            const db = (0, connection_1.getDatabase)();
+            // Test the connection using the existing test function
+            const isTestSuccessful = await (0, connection_1.testConnection)();
+            if (!isTestSuccessful) {
+                throw new Error('Database connection test failed');
+            }
+            isConnected = true;
+            connectionAttempts = attempt;
+            fastify.log.info(`✅ Database connected successfully on attempt ${attempt}`);
+            // Decorate fastify with database instance
+            fastify.decorate('db', db);
+        }
+        catch (error) {
+            fastify.log.error(`❌ Database connection attempt ${attempt} failed:`, error);
+            if (attempt < maxConnectionAttempts) {
+                const delay = process.env.NODE_ENV === 'test' ? 100 : Math.min(1000 * Math.pow(2, attempt - 1), 10000);
+                fastify.log.info(`⏳ Retrying database connection in ${delay}ms...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+                return ensureConnection(attempt + 1);
+            }
+            else {
+                throw new Error(`Failed to connect to database after ${maxConnectionAttempts} attempts: ${error}`);
+            }
+        }
+    }
+    // Connect to database with retry logic
+    await ensureConnection();
+    // Enhanced health check with detailed diagnostics
+    fastify.decorate('dbHealth', async () => {
+        try {
+            if (!isConnected) {
+                return {
+                    status: 'disconnected',
+                    message: 'Database not connected',
+                    details: { connectionAttempts }
+                };
+            }
+            const healthResult = await (0, connection_1.checkDatabaseHealth)();
+            if (healthResult.status === 'healthy') {
+                return {
+                    status: 'healthy',
+                    message: 'Database connection OK',
+                    details: {
+                        responseTime: healthResult.responseTime,
+                        poolStats: healthResult.poolStats,
+                        config: {
+                            host: config_1.config.DB_HOST,
+                            port: config_1.config.DB_PORT,
+                            database: config_1.config.DB_NAME,
+                            connectionLimit: config_1.config.DB_CONNECTION_LIMIT,
+                        }
+                    }
+                };
+            }
+            else {
+                return {
+                    status: 'unhealthy',
+                    message: `Database connection failed: ${healthResult.error}`,
+                    details: { error: healthResult.error }
+                };
+            }
+        }
+        catch (error) {
+            fastify.log.error('Database health check failed:', error);
+            return {
+                status: 'error',
+                message: 'Health check failed',
+                details: { error: error instanceof Error ? error.message : 'Unknown error' }
+            };
+        }
+    });
+    // Database reconnection function
+    fastify.decorate('dbReconnect', async () => {
+        try {
+            fastify.log.info('🔄 Attempting database reconnection...');
+            // Try to disconnect first
+            try {
+                await (0, connection_1.disconnectDatabase)();
+            }
+            catch (error) {
+                fastify.log.warn('Error during disconnect (continuing):', error);
+            }
+            isConnected = false;
+            // Reconnect
+            await ensureConnection();
+            fastify.log.info('✅ Database reconnection successful');
+            return true;
+        }
+        catch (error) {
+            fastify.log.error('❌ Database reconnection failed:', error);
+            isConnected = false;
+            return false;
+        }
+    });
+    // Connection monitoring - check connection every 30 seconds
+    const connectionMonitor = setInterval(async () => {
+        try {
+            const health = await fastify.dbHealth();
+            if (health.status !== 'healthy') {
+                fastify.log.warn('Database health check failed, attempting reconnection...');
+                await fastify.dbReconnect();
+            }
+        }
+        catch (error) {
+            fastify.log.error('Connection monitor error:', error);
+        }
+    }, 30000);
+    // Graceful shutdown
+    fastify.addHook('onClose', async () => {
+        try {
+            // Clear connection monitor
+            clearInterval(connectionMonitor);
+            // Close database connections
+            await (0, connection_1.disconnectDatabase)();
+            isConnected = false;
+            fastify.log.info('✅ Database connections closed gracefully');
+        }
+        catch (error) {
+            fastify.log.error('❌ Error closing database connections:', error);
+        }
+    });
+    // Request hook to ensure connection before each request
+    fastify.addHook('preHandler', async (request, reply) => {
+        if (!isConnected) {
+            fastify.log.warn('Database not connected, attempting reconnection...');
+            try {
+                await fastify.dbReconnect();
+            }
+            catch (error) {
+                fastify.log.error('Failed to reconnect to database:', error);
+                // Return 503 Service Unavailable if database is down
+                return reply.status(503).send({
+                    success: false,
+                    error: {
+                        message: 'Service temporairement indisponible - Base de données inaccessible',
+                        code: 'DATABASE_UNAVAILABLE',
+                    },
+                });
+            }
+        }
+    });
+    // Add database info to request context
+    fastify.addHook('onRequest', async (request) => {
+        request.dbConnected = isConnected;
+        request.dbAttempts = connectionAttempts;
+    });
+    fastify.log.info('✅ Database plugin registered successfully');
+};
+exports.default = (0, fastify_plugin_1.default)(databasePlugin, {
+    name: 'database',
+    dependencies: [], // No dependencies
+});

@@ -391,9 +391,10 @@ export class ErrorTestExamples {
     try {
       // This will throw an external service error
       await notificationService.sendEmail('fail@example.com', 'Test', 'Body');
-    } catch (error) {
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
       console.log('External Service Error:', {
-        message: error.message,
+        message: err.message,
         isRetryable: (error as BaseError).metadata.isRetryable
       });
     }

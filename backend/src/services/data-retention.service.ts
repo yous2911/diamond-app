@@ -162,7 +162,8 @@ export class DataRetentionService {
           action: validatedData.action
         },
         severity: 'medium',
-        category: 'compliance'
+        category: 'compliance',
+        timestamp: new Date()
       });
 
       logger.info('Retention policy created', { 
@@ -173,7 +174,7 @@ export class DataRetentionService {
 
       return policyId;
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error creating retention policy:', error);
       throw new Error('Failed to create retention policy');
     }
@@ -207,7 +208,7 @@ export class DataRetentionService {
           policy.recordsProcessed += policyResult.recordsProcessed;
           await this.updatePolicyInDatabase(policy);
 
-        } catch (error) {
+        } catch (error: unknown) {
           errorsEncountered++;
           logger.error(`Error executing policy ${policy.id}:`, error);
           
@@ -222,7 +223,8 @@ export class DataRetentionService {
               error: error instanceof Error ? error.message : 'Unknown error'
             },
             severity: 'high',
-            category: 'compliance'
+            category: 'compliance',
+            timestamp: new Date()
           });
         }
       }
@@ -240,7 +242,8 @@ export class DataRetentionService {
           executedAt: new Date()
         },
         severity: 'medium',
-        category: 'compliance'
+        category: 'compliance',
+        timestamp: new Date()
       });
 
       logger.info('Retention policies execution completed', {
@@ -251,7 +254,7 @@ export class DataRetentionService {
 
       return { policiesExecuted, recordsProcessed, errorsEncountered };
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error executing retention policies:', error);
       throw new Error('Failed to execute retention policies');
     }
@@ -303,10 +306,11 @@ export class DataRetentionService {
               retentionPeriodDays: policy.retentionPeriodDays
             },
             severity: 'medium',
-            category: 'compliance'
+            category: 'compliance',
+            timestamp: new Date()
           });
 
-        } catch (error) {
+        } catch (error: unknown) {
           logger.error(`Error processing entity ${entity.id}:`, error);
           // Continue with other entities
         }
@@ -314,7 +318,7 @@ export class DataRetentionService {
 
       return { recordsProcessed };
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error(`Error executing policy ${policy.id}:`, error);
       throw error;
     }
@@ -392,7 +396,8 @@ export class DataRetentionService {
           action: validatedData.action
         },
         severity: 'low',
-        category: 'compliance'
+        category: 'compliance',
+        timestamp: new Date()
       });
 
       logger.info('Retention scheduled', { 
@@ -403,7 +408,7 @@ export class DataRetentionService {
 
       return scheduleId;
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error scheduling retention:', error);
       throw new Error('Failed to schedule retention');
     }
@@ -459,7 +464,8 @@ export class DataRetentionService {
           complianceStatus
         },
         severity: 'low',
-        category: 'compliance'
+        category: 'compliance',
+        timestamp: new Date()
       });
 
       logger.info('Retention report generated', { 
@@ -470,7 +476,7 @@ export class DataRetentionService {
 
       return report;
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error generating retention report:', error);
       throw new Error('Failed to generate retention report');
     }
@@ -522,7 +528,7 @@ export class DataRetentionService {
         canExtendRetention
       };
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error getting retention status:', error);
       throw new Error('Failed to get retention status');
     }
@@ -695,9 +701,10 @@ export class DataRetentionService {
       });
 
       logger.debug('Retention policy saved to database', { policyId: policy.id });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error saving retention policy to database:', error);
-      throw new Error(`Failed to save retention policy: ${error.message}`);
+      const err = error instanceof Error ? error : new Error(String(error));
+      throw new Error(`Failed to save retention policy: ${err.message}`);
     }
   }
 
@@ -722,9 +729,10 @@ export class DataRetentionService {
       });
 
       logger.debug('Retention policy updated in database', { policyId: policy.id });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error updating retention policy in database:', error);
-      throw new Error(`Failed to update retention policy: ${error.message}`);
+      const err = error instanceof Error ? error : new Error(String(error));
+      throw new Error(`Failed to update retention policy: ${err.message}`);
     }
   }
 
@@ -750,9 +758,10 @@ export class DataRetentionService {
       });
 
       logger.debug('Retention schedule saved to database', { scheduleId: schedule.id });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error saving retention schedule to database:', error);
-      throw new Error(`Failed to save retention schedule: ${error.message}`);
+      const err = error instanceof Error ? error : new Error(String(error));
+      throw new Error(`Failed to save retention schedule: ${err.message}`);
     }
   }
 
@@ -846,7 +855,7 @@ export class DataRetentionService {
 
       return eligibleEntities;
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error finding eligible entities:', error);
       return [];
     }
@@ -905,7 +914,7 @@ export class DataRetentionService {
 
       return false;
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error checking retention exceptions:', error);
       return false; // Fail safe - don't apply exception if check fails
     }
@@ -931,7 +940,8 @@ export class DataRetentionService {
           warningDays: policy.notificationDays
         },
         severity: 'medium',
-        category: 'compliance'
+        category: 'compliance',
+        timestamp: new Date()
       });
 
       // In a real implementation, this would send actual notifications
@@ -946,7 +956,7 @@ export class DataRetentionService {
       // Send actual email notification to admin/compliance team
       await this.emailService.sendRetentionWarning(entity, policy);
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error sending retention notification:', error);
     }
   }
@@ -962,7 +972,7 @@ export class DataRetentionService {
       });
 
       logger.debug('Retention notification marked as sent', { entityId });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error marking notification as sent:', error);
     }
   }
@@ -1012,7 +1022,8 @@ export class DataRetentionService {
           retentionPeriod: policy.retentionPeriodDays
         },
         severity: 'high',
-        category: 'compliance'
+        category: 'compliance',
+        timestamp: new Date()
       });
 
       logger.info('Entity deleted by retention policy', { 
@@ -1021,7 +1032,7 @@ export class DataRetentionService {
         policyId: policy.id 
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error deleting entity:', error);
       throw error;
     }
@@ -1065,7 +1076,8 @@ export class DataRetentionService {
           archiveLocation: 'cold_storage'
         },
         severity: 'medium',
-        category: 'compliance'
+        category: 'compliance',
+        timestamp: new Date()
       });
 
       logger.info('Entity archived by retention policy', { 
@@ -1074,7 +1086,7 @@ export class DataRetentionService {
         policyId: policy.id 
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error archiving entity:', error);
       throw error;
     }
@@ -1118,7 +1130,7 @@ export class DataRetentionService {
       // This is a simplified implementation - in reality you'd query the database
       // based on the entity type and trigger condition
       return [];
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error finding records for retention:', error);
       return [];
     }
@@ -1141,7 +1153,7 @@ export class DataRetentionService {
       }
       
       return { success: true };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error processing retention action:', error);
       return { success: false };
     }
@@ -1163,7 +1175,7 @@ export class DataRetentionService {
         lastExecution: new Date(),
         complianceStatus: 'compliant'
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error calculating retention stats:', error);
       return {
         totalPolicies: 0,
@@ -1206,7 +1218,7 @@ export class DataRetentionService {
         success: true,
         recordsSkipped: skipped
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error applying retention policy:', error);
       return {
         recordsProcessed: 0,
@@ -1232,7 +1244,7 @@ export class DataRetentionService {
         policiesExecuted: executed,
         success: true
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error scheduling retention check:', error);
       return {
         policiesExecuted: 0,
@@ -1255,7 +1267,7 @@ export class DataRetentionService {
         lastCheck: new Date(),
         nextScheduledCheck: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours from now
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error getting retention statistics:', error);
       return {
         totalPolicies: 0,

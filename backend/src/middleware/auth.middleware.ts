@@ -137,7 +137,7 @@ export async function optionalAuthMiddleware(
     }
   } catch (error) {
     // Silently fail for optional auth
-    request.user = undefined;
+    (request as any).user = undefined;
   }
   
   return; // Continue with request

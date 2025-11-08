@@ -102,7 +102,8 @@ export class EmailService {
           rejected: result.rejected
         },
         severity: 'low',
-        category: 'compliance'
+        category: 'compliance',
+        timestamp: new Date()
       });
       
       logger.info('Email sent successfully', { 
@@ -111,7 +112,7 @@ export class EmailService {
         template: options.template,
         messageId: result.messageId
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error sending email:', error);
       throw new Error('Failed to send email');
     }
@@ -423,7 +424,7 @@ export class EmailService {
 
       await this.transporter.verify();
       logger.info('✅ Email service: SMTP connection verified');
-    } catch (error) {
+    } catch (error: unknown) {
       logger.warn('⚠️ Email service: SMTP verification failed, emails will be logged only', error);
     }
   }
@@ -454,10 +455,11 @@ export class EmailService {
         }
         
         return; // Success
-      } catch (error) {
-        lastError = error as Error;
+      } catch (error: unknown) {
+        const err = error instanceof Error ? error : new Error(String(error));
+        lastError = err;
         logger.warn(`Email sending attempt ${attempt}/${maxRetries} failed:`, {
-          error: error.message,
+          error: err.message,
           to: options.to,
           template: options.template,
           attempt
@@ -501,7 +503,8 @@ export class EmailService {
         errorStack: lastError?.stack
       },
       severity: 'high',
-      category: 'system'
+      category: 'system',
+      timestamp: new Date()
     });
 
     // Create detailed error for different failure types
@@ -524,9 +527,10 @@ export class EmailService {
       if (emailConfig.user && emailConfig.host) {
         await this.transporter.verify();
       }
-    } catch (error) {
-      logger.warn('Email service health check failed:', error);
-      throw new Error(`Email service health check failed: ${error.message}`);
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.warn('Email service health check failed:', err);
+      throw new Error(`Email service health check failed: ${err.message}`);
     }
   }
 
@@ -599,7 +603,7 @@ export class EmailService {
         status.status = 'unhealthy'; // Config valid but no auth
         return { ...status, connectionTest: false };
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.warn('Email service connection test failed:', error);
       return { ...status, connectionTest: false };
     }
@@ -699,7 +703,7 @@ export class EmailService {
         }
       });
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Test email failed:', error);
       return false;
     }
@@ -981,7 +985,7 @@ export class EmailService {
             variables: emailData.variables
           });
           results.sent++;
-        } catch (error) {
+        } catch (error: unknown) {
           results.failed++;
           results.errors.push({
             email: emailData.to,

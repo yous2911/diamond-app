@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState, memo } from 'react';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { useGPUPerformance } from '../hooks/useGPUPerformance';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 import MicroInteraction from './MicroInteractions';
 
 // =============================================================================
@@ -39,6 +40,8 @@ const CelebrationSystem = memo<CelebrationProps>(({
     shouldUseComplexAnimation,
     performanceTier 
   } = useGPUPerformance();
+  
+  const prefersReducedMotion = useReducedMotion();
   
   const mainControls = useAnimation();
   const textControls = useAnimation();
@@ -139,24 +142,25 @@ const CelebrationSystem = memo<CelebrationProps>(({
 
   const config = celebrations[type];
 
-  // Adaptive confetti based on performance
-  const confettiCount = getOptimalParticleCount(type === 'level_up' ? 50 : 30);
+  // Adaptive confetti based on performance and accessibility
+  const confettiCount = prefersReducedMotion ? 0 : getOptimalParticleCount(type === 'level_up' ? 50 : 30);
 
   // Play celebration sequence
   const playCelebrationSequence = useCallback(async () => {
     const baseDuration = getOptimalDuration(config.duration);
+    const animationDuration = prefersReducedMotion ? 0.1 : baseDuration / 1000;
     
     // Phase 1: Dramatic entrance
     setPhase('enter');
-    setShowConfetti(true);
+    setShowConfetti(!prefersReducedMotion);
     
     await mainControls.start({
-      scale: [0, 1.3, 1],
-      rotate: [0, 15, 0],
+      scale: prefersReducedMotion ? [1, 1] : [0, 1.3, 1],
+      rotate: prefersReducedMotion ? 0 : [0, 15, 0],
       opacity: [0, 1, 1],
       transition: {
-        duration: 1.0,
-        type: "spring",
+        duration: animationDuration,
+        type: prefersReducedMotion ? "tween" : "spring",
         damping: 15,
         stiffness: 200
       }
@@ -166,12 +170,12 @@ const CelebrationSystem = memo<CelebrationProps>(({
     setPhase('celebrate');
     
     await textControls.start({
-      y: [30, 0],
+      y: prefersReducedMotion ? 0 : [30, 0],
       opacity: [0, 1],
-      scale: [0.8, 1],
+      scale: prefersReducedMotion ? 1 : [0.8, 1],
       transition: {
-        duration: 0.6,
-        type: "spring"
+        duration: prefersReducedMotion ? 0.1 : 0.6,
+        type: prefersReducedMotion ? "tween" : "spring"
       }
     });
 
@@ -188,7 +192,7 @@ const CelebrationSystem = memo<CelebrationProps>(({
       setTimeout(onComplete, 800);
     }, baseDuration * 0.6);
 
-  }, [config, mainControls, textControls, getOptimalDuration, data, onComplete]);
+  }, [config, mainControls, textControls, getOptimalDuration, data, onComplete, prefersReducedMotion]);
 
   useEffect(() => {
     playCelebrationSequence();

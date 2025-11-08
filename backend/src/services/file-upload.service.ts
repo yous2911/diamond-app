@@ -70,19 +70,20 @@ export class FileUploadService {
             const jobId = await this.queueBackgroundProcessing(uploadedFile);
             response.processingJobs?.push(jobId);
           }
-        } catch (error) {
+        } catch (error: unknown) {
+          const err = error instanceof Error ? error : new Error(String(error));
           logger.error('Error processing file:', { 
             filename: file.originalname, 
-            error: error.message 
+            error: err.message 
           });
-          response.errors?.push(`Failed to process ${file.originalname}: ${error.message}`);
+          response.errors?.push(`Failed to process ${file.originalname}: ${err.message}`);
         }
       }
 
       response.success = response.files.length > 0;
       return response;
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error in file upload process:', error);
       throw new Error('File upload processing failed');
     }
@@ -165,8 +166,9 @@ export class FileUploadService {
         );
         uploadedFile.processedVariants = thumbnails;
         uploadedFile.thumbnailUrl = thumbnails.find(t => t.type === 'small')?.url;
-      } catch (error) {
-        logger.warn('Failed to generate thumbnails:', { fileId, error: error.message });
+      } catch (error: unknown) {
+        const err = error instanceof Error ? error : new Error(String(error));
+        logger.warn('Failed to generate thumbnails:', { fileId, error: err.message });
       }
     }
 
@@ -181,8 +183,9 @@ export class FileUploadService {
             threats: scanResult.threats 
           });
         }
-      } catch (error) {
-        logger.error('Security scan failed:', { fileId, error: error.message });
+      } catch (error: unknown) {
+        const err = error instanceof Error ? error : new Error(String(error));
+        logger.error('Security scan failed:', { fileId, error: err.message });
       }
     }
 
@@ -286,8 +289,9 @@ export class FileUploadService {
         metadata.format = imageInfo.format;
         metadata.colorSpace = imageInfo.space;
         metadata.hasAlpha = imageInfo.hasAlpha;
-      } catch (error) {
-        logger.warn('Failed to extract image metadata:', error.message);
+      } catch (error: unknown) {
+        const err = error instanceof Error ? error : new Error(String(error));
+        logger.warn('Failed to extract image metadata:', err.message);
       }
     }
 
@@ -327,8 +331,9 @@ export class FileUploadService {
     if (mimetype.startsWith('image/')) {
       try {
         await this.imageProcessor.validateImageStructure(buffer);
-      } catch (error) {
-        throw new Error(`Invalid image structure: ${error.message}`);
+      } catch (error: unknown) {
+        const err = error instanceof Error ? error : new Error(String(error));
+        throw new Error(`Invalid image structure: ${err.message}`);
       }
     }
   }
@@ -360,7 +365,8 @@ export class FileUploadService {
 
   private getMaxFileSizeForType(mimetype: string): number {
     const category = this.detectFileCategory(mimetype);
-    return MAX_FILE_SIZES[category] || MAX_FILE_SIZES.default;
+    const sizes: Record<string, number> = MAX_FILE_SIZES as any;
+    return sizes[category] || MAX_FILE_SIZES.default;
   }
 
   private sanitizeFilename(filename: string): string {
@@ -429,7 +435,7 @@ export class FileUploadService {
       }
 
       logger.info('File upload storage initialized', { uploadPath: this.uploadPath });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to initialize upload storage:', error);
       throw new Error('Storage initialization failed');
     }
@@ -474,8 +480,9 @@ export class FileUploadService {
 
       logger.info('File deleted successfully', { fileId, userId });
       return true;
-    } catch (error) {
-      logger.error('Error deleting file:', { fileId, error: error.message });
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('Error deleting file:', { fileId, error: err.message });
       throw error;
     }
   }

@@ -51,14 +51,14 @@ export class AuditMiddleware {
           // Log asynchrone pour ne pas impacter les performances
           setImmediate(async () => {
             try {
-              await this.auditService.logAction(auditData);
+              await this.auditService.logAction(auditData as any);
             } catch (error) {
               console.warn('Async audit logging failed:', error);
             }
           });
         } else {
           // Log synchrone pour assurer la trace avant la réponse
-          await this.auditService.logAction(auditData);
+          await this.auditService.logAction(auditData as any);
         }
 
       } catch (error) {
@@ -77,7 +77,7 @@ export class AuditMiddleware {
         const auditData = this.prepareSensitiveAuditData(request);
         
         // Log synchrone pour les routes sensibles
-        await this.auditService.logAction(auditData);
+        await this.auditService.logAction(auditData as any);
 
         // Ajouter des headers de sécurité spécifiques
         reply.header('X-Audit-Logged', 'true');
@@ -121,11 +121,12 @@ export class AuditMiddleware {
           },
           ipAddress: request.ip,
           userAgent: request.headers['user-agent'] || '',
+          timestamp: new Date(),
           severity: reply.statusCode >= 500 ? 'high' : 'medium',
           category: 'security'
         };
 
-        await this.auditService.logAction(auditData);
+        await this.auditService.logAction(auditData as any);
       } catch (auditError) {
         console.warn('Error audit logging failed:', auditError);
       }
@@ -151,6 +152,7 @@ export class AuditMiddleware {
       details: this.extractDetails(request),
       ipAddress: request.ip,
       userAgent: request.headers['user-agent'] || '',
+      timestamp: new Date(),
       severity,
       category
     };
@@ -164,6 +166,7 @@ export class AuditMiddleware {
     
     return {
       ...baseData,
+      timestamp: new Date(),
       severity: 'high',
       details: {
         ...baseData.details,

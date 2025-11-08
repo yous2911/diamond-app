@@ -6,7 +6,7 @@
 
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { db } from '../db/setup.js';
+import { db } from '../db/connection.js';
 import { parents, parentStudentRelations, students, type Parent, type NewParent } from '../db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import { config } from '../config/config.js';
@@ -60,7 +60,7 @@ export class ParentAuthService {
     const passwordHash = await bcrypt.hash(data.password, 12);
 
     // Create parent
-    const [newParent] = await db
+    await db
       .insert(parents)
       .values({
         nom: data.nom,
@@ -73,8 +73,18 @@ export class ParentAuthService {
         weeklyReportEnabled: true,
         achievementNotificationsEnabled: true,
         progressAlertsEnabled: true
-      })
-      .returning();
+      });
+
+    // Get the newly created parent
+    const [newParent] = await db
+      .select()
+      .from(parents)
+      .where(eq(parents.email, data.email))
+      .limit(1);
+
+    if (!newParent) {
+      throw new Error('Failed to create parent account');
+    }
 
     // Link to existing children if provided
     const children = [];
@@ -271,7 +281,7 @@ export class ParentAuthService {
         type: 'parent',
         children
       };
-    } catch (error) {
+    } catch (error: unknown) {
       throw new Error('Token invalide');
     }
   }

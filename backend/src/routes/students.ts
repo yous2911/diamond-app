@@ -1,5 +1,6 @@
 
 import { FastifyInstance } from 'fastify';
+import { Static } from '@sinclair/typebox';
 import { enhancedDatabaseService as databaseService } from '../services/enhanced-database.service.js';
 import { getStudentWithProgress, getRecommendedExercises } from '../db/optimized-queries';
 import { db } from '../db/connection';
@@ -27,7 +28,7 @@ export default async function studentRoutes(fastify: FastifyInstance) {
     preHandler: fastify.authenticate,
     schema: { params: CommonIdParams }
   }, async (request, reply) => {
-    const { id: studentId } = request.params;
+    const { id: studentId } = request.params as Static<typeof CommonIdParams>;
 
     if (!hasAccess(request.user, studentId)) {
       return reply.status(403).send({ success: false, error: { message: 'Accès refusé', code: 'ACCESS_DENIED' } });
@@ -42,8 +43,8 @@ export default async function studentRoutes(fastify: FastifyInstance) {
         success: true,
         data: studentData
       });
-    } catch (error) {
-      fastify.log.error('Get student error:', error);
+    } catch (error: unknown) {
+      fastify.log.error(error as Error, 'Get student error');
       return reply.status(500).send({ success: false, error: { code: 'INTERNAL_ERROR', message: 'Failed to get student data' } });
     }
   });
@@ -53,8 +54,8 @@ export default async function studentRoutes(fastify: FastifyInstance) {
     preHandler: fastify.authenticate,
     schema: RecommendationsSchema
   }, async (request, reply) => {
-    const { id: studentId } = request.params;
-    const { limit } = request.query;
+    const { id: studentId } = request.params as Static<typeof RecommendationsSchema.params>;
+    const { limit } = request.query as Static<typeof RecommendationsSchema.querystring>;
 
     if (!hasAccess(request.user, studentId)) {
       return reply.status(403).send({ success: false, error: { message: 'Accès refusé', code: 'ACCESS_DENIED' } });
@@ -63,8 +64,8 @@ export default async function studentRoutes(fastify: FastifyInstance) {
     try {
       const recommendations = await getRecommendedExercises(studentId, limit);
       return reply.send({ success: true, data: recommendations });
-    } catch (error) {
-      fastify.log.error('Get recommendations error:', error);
+    } catch (error: unknown) {
+      fastify.log.error(error as Error, 'Get recommendations error');
       return reply.status(500).send({ success: false, error: { code: 'INTERNAL_ERROR', message: 'Failed to get recommendations' } });
     }
   });
@@ -75,18 +76,18 @@ export default async function studentRoutes(fastify: FastifyInstance) {
     preValidation: fastify.csrfProtection,
     schema: AttemptSchema
   }, async (request, reply) => {
-    const { id: studentId } = request.params;
-    const attemptData = request.body;
+    const { id: studentId } = request.params as Static<typeof AttemptSchema.params>;
+    const attemptData = request.body as Static<typeof AttemptSchema.body>;
 
     if (!hasAccess(request.user, studentId)) {
       return reply.status(403).send({ success: false, error: { message: 'Accès refusé', code: 'ACCESS_DENIED' } });
     }
 
     try {
-      const result = await databaseService.recordStudentProgress(studentId, attemptData);
+      const result = await databaseService.recordStudentProgress(studentId, attemptData as any);
       return reply.send({ success: true, data: result });
-    } catch (error) {
-      fastify.log.error('Submit attempt error:', error);
+    } catch (error: unknown) {
+      fastify.log.error(error as Error, 'Submit attempt error');
       return reply.status(500).send({ success: false, error: { code: 'INTERNAL_ERROR', message: 'Failed to submit attempt' } });
     }
   });
@@ -96,7 +97,7 @@ export default async function studentRoutes(fastify: FastifyInstance) {
     preHandler: fastify.authenticate,
     schema: ProgressSchema
   }, async (request, reply) => {
-    const { id: studentId } = request.params;
+    const { id: studentId } = request.params as Static<typeof ProgressSchema.params>;
 
     if (!hasAccess(request.user, studentId)) {
       return reply.status(403).send({ success: false, error: { message: 'Accès refusé', code: 'ACCESS_DENIED' } });
@@ -105,8 +106,8 @@ export default async function studentRoutes(fastify: FastifyInstance) {
     try {
       const progress = await databaseService.getStudentProgress(studentId, undefined, 50);
       return reply.send({ success: true, data: progress });
-    } catch (error) {
-      fastify.log.error('Get progress error:', error);
+    } catch (error: unknown) {
+      fastify.log.error(error as Error, 'Get progress error');
       return reply.status(500).send({ success: false, error: { code: 'INTERNAL_ERROR', message: 'Failed to get progress' } });
     }
   });
@@ -121,8 +122,8 @@ export default async function studentRoutes(fastify: FastifyInstance) {
     try {
       const allStudents = await db.select().from(students);
       return { success: true, data: allStudents };
-    } catch (error) {
-      fastify.log.error('Get all students error:', error);
+    } catch (error: unknown) {
+      fastify.log.error(error as Error, 'Get all students error');
       return reply.status(500).send({ success: false, error: { code: 'INTERNAL_ERROR', message: 'Failed to get students list' } });
     }
   });
@@ -154,8 +155,8 @@ export default async function studentRoutes(fastify: FastifyInstance) {
           }
         }
       };
-    } catch (error) {
-      fastify.log.error('Get profile error:', error);
+    } catch (error: unknown) {
+      fastify.log.error(error as Error, 'Get profile error');
       return reply.status(500).send({ success: false, error: { code: 'INTERNAL_ERROR', message: 'Failed to get student profile' } });
     }
   });
@@ -168,8 +169,8 @@ export default async function studentRoutes(fastify: FastifyInstance) {
   }, async (request, reply) => {
     try {
       const studentId = (request.user as any).studentId;
-      const updates = request.body;
-      const updatedStudent = await databaseService.updateStudent(studentId, updates);
+      const updates = request.body as Static<typeof UpdateProfileSchema.body>;
+      const updatedStudent = await databaseService.updateStudent(studentId, updates as any);
       return {
         success: true,
         data: {
@@ -185,8 +186,8 @@ export default async function studentRoutes(fastify: FastifyInstance) {
           }
         }
       };
-    } catch (error) {
-      fastify.log.error('Update profile error:', error);
+    } catch (error: unknown) {
+      fastify.log.error(error as Error, 'Update profile error');
       return reply.status(500).send({ success: false, error: { code: 'INTERNAL_ERROR', message: 'Failed to update student profile' } });
     }
   });
@@ -196,7 +197,7 @@ export default async function studentRoutes(fastify: FastifyInstance) {
     preHandler: fastify.authenticate,
     schema: CompetenceProgressSchema
   }, async (request, reply) => {
-    const { id: studentId } = request.params as FromSchema<typeof CompetenceProgressSchema.params>;
+    const { id: studentId } = request.params as Static<typeof CompetenceProgressSchema.params>;
     if (!hasAccess(request.user, studentId)) {
       return reply.status(403).send({ success: false, error: { message: 'Accès refusé', code: 'ACCESS_DENIED' } });
     }
@@ -209,7 +210,7 @@ export default async function studentRoutes(fastify: FastifyInstance) {
     preValidation: fastify.csrfProtection,
     schema: RecordProgressSchema
   }, async (request, reply) => {
-    const { id: studentId } = request.params as FromSchema<typeof RecordProgressSchema.params>;
+    const { id: studentId } = request.params as Static<typeof RecordProgressSchema.params>;
     if (!hasAccess(request.user, studentId)) {
       return reply.status(403).send({ success: false, error: { message: 'Accès refusé', code: 'ACCESS_DENIED' } });
     }
@@ -221,7 +222,7 @@ export default async function studentRoutes(fastify: FastifyInstance) {
     preHandler: fastify.authenticate,
     schema: AchievementsSchema
   }, async (request, reply) => {
-    const { id: studentId } = request.params as FromSchema<typeof AchievementsSchema.params>;
+    const { id: studentId } = request.params as Static<typeof AchievementsSchema.params>;
     if (!hasAccess(request.user, studentId)) {
       return reply.status(403).send({ success: false, error: { message: 'Accès refusé', code: 'ACCESS_DENIED' } });
     }

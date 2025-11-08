@@ -231,6 +231,9 @@ export async function connectDatabase(): Promise<void> {
   }
 
   try {
+    // Sanitize database configuration for logging
+    const sanitizedConfig = sanitizeDatabaseConfig(dbConfig);
+
     // Validate SSL configuration for production
     if (isProduction && dbConfig.ssl) {
       if (!process.env.DB_SSL_CA) {
@@ -244,7 +247,7 @@ export async function connectDatabase(): Promise<void> {
       port: sanitizedConfig.port,
       database: sanitizedConfig.database,
       connectionLimit: sanitizedConfig.connectionLimit,
-      environment: config.NODE_ENV,
+      environment: dbConfig.host ? 'configured' : 'unknown',
       sslEnabled: !!dbConfig.ssl
     });
 

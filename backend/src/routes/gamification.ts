@@ -452,7 +452,8 @@ export default async function gamificationRoutes(fastify: FastifyInstance): Prom
       });
 
     } catch (error) {
-      (fastify.log as any).error('Error updating streak:', error.message);
+      const err = error instanceof Error ? error : new Error(String(error));
+      (fastify.log as any).error({ err }, 'Error updating streak');
       reply.code(500).send({
         success: false,
         message: 'Error updating streak'
@@ -524,7 +525,8 @@ export default async function gamificationRoutes(fastify: FastifyInstance): Prom
       });
 
     } catch (error) {
-      (fastify.log as any).error('Error giving kudos:', error.message);
+      const err = error instanceof Error ? error : new Error(String(error));
+      (fastify.log as any).error({ err }, 'Error giving kudos');
       reply.code(500).send({
         success: false,
         message: 'Error giving kudos'

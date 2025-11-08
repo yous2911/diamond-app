@@ -7,6 +7,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Bell, BellOff, Star, Target, Flame, Trophy, BookOpen } from 'lucide-react';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 
 interface Notification {
   id: string;
@@ -38,72 +39,33 @@ const RealTimeNotifications: React.FC<RealTimeNotificationsProps> = ({
   const [isConnected, setIsConnected] = useState(false);
   const [showCelebration, setShowCelebration] = useState<Notification | null>(null);
   const [ws, setWs] = useState<WebSocket | null>(null);
+  const prefersReducedMotion = useReducedMotion();
 
   const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3004';
   // Ensure WS_URL is properly constructed - remove any existing path and add /ws
   const baseUrl = API_URL.replace(/\/api.*$/, '').replace('http', 'ws');
   const WS_URL = baseUrl + '/ws';
 
-  // Initialize WebSocket connection
-  useEffect(() => {
-    const connectWebSocket = () => {
-      try {
-        console.log('Attempting to connect to WebSocket:', WS_URL);
-        const websocket = new WebSocket(WS_URL);
-        
-        websocket.onopen = () => {
-          console.log('✅ WebSocket connected');
-          setIsConnected(true);
-          
-          // Register user connection
-          websocket.send(JSON.stringify({
-            type: 'register',
-            userId,
-            userType
-          }));
-        };
+  const removeNotification = useCallback((id: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  }, []);
 
-        websocket.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
-            handleWebSocketMessage(data);
-          } catch (error) {
-            console.error('Error parsing WebSocket message:', error);
-          }
-        };
+  const generateId = useCallback(() => Date.now().toString() + Math.random().toString(36).substr(2, 9), []);
 
-        websocket.onclose = () => {
-          console.log('🔌 WebSocket disconnected');
-          setIsConnected(false);
-          
-          // Attempt to reconnect after 3 seconds
-          setTimeout(connectWebSocket, 3000);
-        };
+  const addNotification = useCallback((notification: Notification) => {
+    setNotifications(prev => [notification, ...prev.slice(0, 4)]); // Keep only 5 notifications
+    
+    if (onNotificationReceived) {
+      onNotificationReceived(notification);
+    }
 
-        websocket.onerror = (error) => {
-          console.error('❌ WebSocket error:', error);
-          setIsConnected(false);
-        };
-
-        setWs(websocket);
-      } catch (error) {
-        console.error('Failed to create WebSocket connection:', error);
-        setIsConnected(false);
-        // Fallback: try to reconnect after 5 seconds (only if not in test env)
-        if (process.env.NODE_ENV !== 'test') {
-          setTimeout(connectWebSocket, 5000);
-        }
-      }
-    };
-
-    connectWebSocket();
-
-    return () => {
-      if (ws) {
-        ws.close();
-      }
-    };
-  }, [userId, userType, WS_URL]);
+    // Auto-remove notification after duration
+    if (notification.duration) {
+      setTimeout(() => {
+        removeNotification(notification.id);
+      }, notification.duration);
+    }
+  }, [onNotificationReceived, removeNotification]);
 
   const handleWebSocketMessage = useCallback((data: any) => {
     switch (data.type) {
@@ -218,28 +180,69 @@ const RealTimeNotifications: React.FC<RealTimeNotificationsProps> = ({
         }
         break;
     }
-  }, [userType]);
+  }, [userType, addNotification, setShowCelebration, generateId]);
 
-  const addNotification = (notification: Notification) => {
-    setNotifications(prev => [notification, ...prev.slice(0, 4)]); // Keep only 5 notifications
-    
-    if (onNotificationReceived) {
-      onNotificationReceived(notification);
-    }
+  // Initialize WebSocket connection
+  useEffect(() => {
+    const connectWebSocket = () => {
+      try {
+        console.log('Attempting to connect to WebSocket:', WS_URL);
+        const websocket = new WebSocket(WS_URL);
+        
+        websocket.onopen = () => {
+          console.log('✅ WebSocket connected');
+          setIsConnected(true);
+          
+          // Register user connection
+          websocket.send(JSON.stringify({
+            type: 'register',
+            userId,
+            userType
+          }));
+        };
 
-    // Auto-remove notification after duration
-    if (notification.duration) {
-      setTimeout(() => {
-        removeNotification(notification.id);
-      }, notification.duration);
-    }
-  };
+        websocket.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            handleWebSocketMessage(data);
+          } catch (error) {
+            console.error('Error parsing WebSocket message:', error);
+          }
+        };
 
-  const removeNotification = (id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
-  };
+        websocket.onclose = () => {
+          console.log('🔌 WebSocket disconnected');
+          setIsConnected(false);
+          
+          // Attempt to reconnect after 3 seconds
+          setTimeout(connectWebSocket, 3000);
+        };
 
-  const generateId = () => Date.now().toString() + Math.random().toString(36).substr(2, 9);
+        websocket.onerror = (error) => {
+          console.error('❌ WebSocket error:', error);
+          setIsConnected(false);
+        };
+
+        setWs(websocket);
+      } catch (error) {
+        console.error('Failed to create WebSocket connection:', error);
+        setIsConnected(false);
+        // Fallback: try to reconnect after 5 seconds (only if not in test env)
+        if (process.env.NODE_ENV !== 'test') {
+          setTimeout(connectWebSocket, 5000);
+        }
+      }
+    };
+
+    connectWebSocket();
+
+    return () => {
+      if (ws) {
+        ws.close();
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, userType, WS_URL, handleWebSocketMessage]);
 
   const getIconComponent = (iconString: string) => {
     switch (iconString) {
@@ -262,9 +265,9 @@ const RealTimeNotifications: React.FC<RealTimeNotificationsProps> = ({
               ? 'bg-green-500 text-white'
               : 'bg-red-500 text-white'
           }`}
-          initial={{ scale: 0 }}
+          initial={prefersReducedMotion ? { scale: 1 } : { scale: 0 }}
           animate={{ scale: 1 }}
-          transition={{ type: "spring", stiffness: 500, damping: 30 }}
+          transition={prefersReducedMotion ? { duration: 0.01 } : { type: "spring", stiffness: 500, damping: 30 }}
         >
           {isConnected ? <Bell className="w-4 h-4" /> : <BellOff className="w-4 h-4" />}
           {isConnected ? 'Notifications actives' : 'Reconnexion...'}
@@ -278,16 +281,16 @@ const RealTimeNotifications: React.FC<RealTimeNotificationsProps> = ({
             <motion.div
               key={notification.id}
               className={`${notification.color} rounded-xl p-4 text-white shadow-lg backdrop-blur-sm`}
-              initial={{ opacity: 0, x: 300, scale: 0.8 }}
+              initial={prefersReducedMotion ? { opacity: 1, x: 0, scale: 1 } : { opacity: 0, x: 300, scale: 0.8 }}
               animate={{ opacity: 1, x: 0, scale: 1 }}
-              exit={{ opacity: 0, x: 300, scale: 0.8 }}
-              transition={{ 
+              exit={prefersReducedMotion ? { opacity: 1, x: 0, scale: 1 } : { opacity: 0, x: 300, scale: 0.8 }}
+              transition={prefersReducedMotion ? { duration: 0.01 } : { 
                 type: "spring", 
                 stiffness: 300, 
                 damping: 30,
                 mass: 0.8
               }}
-              whileHover={{ scale: 1.02 }}
+              whileHover={!prefersReducedMotion ? { scale: 1.02 } : undefined}
             >
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-3 flex-1">
@@ -325,36 +328,38 @@ const RealTimeNotifications: React.FC<RealTimeNotificationsProps> = ({
             exit={{ opacity: 0 }}
           >
             {/* Confetti Animation */}
-            <div className="absolute inset-0 pointer-events-none overflow-hidden">
-              {Array.from({ length: 50 }).map((_, i) => (
-                <motion.div
-                  key={i}
-                  className="absolute w-2 h-2 bg-yellow-400 rounded-full"
-                  style={{
-                    left: `${Math.random() * 100}%`,
-                    top: '-10px'
-                  }}
-                  animate={{
-                    y: window.innerHeight + 20,
-                    rotate: 360,
-                    opacity: [1, 1, 0]
-                  }}
-                  transition={{
-                    duration: 3,
-                    delay: Math.random() * 2,
-                    ease: "easeOut"
-                  }}
-                />
-              ))}
-            </div>
+            {!prefersReducedMotion && (
+              <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                {Array.from({ length: 50 }).map((_, i) => (
+                  <motion.div
+                    key={i}
+                    className="absolute w-2 h-2 bg-yellow-400 rounded-full"
+                    style={{
+                      left: `${Math.random() * 100}%`,
+                      top: '-10px'
+                    }}
+                    animate={{
+                      y: window.innerHeight + 20,
+                      rotate: 360,
+                      opacity: [1, 1, 0]
+                    }}
+                    transition={{
+                      duration: 3,
+                      delay: Math.random() * 2,
+                      ease: "easeOut"
+                    }}
+                  />
+                ))}
+              </div>
+            )}
 
             {/* Celebration Content */}
             <motion.div
               className="bg-white rounded-3xl p-8 max-w-md mx-4 text-center shadow-2xl"
-              initial={{ scale: 0, rotate: -10 }}
+              initial={prefersReducedMotion ? { scale: 1, rotate: 0 } : { scale: 0, rotate: -10 }}
               animate={{ scale: 1, rotate: 0 }}
-              exit={{ scale: 0, rotate: 10 }}
-              transition={{ 
+              exit={prefersReducedMotion ? { scale: 1, rotate: 0 } : { scale: 0, rotate: 10 }}
+              transition={prefersReducedMotion ? { duration: 0.01 } : { 
                 type: "spring", 
                 stiffness: 300, 
                 damping: 20 
@@ -362,11 +367,14 @@ const RealTimeNotifications: React.FC<RealTimeNotificationsProps> = ({
             >
               <motion.div
                 className="text-8xl mb-4"
-                animate={{ 
+                animate={prefersReducedMotion ? { 
+                  scale: 1,
+                  rotate: 0
+                } : { 
                   scale: [1, 1.2, 1],
                   rotate: [0, 10, -10, 0]
                 }}
-                transition={{ 
+                transition={prefersReducedMotion ? { duration: 0.01 } : { 
                   duration: 1, 
                   repeat: Infinity,
                   ease: "easeInOut"
@@ -395,7 +403,7 @@ const RealTimeNotifications: React.FC<RealTimeNotificationsProps> = ({
               
               <motion.button
                 className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-8 py-3 rounded-full font-semibold shadow-lg"
-                whileHover={{ scale: 1.05 }}
+                whileHover={!prefersReducedMotion ? { scale: 1.05 } : undefined}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setShowCelebration(null)}
                 initial={{ opacity: 0, y: 20 }}

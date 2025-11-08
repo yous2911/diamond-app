@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, memo } from 'react';
 import { motion, AnimatePresence, useAnimation } from 'framer-motion';
 import { useMagicalSounds } from '../hooks/useMagicalSounds';
+import { useReducedMotion } from '../hooks/useReducedMotion';
 import EnhancedLevelUpSystem from './EnhancedLevelUpSystem';
 
 // =============================================================================
@@ -31,6 +32,7 @@ const XPCrystalsPremium = memo<XPCrystalsPremiumProps>(({
   const crystalRef = useRef<HTMLDivElement>(null);
   const mainControls = useAnimation();
   const { playLevelUpFanfare, playSparkleSound } = useMagicalSounds();
+  const prefersReducedMotion = useReducedMotion();
 
   const progress = Math.min((displayXP / maxXP) * 100, 100);
 
@@ -73,14 +75,16 @@ const XPCrystalsPremium = memo<XPCrystalsPremiumProps>(({
     }
   }, [currentXP, displayXP, playSparkleSound]);
 
-  // Breathing animation
+  // Breathing animation (disabled for reduced motion)
   useEffect(() => {
-    mainControls.start({
-      scale: [1, 1.05, 1],
-      rotate: [0, 2, 0],
-      transition: { duration: 3, repeat: Infinity, ease: "easeInOut" }
-    });
-  }, [mainControls]);
+    if (!prefersReducedMotion) {
+      mainControls.start({
+        scale: [1, 1.05, 1],
+        rotate: [0, 2, 0],
+        transition: { duration: 3, repeat: Infinity, ease: "easeInOut" }
+      });
+    }
+  }, [mainControls, prefersReducedMotion]);
 
   return (
     <div className="relative" data-testid="xp-crystals-premium">
@@ -102,8 +106,8 @@ const XPCrystalsPremium = memo<XPCrystalsPremiumProps>(({
         animate={mainControls}
         onHoverStart={() => setIsHovered(true)}
         onHoverEnd={() => setIsHovered(false)}
-        whileHover={{ scale: 1.1 }}
-        whileTap={{ scale: 0.95 }}
+        whileHover={prefersReducedMotion ? undefined : { scale: 1.1 }}
+        whileTap={prefersReducedMotion ? undefined : { scale: 0.95 }}
       >
         {/* Multi-layered Aura */}
         <div className="absolute inset-0 pointer-events-none">
@@ -121,11 +125,15 @@ const XPCrystalsPremium = memo<XPCrystalsPremiumProps>(({
                 key={i}
                 className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 ${sizes[i]} ${colors[i]} rounded-full opacity-30`}
                 style={{ filter: `blur(${blurs[i]}px)` }}
-                animate={{
+                animate={prefersReducedMotion ? {
+                  opacity: isHovered ? 0.6 : 0.3
+                } : {
                   scale: isHovered ? [1, 1.3, 1] : [1, 1.1, 1],
                   opacity: isHovered ? [0.3, 0.6, 0.3] : [0.2, 0.4, 0.2]
                 }}
-                transition={{
+                transition={prefersReducedMotion ? {
+                  duration: 0.1
+                } : {
                   duration: 2 + i,
                   repeat: Infinity,
                   ease: "easeInOut"

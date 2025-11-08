@@ -74,9 +74,10 @@ export class ImageProcessingService {
         hasAlpha: metadata.hasAlpha || false,
         isAnimated: metadata.pages ? metadata.pages > 1 : false
       };
-    } catch (error) {
-      logger.error('Error getting image info:', error);
-      throw new Error(`Failed to get image information: ${error.message}`);
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('Error getting image info:', err);
+      throw new Error(`Failed to get image information: ${err.message}`);
     }
   }
 
@@ -111,7 +112,7 @@ export class ImageProcessingService {
       }
 
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Image validation failed:', error);
       throw error;
     }
@@ -138,11 +139,12 @@ export class ImageProcessingService {
             size
           );
           variants.push(variant);
-        } catch (error) {
+        } catch (error: unknown) {
+          const err = error instanceof Error ? error : new Error(String(error));
           logger.warn(`Failed to generate ${size.name} thumbnail:`, {
             source: sourcePath,
             size: size.name,
-            error: error.message
+            error: err.message
           });
         }
       }
@@ -154,9 +156,10 @@ export class ImageProcessingService {
       });
 
       return variants;
-    } catch (error) {
-      logger.error('Error generating thumbnails:', error);
-      throw new Error(`Thumbnail generation failed: ${error.message}`);
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('Error generating thumbnails:', err);
+      throw new Error(`Thumbnail generation failed: ${err.message}`);
     }
   }
 
@@ -279,9 +282,10 @@ export class ImageProcessingService {
       }
 
       return await image.toBuffer();
-    } catch (error) {
-      logger.error('Error compressing image:', error);
-      throw new Error(`Image compression failed: ${error.message}`);
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('Error compressing image:', err);
+      throw new Error(`Image compression failed: ${err.message}`);
     }
   }
 
@@ -323,9 +327,10 @@ export class ImageProcessingService {
       }
 
       return await image.toBuffer();
-    } catch (error) {
-      logger.error('Error resizing image:', error);
-      throw new Error(`Image resize failed: ${error.message}`);
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('Error resizing image:', err);
+      throw new Error(`Image resize failed: ${err.message}`);
     }
   }
 
@@ -369,9 +374,10 @@ export class ImageProcessingService {
           top: position.top
         }])
         .toBuffer();
-    } catch (error) {
-      logger.error('Error adding watermark:', error);
-      throw new Error(`Watermark application failed: ${error.message}`);
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('Error adding watermark:', err);
+      throw new Error(`Watermark application failed: ${err.message}`);
     }
   }
 
@@ -404,9 +410,10 @@ export class ImageProcessingService {
       }
 
       return await image.toBuffer();
-    } catch (error) {
-      logger.error('Error converting image format:', error);
-      throw new Error(`Format conversion failed: ${error.message}`);
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('Error converting image format:', err);
+      throw new Error(`Format conversion failed: ${err.message}`);
     }
   }
 
@@ -424,9 +431,10 @@ export class ImageProcessingService {
       const hexColor = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
       
       return [hexColor];
-    } catch (error) {
-      logger.error('Error extracting color palette:', error);
-      throw new Error(`Color extraction failed: ${error.message}`);
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('Error extracting color palette:', err);
+      throw new Error(`Color extraction failed: ${err.message}`);
     }
   }
 
@@ -451,9 +459,10 @@ export class ImageProcessingService {
       if (avif) result.avif = avif;
 
       return result;
-    } catch (error) {
-      logger.error('Error optimizing image for web:', error);
-      throw new Error(`Web optimization failed: ${error.message}`);
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('Error optimizing image for web:', err);
+      throw new Error(`Web optimization failed: ${err.message}`);
     }
   }
 
@@ -528,9 +537,10 @@ export class ImageProcessingService {
       );
 
       return results;
-    } catch (error) {
-      logger.error('Error in batch processing:', error);
-      throw new Error(`Batch processing failed: ${error.message}`);
+    } catch (error: unknown) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('Error in batch processing:', err);
+      throw new Error(`Batch processing failed: ${err.message}`);
     }
   }
 }

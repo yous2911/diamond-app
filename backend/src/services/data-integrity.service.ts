@@ -367,8 +367,9 @@ class DataIntegrityService extends EventEmitter {
       this.emit('initialized');
 
     } catch (error) {
-      logger.error('Failed to initialize data integrity service', { error });
-      throw error;
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('Failed to initialize data integrity service', { error: err });
+      throw err;
     }
   }
 
@@ -380,9 +381,10 @@ class DataIntegrityService extends EventEmitter {
           try {
             await this.checkRule(rule.id);
           } catch (error) {
+            const err = error instanceof Error ? error : new Error(String(error));
             logger.error('Scheduled integrity check failed', {
               ruleId: rule.id,
-              error: error.message
+              error: err.message
             });
           }
         }, { });
@@ -396,7 +398,8 @@ class DataIntegrityService extends EventEmitter {
       try {
         await this.runComprehensiveCheck();
       } catch (error) {
-        logger.error('Daily comprehensive integrity check failed', { error });
+        const err = error instanceof Error ? error : new Error(String(error));
+        logger.error('Daily comprehensive integrity check failed', { error: err });
       }
     }, { name: 'comprehensive-integrity-check' });
 
@@ -414,7 +417,8 @@ class DataIntegrityService extends EventEmitter {
       try {
         await this.collectDataQualityMetrics();
       } catch (error) {
-        logger.error('Data quality metrics collection failed', { error });
+        const err = error instanceof Error ? error : new Error(String(error));
+        logger.error('Data quality metrics collection failed', { error: err });
       }
     }, { name: 'data-quality-metrics' });
 
@@ -488,10 +492,11 @@ class DataIntegrityService extends EventEmitter {
       return checkResult;
 
     } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
       const executionTime = Date.now() - startTime;
       logger.error('Integrity rule check failed', {
         ruleId: rule.id,
-        error: error.message
+        error: err.message
       });
 
       const checkResult: IntegrityCheckResult = {
@@ -502,7 +507,7 @@ class DataIntegrityService extends EventEmitter {
           id: `error-${Date.now()}`,
           table: rule.table,
           primaryKey: {},
-          description: `Rule execution failed: ${error.message}`,
+          description: `Rule execution failed: ${err.message}`,
           severity: 'critical',
           detectedAt: new Date(),
           resolved: false
@@ -545,9 +550,10 @@ class DataIntegrityService extends EventEmitter {
       }
 
     } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
       logger.debug('Could not get detailed violations', {
         ruleId: rule.id,
-        error: error.message
+        error: err.message
       });
 
       // Create a generic violation if we can't get details
@@ -632,9 +638,10 @@ class DataIntegrityService extends EventEmitter {
           const result = await this.checkRule(rule.id);
           results.push(result);
         } catch (error) {
+          const err = error instanceof Error ? error : new Error(String(error));
           logger.error('Rule check failed during comprehensive check', {
             ruleId: rule.id,
-            error: error.message
+            error: err.message
           });
         }
       }
@@ -683,8 +690,9 @@ class DataIntegrityService extends EventEmitter {
       return report;
 
     } catch (error) {
-      logger.error('Comprehensive integrity check failed', { error });
-      throw error;
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('Comprehensive integrity check failed', { error: err });
+      throw err;
     }
   }
 
@@ -800,7 +808,8 @@ class DataIntegrityService extends EventEmitter {
       this.emit('metricsCollected', metrics);
 
     } catch (error) {
-      logger.error('Failed to collect data quality metrics', { error });
+      const err = error instanceof Error ? error : new Error(String(error));
+      logger.error('Failed to collect data quality metrics', { error: err });
     }
   }
 
@@ -884,7 +893,8 @@ class DataIntegrityService extends EventEmitter {
       const result = (rows as any[])[0];
       return result.recent_updates || 100;
     } catch (error) {
-      return 100; // Default if timestamp columns don't exist
+      // Default if timestamp columns don't exist
+      return 100;
     }
   }
 
@@ -897,7 +907,8 @@ class DataIntegrityService extends EventEmitter {
         try {
           await this.checkRule(rule.id);
         } catch (error) {
-          logger.error('Custom rule check failed', { ruleId: rule.id, error });
+          const err = error instanceof Error ? error : new Error(String(error));
+          logger.error('Custom rule check failed', { ruleId: rule.id, error: err });
         }
       }, { });
 

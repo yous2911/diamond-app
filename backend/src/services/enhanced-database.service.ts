@@ -130,7 +130,7 @@ class EnhancedDatabaseService {
         .offset(filters.offset || 0);
 
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Get student competence progress error:', { studentId, filters, error });
       throw new Error('Failed to get student competence progress');
     }
@@ -165,9 +165,9 @@ class EnhancedDatabaseService {
       if (existingProgress.length > 0) {
         // Update existing progress
         const current = existingProgress[0];
-        const newTotalAttempts = current.totalAttempts + (data.attempts || 1);
-        const newSuccessfulAttempts = current.successfulAttempts + (data.completed ? 1 : 0);
-        const newAverageScore = Number((((Number(current.currentScore) || 0) * current.totalAttempts) + data.score) / newTotalAttempts);
+        const newTotalAttempts = (current.totalAttempts || 0) + (data.attempts || 1);
+        const newSuccessfulAttempts = (current.successfulAttempts || 0) + (data.completed ? 1 : 0);
+        const newAverageScore = Number((((Number(current.currentScore) || 0) * (current.totalAttempts || 0)) + data.score) / newTotalAttempts);
         
         // Calculate new mastery level
         const oldMasteryLevel = current.masteryLevel;
@@ -232,7 +232,7 @@ class EnhancedDatabaseService {
           averageScore: data.score
         };
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Record student progress error:', { studentId, data, error });
       throw new Error('Failed to record student progress');
     }
@@ -253,7 +253,7 @@ class EnhancedDatabaseService {
         .orderBy(asc(competencePrerequisites.minimumLevel));
 
       return prerequisites;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Get competence prerequisites error:', { competenceCode, error });
       throw new Error('Failed to get competence prerequisites');
     }
@@ -288,7 +288,7 @@ class EnhancedDatabaseService {
         .offset(filters.offset || 0);
 
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Get student achievements error:', { studentId, filters, error });
       throw new Error('Failed to get student achievements');
     }
@@ -326,7 +326,7 @@ class EnhancedDatabaseService {
         .offset(filters.offset || 0);
 
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Get daily learning analytics error:', { filters, error });
       throw new Error('Failed to get daily learning analytics');
     }
@@ -364,7 +364,7 @@ class EnhancedDatabaseService {
         .offset(filters.offset || 0);
 
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Get learning session tracking error:', { filters, error });
       throw new Error('Failed to get learning session tracking');
     }
@@ -380,7 +380,7 @@ class EnhancedDatabaseService {
         .select({
           totalExercises: count(),
           completedExercises: sql<number>`COUNT(CASE WHEN ${studentProgress.completed} THEN 1 END)`,
-          averageScore: avg(sql<number>`CAST(${studentProgress.score} AS DECIMAL(5,2))`),
+          averageScore: avg(studentProgress.averageScore),
           totalTimeSpent: sum(studentProgress.timeSpent),
           xpEarned: sql<number>`COALESCE(SUM(10), 0)` // Default XP value
         })
@@ -405,7 +405,7 @@ class EnhancedDatabaseService {
       };
 
       competenceBreakdown.forEach(item => {
-        if (item.masteryLevel in breakdown) {
+        if (item.masteryLevel && item.masteryLevel in breakdown) {
           breakdown[item.masteryLevel as keyof typeof breakdown] = item.count;
         }
       });
@@ -424,7 +424,7 @@ class EnhancedDatabaseService {
         masteredCompetences: breakdown.expertise + breakdown.maitrise,
         competenceBreakdown: breakdown
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Get student stats error:', { studentId, error });
       throw new Error('Failed to get student statistics');
     }
@@ -463,7 +463,7 @@ class EnhancedDatabaseService {
         .limit(limit);
 
       return recommendedExercises;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Get recommended exercises error:', { studentId, error });
       throw new Error('Failed to get recommended exercises');
     }
@@ -497,7 +497,7 @@ class EnhancedDatabaseService {
       }
 
       return student;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Get student by ID error:', { id, error });
       throw new Error('Failed to get student');
     }
@@ -516,7 +516,7 @@ class EnhancedDatabaseService {
         .limit(limit || 50);
 
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Get student progress error:', { studentId, matiere, error });
       return [];
     }
@@ -569,7 +569,7 @@ class EnhancedDatabaseService {
       }
 
       return streak;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Calculate streak error:', { studentId, error });
       return 0;
     }
@@ -598,7 +598,7 @@ class EnhancedDatabaseService {
           timestamp: new Date().toISOString()
         }
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Database health check failed:', error);
       return {
         status: 'unhealthy',
@@ -622,7 +622,7 @@ class EnhancedDatabaseService {
       const updated = await this.getStudentById(id);
       if (!updated) throw new Error('Student not found after update');
       return updated;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Update student error:', { id, updates, error });
       throw new Error('Failed to update student');
     }
@@ -643,7 +643,7 @@ class EnhancedDatabaseService {
         });
       
       return { id: (result as any).insertId, ...sessionData };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Create session error:', { sessionData, error });
       throw new Error('Failed to create session');
     }
@@ -657,7 +657,7 @@ class EnhancedDatabaseService {
         .where(eq(learningSessionTracking.id, parseInt(id)));
       
       return { id, ...updates };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Update session error:', { id, updates, error });
       throw new Error('Failed to update session');
     }
@@ -670,7 +670,7 @@ class EnhancedDatabaseService {
         .from(weeklyProgressSummary)
         .where(eq(weeklyProgressSummary.studentId, studentId))
         .orderBy(desc(weeklyProgressSummary.weekStart));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Get weekly progress error:', { studentId, error });
       return [];
     }
@@ -683,7 +683,7 @@ class EnhancedDatabaseService {
           matiere: exercises.matiere,
           totalExercises: count(),
           completedExercises: sql<number>`COUNT(CASE WHEN ${studentProgress.completed} THEN 1 END)`,
-          averageScore: avg(sql<number>`CAST(${studentProgress.score} AS DECIMAL(5,2))`)
+          averageScore: avg(sql<number>`CAST(${studentProgress.averageScore} AS DECIMAL(5,2))`)
         })
         .from(studentProgress)
         .innerJoin(exercises, eq(studentProgress.exerciseId, exercises.id))
@@ -698,7 +698,7 @@ class EnhancedDatabaseService {
         };
         return acc;
       }, {} as Record<string, any>);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Get subject progress error:', { studentId, error });
       return {};
     }
