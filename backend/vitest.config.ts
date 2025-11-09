@@ -7,7 +7,6 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     setupFiles: ['./src/tests/setup.ts'],
-    pool: 'threads',
     isolate: false,
     clearMocks: true,
     restoreMocks: false,

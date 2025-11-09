@@ -67,3 +67,18 @@ vi.mock('../db/connection', () => {
     }
   };
 });
+
+// Mock EncryptionService
+vi.mock('../services/encryption.service', () => {
+  const mockEncryptionService = {
+    encryptStudentData: vi.fn((data) => Promise.resolve({
+      encryptedData: JSON.stringify(data),
+      keyId: 'test-key-123'
+    })),
+    decryptStudentData: vi.fn((encryptedData) => Promise.resolve(JSON.parse(encryptedData.encryptedData))),
+  };
+
+  return {
+    EncryptionService: vi.fn(() => mockEncryptionService)
+  };
+});
