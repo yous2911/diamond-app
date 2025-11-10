@@ -4,7 +4,7 @@
  * Works alongside existing student authentication system
  */
 
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { db } from '../db/setup.js';
 import { parents, parentStudentRelations, students, type Parent, type NewParent } from '../db/schema.js';

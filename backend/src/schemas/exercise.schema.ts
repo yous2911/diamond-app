@@ -1,7 +1,8 @@
 import { Type } from '@sinclair/typebox';
 import { SanitizedText, SanitizedHTML, CommonIdParams, PaginationQuery } from './common.schema';
 
-const CompetenceCode = Type.RegEx(/^[A-Z]{2}\.\d{4}\.\d+$/, {
+const CompetenceCode = Type.String({
+  pattern: '^[A-Z]{2}\\.\\d{4}\\.\\d+$',
   description: 'Code de compétence (e.g., CP.2025.1)',
 });
 

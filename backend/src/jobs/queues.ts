@@ -16,8 +16,18 @@ export const emailQueue = redis
   ? new Queue('email-queue', { connection: redis })
   : null;
 
+export const leaderboardQueue = redis
+  ? new Queue('leaderboard-queue', { connection: redis })
+  : null;
+
 if (emailQueue) {
   logger.info('📧 Email queue initialized successfully.');
 } else {
   logger.warn('⚠️ Email queue could not be initialized because Redis is not available.');
+}
+
+if (leaderboardQueue) {
+  logger.info('🏆 Leaderboard queue initialized successfully.');
+} else {
+  logger.warn('⚠️ Leaderboard queue could not be initialized because Redis is not available.');
 }

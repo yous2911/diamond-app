@@ -71,23 +71,29 @@ const redisPlugin = async (fastify: any) => {
         port: redisConfig.port,
         password: redisConfig.password || undefined,
         db: redisConfig.db,
-        // retryDelayOnFailover removed - not supported in current Redis version
-        maxRetriesPerRequest: redisConfig.maxRetriesPerRequest,
+        maxRetriesPerRequest: 1, // Limit retries per request
         lazyConnect: redisConfig.lazyConnect,
-        showFriendlyErrorStack: redisConfig.showFriendlyErrorStack,
+        showFriendlyErrorStack: false, // Disable stack traces in production
         connectTimeout: redisConfig.connectTimeout,
         commandTimeout: redisConfig.commandTimeout,
-        
-        // Connection retry configuration
+        enableOfflineQueue: false, // Don't queue commands when offline
+        enableReadyCheck: true,
+
+        // Connection retry configuration - stop after 3 attempts
         retryStrategy: (times) => {
           if (times > 3) {
             fastify.log.error('Redis connection failed after 3 retries, falling back to memory cache');
+            redis = null; // Clear the redis instance
+            isRedisAvailable = false;
             return null; // Stop retrying
           }
           const delay = Math.min(times * 50, 2000);
           fastify.log.warn(`Redis connection retry ${times} in ${delay}ms`);
           return delay;
-        }
+        },
+
+        // Prevent reconnection on errors
+        reconnectOnError: () => false
       });
 
       // Event handlers

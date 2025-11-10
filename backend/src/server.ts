@@ -45,14 +45,15 @@ async function registerPlugins() {
     logger.info('📦 Registering security plugin (Helmet)...');
     await fastify.register(import('./plugins/security'));
 
-    logger.info('📦 Registering CSRF protection plugin...');
-    await fastify.register(import('./plugins/csrf'));
-    
-    logger.info('📦 Registering rate-limit plugin...');
-    await fastify.register(import('./plugins/rate-limit'));
-    
+    // CSRF temporarily disabled - re-enable after CSR grant presentation
+    // logger.info('📦 Registering CSRF protection plugin...');
+    // await fastify.register(import('./plugins/csrf'));
+
     logger.info('📦 Registering auth plugin...');
     await fastify.register(import('./plugins/auth'));
+
+    logger.info('📦 Registering rate-limit plugin...');
+    await fastify.register(import('./plugins/rate-limit'));
     
     logger.info('📦 Registering websocket plugin...');
     await fastify.register(import('./plugins/websocket'));

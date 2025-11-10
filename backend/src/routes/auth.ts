@@ -4,7 +4,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { authSchemas, loginSchema, registerSchema } from '../schemas/auth.schema';
 import { AuthService } from '../services/auth.service';
 import { addSendWelcomeEmailJob } from '../jobs/producers/email.producer';
-import { serviceContainer } from '../container/service.container';
 
 // Types will be inferred from Zod schemas, removing manual interfaces
 type LoginRequestBody = z.infer<typeof loginSchema>;
@@ -29,8 +28,8 @@ interface AuthenticatedRequest extends FastifyRequest {
 }
 
 export default async function authRoutes(fastify: FastifyInstance) {
-  // Use dependency injection instead of manual instantiation
-  const authService = serviceContainer.get('authService') || new AuthService();
+  // Instantiate AuthService directly
+  const authService = new AuthService();
   const sevenDaysInSeconds = 7 * 24 * 60 * 60;
 
   // Secure login endpoint

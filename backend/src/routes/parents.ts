@@ -44,26 +44,7 @@ const GetSuperMemoStatsSchema = z.object({
 const parentsRoutes: FastifyPluginAsync = async (fastify) => {
   
   // Get all children for a parent
-  fastify.get('/children/:parentId', {
-    schema: {
-      params: GetChildrenSchema,
-      response: {
-        200: z.array(z.object({
-          id: z.number(),
-          name: z.string(),
-          age: z.number(),
-          level: z.string(),
-          avatar: z.string(),
-          totalXP: z.number(),
-          currentStreak: z.number(),
-          completedExercises: z.number(),
-          masteredCompetencies: z.number(),
-          currentLevel: z.number(),
-          lastActivity: z.string()
-        }))
-      }
-    }
-  }, async (request: FastifyRequest<{ Params: z.infer<typeof GetChildrenSchema> }>, reply: FastifyReply) => {
+  fastify.get('/children/:parentId', async (request: FastifyRequest<{ Params: z.infer<typeof GetChildrenSchema> }>, reply: FastifyReply) => {
     try {
       const { parentId } = request.params;
 
@@ -98,11 +79,11 @@ const parentsRoutes: FastifyPluginAsync = async (fastify) => {
 
           // Get mastered competencies count
           const [competencyStats] = await db
-            .select({ count: count(competencies_progress.id) })
-            .from(competencies_progress)
+            .select({ count: count(studentCompetenceProgress.id) })
+            .from(studentCompetenceProgress)
             .where(and(
-              eq(competencies_progress.studentId, child.id),
-              gte(competencies_progress.masteryLevel, 0.8)
+              eq(studentCompetenceProgress.studentId, child.id),
+              gte(studentCompetenceProgress.masteryLevel, 0.8)
             ));
 
           // Calculate age from date of birth
@@ -134,40 +115,9 @@ const parentsRoutes: FastifyPluginAsync = async (fastify) => {
   });
 
   // Get detailed analytics for a specific child
-  fastify.get('/analytics/:childId', {
-    schema: {
-      params: z.object({ childId: z.string() }),
-      querystring: z.object({ 
-        timeframe: z.enum(['week', 'month', 'year']).default('week') 
-      }),
-      response: {
-        200: z.object({
-          weeklyProgress: z.array(z.number()),
-          recentAchievements: z.array(z.object({
-            id: z.number(),
-            title: z.string(),
-            icon: z.string(),
-            date: z.string(),
-            color: z.string()
-          })),
-          competencyProgress: z.array(z.object({
-            domain: z.string(),
-            progress: z.number(),
-            total: z.number(),
-            mastered: z.number()
-          })),
-          learningPattern: z.object({
-            bestTime: z.string(),
-            averageSession: z.string(),
-            preferredSubject: z.string(),
-            difficultyTrend: z.string()
-          })
-        })
-      }
-    }
-  }, async (request: FastifyRequest<{ 
-    Params: { childId: string }, 
-    Querystring: { timeframe: 'week' | 'month' | 'year' } 
+  fastify.get('/analytics/:childId', async (request: FastifyRequest<{
+    Params: { childId: string },
+    Querystring: { timeframe: 'week' | 'month' | 'year' }
   }>, reply: FastifyReply) => {
     try {
       const childId = parseInt(request.params.childId);
@@ -222,14 +172,14 @@ const parentsRoutes: FastifyPluginAsync = async (fastify) => {
       // Get recent achievements
       const achievements = await db
         .select({
-          id: student_achievements.id,
-          achievementType: student_achievements.achievementType,
-          achievementData: student_achievements.achievementData,
-          earnedAt: student_achievements.earnedAt
+          id: studentAchievements.id,
+          achievementType: studentAchievements.achievementType,
+          achievementData: studentAchievements.achievementData,
+          earnedAt: studentAchievements.earnedAt
         })
-        .from(student_achievements)
-        .where(eq(student_achievements.studentId, childId))
-        .orderBy(desc(student_achievements.earnedAt))
+        .from(studentAchievements)
+        .where(eq(studentAchievements.studentId, childId))
+        .orderBy(desc(studentAchievements.earnedAt))
         .limit(5);
 
       const recentAchievements = achievements.map((ach, index) => ({
@@ -248,12 +198,12 @@ const parentsRoutes: FastifyPluginAsync = async (fastify) => {
       // Get competency progress by domain
       const competencyProgress = await db
         .select({
-          competencyCode: competencies_progress.competencyCode,
-          masteryLevel: competencies_progress.masteryLevel,
-          practiceCount: competencies_progress.practiceCount
+          competencyCode: studentCompetenceProgress.competencyCode,
+          masteryLevel: studentCompetenceProgress.masteryLevel,
+          practiceCount: studentCompetenceProgress.practiceCount
         })
-        .from(competencies_progress)
-        .where(eq(competencies_progress.studentId, childId));
+        .from(studentCompetenceProgress)
+        .where(eq(studentCompetenceProgress.studentId, childId));
 
       // Group by domain (first 2 characters of competency code)
       const domainStats: Record<string, { total: number, mastered: number, avgMastery: number }> = {};
@@ -315,26 +265,9 @@ const parentsRoutes: FastifyPluginAsync = async (fastify) => {
   });
 
   // Get SuperMemo algorithm performance stats
-  fastify.get('/supermemo/:childId', {
-    schema: {
-      params: z.object({ childId: z.string() }),
-      querystring: z.object({ 
-        days: z.string().optional().transform(val => val ? parseInt(val) : 30)
-      }),
-      response: {
-        200: z.object({
-          retention: z.number(),
-          averageInterval: z.number(),
-          stabilityIndex: z.number(),
-          retrievalStrength: z.number(),
-          totalReviews: z.number(),
-          successRate: z.number()
-        })
-      }
-    }
-  }, async (request: FastifyRequest<{ 
-    Params: { childId: string }, 
-    Querystring: { days?: number } 
+  fastify.get('/supermemo/:childId', async (request: FastifyRequest<{
+    Params: { childId: string },
+    Querystring: { days?: number }
   }>, reply: FastifyReply) => {
     try {
       const childId = parseInt(request.params.childId);

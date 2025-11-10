@@ -38,30 +38,7 @@ const LinkChildSchema = z.object({
 const parentAuthRoutes: FastifyPluginAsync = async (fastify) => {
   
   // Parent Registration
-  fastify.post('/register', {
-    schema: {
-      body: ParentRegistrationSchema,
-      response: {
-        201: z.object({
-          success: z.boolean(),
-          message: z.string(),
-          parent: z.object({
-            id: z.number(),
-            nom: z.string(),
-            prenom: z.string(),
-            email: z.string()
-          }),
-          token: z.string(),
-          children: z.array(z.object({
-            id: z.number(),
-            nom: z.string(),
-            prenom: z.string(),
-            niveau: z.string()
-          }))
-        })
-      }
-    }
-  }, async (request: FastifyRequest<{ Body: z.infer<typeof ParentRegistrationSchema> }>, reply: FastifyReply) => {
+  fastify.post('/register', async (request: FastifyRequest<{ Body: z.infer<typeof ParentRegistrationSchema> }>, reply: FastifyReply) => {
     try {
       const result = await parentAuthService.register(request.body);
       
@@ -96,30 +73,7 @@ const parentAuthRoutes: FastifyPluginAsync = async (fastify) => {
   });
 
   // Parent Login
-  fastify.post('/login', {
-    schema: {
-      body: ParentLoginSchema,
-      response: {
-        200: z.object({
-          success: z.boolean(),
-          message: z.string(),
-          parent: z.object({
-            id: z.number(),
-            nom: z.string(),
-            prenom: z.string(),
-            email: z.string()
-          }),
-          token: z.string(),
-          children: z.array(z.object({
-            id: z.number(),
-            nom: z.string(),
-            prenom: z.string(),
-            niveau: z.string()
-          }))
-        })
-      }
-    }
-  }, async (request: FastifyRequest<{ Body: z.infer<typeof ParentLoginSchema> }>, reply: FastifyReply) => {
+  fastify.post('/login', async (request: FastifyRequest<{ Body: z.infer<typeof ParentLoginSchema> }>, reply: FastifyReply) => {
     try {
       const result = await parentAuthService.login(request.body);
       
@@ -164,34 +118,7 @@ const parentAuthRoutes: FastifyPluginAsync = async (fastify) => {
 
   // Get Parent Profile (requires authentication)
   fastify.get('/profile', {
-    preHandler: [fastify.authenticate],
-    schema: {
-      response: {
-        200: z.object({
-          success: z.boolean(),
-          parent: z.object({
-            id: z.number(),
-            nom: z.string(),
-            prenom: z.string(),
-            email: z.string(),
-            telephone: z.string().nullable(),
-            dailyReportEnabled: z.boolean(),
-            weeklyReportEnabled: z.boolean(),
-            achievementNotificationsEnabled: z.boolean(),
-            progressAlertsEnabled: z.boolean()
-          }),
-          children: z.array(z.object({
-            id: z.number(),
-            nom: z.string(),
-            prenom: z.string(),
-            niveau: z.string(),
-            totalXP: z.number().nullable(),
-            currentStreak: z.number().nullable(),
-            lastLogin: z.string().nullable()
-          }))
-        })
-      }
-    }
+    preHandler: [fastify.authenticate]
   }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       // Get parent ID from auth context
@@ -236,16 +163,7 @@ const parentAuthRoutes: FastifyPluginAsync = async (fastify) => {
 
   // Link Child to Parent (requires authentication)
   fastify.post('/link-child', {
-    preHandler: [fastify.authenticate],
-    schema: {
-      body: LinkChildSchema,
-      response: {
-        200: z.object({
-          success: z.boolean(),
-          message: z.string()
-        })
-      }
-    }
+    preHandler: [fastify.authenticate]
   }, async (request: FastifyRequest<{ Body: z.infer<typeof LinkChildSchema> }>, reply: FastifyReply) => {
     try {
       const parentId = (request as any).user?.id;
