@@ -5,7 +5,6 @@
 
 import { FastifyRequest, FastifyReply } from 'fastify';
 import '@fastify/cookie';
-import { AuthService } from '../services/auth.service';
 import { createSecureAuthRateLimiter } from '../services/secure-rate-limiter.service';
 
 // User type is declared in types/fastify-extended.ts

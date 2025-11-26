@@ -290,6 +290,7 @@ export interface AuditLogRequest {
   userAgent?: string;
   severity?: Severity;
   category?: AuditCategory;
+  timestamp: string;
 }
 
 // Database integration types with existing schema

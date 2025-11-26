@@ -116,6 +116,8 @@ async function populateLeaderboardData() {
     
     for (let i = 0; i < Math.min(studentsData.length, progressDataRows.length); i++) {
       const student = studentsData[i];
+      if (!student || !student.id) continue;
+      
       const progress = progressDataRows[i] || { 
         exercises_completed: Math.floor(Math.random() * 20) + 1,
         avg_score: Math.random() * 100,
@@ -124,16 +126,16 @@ async function populateLeaderboardData() {
 
       // Calculate composite score
       const score = Math.floor(
-        (Number(progress.exercises_completed) * 10) + 
-        (Number(progress.avg_score) * 2) + 
-        Math.floor(Number(progress.total_time) / 100)
+        (Number(progress.exercises_completed ?? 0) * 10) + 
+        (Number(progress.avg_score ?? 0) * 2) + 
+        Math.floor(Number(progress.total_time ?? 0) / 100)
       );
 
       leaderboardEntries.push({
         student_id: student.id,
         score,
-        exercises_completed: progress.exercises_completed,
-        avg_score: progress.avg_score
+        exercises_completed: progress.exercises_completed ?? 0,
+        avg_score: progress.avg_score ?? 0
       });
     }
 
@@ -143,6 +145,8 @@ async function populateLeaderboardData() {
     // Insert global leaderboard
     for (let i = 0; i < leaderboardEntries.length; i++) {
       const entry = leaderboardEntries[i];
+      if (!entry) continue;
+      
       const rank = i + 1;
 
       await db.execute(sql`
@@ -150,7 +154,7 @@ async function populateLeaderboardData() {
         (type, category, student_id, score, rank, period, metadata)
         VALUES 
         ('global', 'points', ${entry.student_id}, ${entry.score}, ${rank}, 'all-time', 
-         JSON_OBJECT('exercises', ${entry.exercises_completed}, 'avgScore', ${entry.avg_score}))
+         JSON_OBJECT('exercises', ${entry.exercises_completed ?? 0}, 'avgScore', ${entry.avg_score ?? 0}))
       `);
     }
 
@@ -159,12 +163,12 @@ async function populateLeaderboardData() {
       INSERT IGNORE INTO competitions (id, name, description, type, start_date, end_date, participants, rewards, metadata)
       VALUES 
       (1, '🚀 Défi de la Semaine', 'Complétez 20 exercices cette semaine !', 'weekly_challenge', 
-       NOW() - INTERVAL 2 DAY, NOW() + INTERVAL 5 DAY, ${Math.floor(students.length * 0.6)},
+       NOW() - INTERVAL 2 DAY, NOW() + INTERVAL 5 DAY, ${Math.floor((students[0]?.length ?? 0) * 0.6)},
        JSON_ARRAY('🏆 Badge Spécial', '💎 100 Points Bonus'),
        JSON_OBJECT('target', 20, 'current', 12, 'percentage', 60)),
       
       (2, '⚡ Marathon Mathématique', 'Résolvez un maximum d\\'exercices de maths !', 'monthly_competition',
-       NOW() - INTERVAL 10 DAY, NOW() + INTERVAL 20 DAY, ${Math.floor(students.length * 0.8)},
+       NOW() - INTERVAL 10 DAY, NOW() + INTERVAL 20 DAY, ${Math.floor((students[0]?.length ?? 0) * 0.8)},
        JSON_ARRAY('👑 Couronne Dorée', '🎁 Surprise Spéciale'),
        JSON_OBJECT('target', 100, 'current', 45, 'percentage', 45))
     `);
@@ -173,6 +177,8 @@ async function populateLeaderboardData() {
     const topStudents = leaderboardEntries.slice(0, 10);
     
     for (const student of topStudents) {
+      if (!student || !student.student_id) continue;
+      
       const badges = [
         { type: 'first_exercise', title: '🎯 Premier Exercice', description: 'Bravo pour le premier exercice !', rarity: 'common' },
         { type: 'streak_master_7', title: '🔥 Série de 7 jours', description: '7 jours consécutifs !', rarity: 'rare' },
@@ -181,13 +187,15 @@ async function populateLeaderboardData() {
 
       const badge = badges[Math.floor(Math.random() * badges.length)];
       
-      await db.execute(sql`
-        INSERT IGNORE INTO student_badges 
-        (student_id, badge_type, title, description, rarity, metadata)
-        VALUES 
-        (${student.student_id}, ${badge.type}, ${badge.title}, ${badge.description}, ${badge.rarity}, 
-         JSON_OBJECT('score', ${student.score}, 'rank', ${leaderboardEntries.indexOf(student) + 1}))
-      `);
+      if (badge) {
+        await db.execute(sql`
+          INSERT IGNORE INTO student_badges 
+          (student_id, badge_type, title, description, rarity, metadata)
+          VALUES 
+          (${student.student_id}, ${badge.type}, ${badge.title}, ${badge.description}, ${badge.rarity}, 
+           JSON_OBJECT('score', ${student.score ?? 0}, 'rank', ${leaderboardEntries.indexOf(student) + 1}))
+        `);
+      }
     }
 
     console.log(`✅ Populated leaderboard with ${leaderboardEntries.length} entries`);

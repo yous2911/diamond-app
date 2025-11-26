@@ -1,5 +1,5 @@
 import 'fastify';
-import { FastifyRequest as OriginalFastifyRequest, FastifyReply } from 'fastify';
+import { FastifyRequest as OriginalFastifyRequest } from 'fastify';
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -20,6 +20,12 @@ declare module 'fastify' {
     
     // Authentication decorator
     authenticate: (request: FastifyRequest, reply: FastifyReply) => Promise<void>;
+    
+    // JWT refresh token instance
+    refreshJwt: {
+      sign: (payload: any, options?: any) => Promise<string>;
+      verify: (token: string) => Promise<any>;
+    };
     
     // Monitoring service
     monitoring: any;

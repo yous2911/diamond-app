@@ -59,7 +59,7 @@ vi.mock('../db/optimized-queries', () => ({
     }
     return Promise.resolve(null);
   }),
-  getRecommendedExercises: vi.fn((studentId, limit = 10) => {
+  getRecommendedExercises: vi.fn((_studentId, _limit = 10) => {
     return Promise.resolve([
       {
         id: 1,
@@ -877,7 +877,8 @@ const mockFileSecurityService = vi.hoisted(() => ({
       '.pdf': ['application/pdf']
     };
     
-    if (expectedMimeTypes[extension] && !expectedMimeTypes[extension].includes(mimeType)) {
+    const expectedTypes = expectedMimeTypes[extension];
+    if (expectedTypes && !expectedTypes.includes(mimeType)) {
       warnings.push('MIME type mismatch detected');
     }
     if (buffer.length === 0) {
@@ -1952,7 +1953,7 @@ const mockImageProcessingService = vi.hoisted(() => ({
       png: Buffer.concat([buffer, Buffer.from('PNG')])
     });
   }),
-  resizeImage: vi.fn((buffer, options, qualityOptions) => {
+  resizeImage: vi.fn((buffer, options, _qualityOptions) => {
     const width = options.width;
     const height = options.height;
     return Promise.resolve(Buffer.concat([buffer, Buffer.from(`RESIZED_${width}x${height}`)]));
@@ -2227,9 +2228,9 @@ vi.mock('../services/database.service', () => {
       });
     }),
     
-    getStudentProgress: vi.fn((studentId, _exerciseIds) => {
+    getStudentProgress: vi.fn((_studentId, _exerciseIds) => {
       return Promise.resolve({
-        studentId: studentId,
+        studentId: _studentId,
         totalExercises: 10,
         completedExercises: 5,
         totalPoints: 50,
@@ -2318,7 +2319,7 @@ vi.mock('../services/enhanced-database.service', () => {
       });
     }),
     
-    getStudentProgress: vi.fn((studentId, _exerciseIds) => {
+    getStudentProgress: vi.fn((_studentId, _exerciseIds) => {
       return Promise.resolve([
         {
           exerciseId: 1,

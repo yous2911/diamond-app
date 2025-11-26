@@ -35,8 +35,8 @@ export class AuditMiddleware {
   /**
    * Middleware principal d'audit pour Fastify
    */
-  createMiddleware(): (request: FastifyRequest, reply: FastifyReply) => Promise<void> {
-    return async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
+  createMiddleware(): (request: FastifyRequest, _reply: FastifyReply) => Promise<void> {
+    return async (request: FastifyRequest, _reply: FastifyReply): Promise<void> => {
       try {
         // Vérifier si cette route doit être exclue
         if (this.shouldExcludeRoute(request)) {
@@ -122,12 +122,14 @@ export class AuditMiddleware {
           ipAddress: request.ip,
           userAgent: request.headers['user-agent'] || '',
           severity: reply.statusCode >= 500 ? 'high' : 'medium',
-          category: 'security'
+          category: 'security',
+          timestamp: new Date().toISOString()
         };
 
         await this.auditService.logAction(auditData);
       } catch (auditError) {
-        console.warn('Error audit logging failed:', auditError);
+        const errorMessage = auditError instanceof Error ? auditError.message : 'Unknown error';
+        console.warn('Error audit logging failed:', errorMessage);
       }
       return; // Explicit return for all code paths
     };
@@ -152,7 +154,8 @@ export class AuditMiddleware {
       ipAddress: request.ip,
       userAgent: request.headers['user-agent'] || '',
       severity,
-      category
+      category,
+      timestamp: new Date()
     };
   }
 
@@ -170,7 +173,8 @@ export class AuditMiddleware {
         sensitiveRoute: true,
         timestamp: new Date().toISOString(),
         headers: this.options.logLevel === 'full' ? request.headers : undefined
-      }
+      },
+      timestamp: new Date()
     };
   }
 

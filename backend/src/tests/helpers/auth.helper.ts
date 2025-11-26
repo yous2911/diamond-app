@@ -1,5 +1,5 @@
 // Authentication helper for real app testing
-import { FastifyInstance } from 'fastify';
+import { FastifyInstance, InjectOptions } from 'fastify';
 
 export interface TestUserCredentials {
   identifiant: string;
@@ -44,14 +44,16 @@ export async function makeAuthenticatedRequest(
   app: FastifyInstance, 
   token: string, 
   options: {
-    method: string;
+    method: InjectOptions['method'];
     url: string;
     payload?: any;
     headers?: Record<string, string>;
   }
 ) {
   return await app.inject({
-    ...options,
+    method: options.method,
+    url: options.url,
+    payload: options.payload,
     headers: {
       ...options.headers,
       Authorization: `Bearer ${token}`,

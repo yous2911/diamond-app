@@ -30,7 +30,12 @@ class MockMonitoringService implements IMonitoringService {
   }
 
   captureMessage(message: string, level = 'info', context?: any): void {
-    logger[level as keyof typeof logger]('Mock Sentry - Message captured:', { message, context });
+    const logMethod = logger[level as keyof typeof logger];
+    if (typeof logMethod === 'function') {
+      logMethod('Mock Sentry - Message captured:', { message, context });
+    } else {
+      logger.info('Mock Sentry - Message captured:', { message, context });
+    }
   }
 
   addBreadcrumb(): void {
@@ -252,7 +257,7 @@ class ErrorMonitoringService {
 class ErrorResponseFormatter {
   static formatResponse(
     error: Error | BaseError,
-    context: any,
+    _context: any,
     config: IErrorHandlerConfig
   ): object {
     const shouldExpose = ErrorClassifier.shouldExposeToClient(error, config);
@@ -340,7 +345,8 @@ export async function unifiedErrorHandler(
     
   } catch (handlerError) {
     // Fallback error handling
-    logger.error('Error in error handler:', handlerError);
+    const errorMessage = handlerError instanceof Error ? handlerError.message : 'Unknown error';
+    logger.error('Error in error handler:', { error: errorMessage });
     
     await reply.status(500).send({
       success: false,

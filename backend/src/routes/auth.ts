@@ -60,7 +60,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
       const accessToken = await reply.jwtSign(accessTokenPayload, {
         expiresIn: '15m',
       });
-      const refreshToken = await (fastify as { refreshJwt: { sign: (payload: any, options: any) => Promise<string> } }).refreshJwt.sign(
+      const refreshToken = await fastify.refreshJwt.sign(
         refreshTokenPayload,
         { expiresIn: '7d' }
       );
@@ -126,7 +126,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
       const accessToken = await reply.jwtSign(accessTokenPayload, {
         expiresIn: '15m',
       });
-      const refreshToken = await (fastify as { refreshJwt: { sign: (payload: any, options: any) => Promise<string> } }).refreshJwt.sign(
+      const refreshToken = await fastify.refreshJwt.sign(
         refreshTokenPayload,
         { expiresIn: '7d' }
       );
@@ -182,7 +182,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
             .send({ error: 'Token de rafraîchissement manquant' });
         }
 
-        const decoded = await (fastify as { refreshJwt: { verify: (token: string) => Promise<any> } }).refreshJwt.verify(refreshToken);
+        const decoded = await fastify.refreshJwt.verify(refreshToken);
 
         // CRITICAL: Check if token is revoked
         const isRevoked = await fastify.cache.get(`denylist:${decoded.jti}`);
@@ -314,9 +314,7 @@ export default async function authRoutes(fastify: FastifyInstance) {
         const { 'refresh-token': refreshToken } = request.cookies;
 
         if (refreshToken) {
-          const decoded = await (fastify as { refreshJwt: { verify: (token: string) => Promise<any> } }).refreshJwt.verify(
-            refreshToken
-          );
+          const decoded = await fastify.refreshJwt.verify(refreshToken);
           // Add token JTI to denylist to invalidate it
           await fastify.cache.set(
             `denylist:${decoded.jti}`,

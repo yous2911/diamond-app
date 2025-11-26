@@ -27,29 +27,26 @@ export class StorageService {
    */
   async saveFileMetadata(file: UploadedFile): Promise<void> {
     try {
-      const transaction = await db.transaction(async (tx) => {
+      await db.transaction(async (tx) => {
         // Generate file ID
         const newFileId = `file_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         
         // Insert main file record
         await tx.insert(files).values({
           id: newFileId,
-          originalName: file.originalName,
           fileName: file.originalName,
           filePath: file.path,
           fileSize: file.size,
-          size: file.size,
-          path: file.path,
           mimeType: file.mimetype,
-          url: file.url,
-          thumbnailUrl: file.thumbnailUrl,
+          url: file.url || null,
+          thumbnailUrl: file.thumbnailUrl || null,
           metadata: JSON.stringify(file.metadata),
-          uploadedBy: file.uploadedBy,
+          uploadedBy: file.uploadedBy || null,
           uploadedAt: file.uploadedAt instanceof Date ? file.uploadedAt : new Date(file.uploadedAt),
           category: file.category,
           isPublic: file.isPublic,
           status: file.status,
-          checksum: file.checksum
+          checksum: file.checksum || null
         });
 
 
@@ -61,13 +58,7 @@ export class StorageService {
             variantType: variant.type,
             filePath: variant.path,
             fileSize: variant.size,
-            fileId: newFileId,
-            path: variant.path,
-            type: variant.type,
-            filename: variant.filename,
-            url: variant.url,
-            size: variant.size,
-            mimetype: variant.mimetype,
+            url: variant.url || null,
             metadata: JSON.stringify(variant.metadata)
           }));
 
@@ -79,8 +70,9 @@ export class StorageService {
 
       logger.info('File metadata saved to database', { fileId: file.id });
     } catch (error) {
-      logger.error('Error saving file metadata:', { fileId: file.id, error: error.message });
-      throw new Error(`Failed to save file metadata: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Error saving file metadata:', { fileId: file.id, error: errorMessage });
+      throw new Error(`Failed to save file metadata: ${errorMessage}`);
     }
   }
 
@@ -105,41 +97,46 @@ export class StorageService {
       const variants = await db
         .select()
         .from(fileVariants)
-        .where(eq(fileVariants.fileId, fileId));
+        .where(eq(fileVariants.originalFileId, fileId));
 
       const processedVariants: ProcessedVariant[] = variants.map(variant => ({
         id: variant.id.toString(),
-        type: variant.type as any,
-        filename: variant.filename,
-        path: variant.path,
-        url: variant.url,
-        size: variant.size,
-        mimetype: variant.mimetype,
+        type: variant.variantType as any,
+        filename: path.basename(variant.filePath),
+        path: variant.filePath,
+        url: variant.url || '',
+        size: variant.fileSize,
+        mimetype: '', // Not stored in schema, would need to be inferred
         metadata: JSON.parse((variant.metadata as any) || '{}'),
         createdAt: new Date(variant.createdAt)
       }));
 
+      if (!file) {
+        return null;
+      }
+
       return {
-        id: (file.id as any).toString(),
+        id: file.id.toString(),
         originalName: file.fileName,
         filename: file.fileName,
         mimetype: file.mimeType,
-        size: file.size,
-        path: file.path,
-        url: file.url,
+        size: file.fileSize,
+        path: file.filePath,
+        url: file.url || '',
         thumbnailUrl: file.thumbnailUrl || undefined,
         metadata: JSON.parse((file.metadata as any) || '{}'),
-        uploadedBy: file.uploadedBy,
+        uploadedBy: file.uploadedBy || '',
         uploadedAt: new Date(file.uploadedAt),
         category: file.category as FileCategory,
-        isPublic: file.isPublic,
+        isPublic: file.isPublic || false,
         status: file.status as any,
-        checksum: file.checksum,
+        checksum: file.checksum || '',
         processedVariants
       };
     } catch (error) {
-      logger.error('Error getting file by ID:', { fileId, error: error.message });
-      throw new Error(`Failed to get file: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Error getting file by ID:', { fileId, error: errorMessage });
+      throw new Error(`Failed to get file: ${errorMessage}`);
     }
   }
 
@@ -161,9 +158,13 @@ export class StorageService {
         return null;
       }
 
+      if (fileData.length === 0 || !fileData[0]) {
+        return null;
+      }
       return this.getFileById(fileData[0].id.toString());
     } catch (error) {
-      logger.error('Error finding file by checksum:', { checksum, error: error.message });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Error finding file by checksum:', { checksum, error: errorMessage });
       return null;
     }
   }
@@ -183,7 +184,7 @@ export class StorageService {
     try {
       const { category, limit = 20, offset = 0, includePublic = false } = options;
 
-      let whereConditions = eq(files.uploadedBy, userId);
+      let whereConditions: any = eq(files.uploadedBy, userId);
       
       if (category) {
         whereConditions = and(whereConditions, eq(files.category, category));
@@ -194,10 +195,12 @@ export class StorageService {
       }
 
       // Get total count
-      const [{ count }] = await db
+      const countResult = await db
         .select({ count: sql<number>`count(*)` })
         .from(files)
         .where(whereConditions);
+      
+      const count = countResult[0]?.count || 0;
 
       // Get files
       const fileData = await db
@@ -218,8 +221,9 @@ export class StorageService {
 
       return { files: filesList, total: count };
     } catch (error) {
-      logger.error('Error getting files by user:', { userId, error: error.message });
-      throw new Error(`Failed to get user files: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Error getting files by user:', { userId, error: errorMessage });
+      throw new Error(`Failed to get user files: ${errorMessage}`);
     }
   }
 
@@ -235,8 +239,9 @@ export class StorageService {
 
       logger.info('File status updated', { fileId, status });
     } catch (error) {
-      logger.error('Error updating file status:', { fileId, status, error: error.message });
-      throw new Error(`Failed to update file status: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Error updating file status:', { fileId, status, error: errorMessage });
+      throw new Error(`Failed to update file status: ${errorMessage}`);
     }
   }
 
@@ -258,13 +263,14 @@ export class StorageService {
         await tx
           .update(fileVariants)
           .set({ deletedAt: new Date() })
-          .where(eq(fileVariants.fileId, fileId));
+          .where(eq(fileVariants.originalFileId, fileId));
       });
 
       logger.info('File marked as deleted', { fileId });
     } catch (error) {
-      logger.error('Error marking file as deleted:', { fileId, error: error.message });
-      throw new Error(`Failed to delete file: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Error marking file as deleted:', { fileId, error: errorMessage });
+      throw new Error(`Failed to delete file: ${errorMessage}`);
     }
   }
 
@@ -274,19 +280,21 @@ export class StorageService {
   async getStorageStats(): Promise<StorageStats> {
     try {
       // Get total files and sizes
-      const [totalStats] = await db
+      const totalStatsResult = await db
         .select({
           totalFiles: sql<number>`count(*)`,
-          totalSize: sql<number>`sum(${files.size})`
+          totalSize: sql<number>`sum(${files.fileSize})`
         })
         .from(files)
         .where(eq(files.status, 'ready'));
+
+      const totalStats = totalStatsResult[0];
 
       // Get category breakdown
       const categoryStats = await db
         .select({
           category: files.category,
-          size: sql<number>`sum(${files.size})`
+          size: sql<number>`sum(${files.fileSize})`
         })
         .from(files)
         .where(eq(files.status, 'ready'))
@@ -314,12 +322,12 @@ export class StorageService {
       }
 
       // Calculate storage usage
-      const usedSpace = totalStats.totalSize || 0;
+      const usedSpace = totalStats?.totalSize || 0;
       const availableSpace = this.maxStorageSize - usedSpace;
       const percentage = (usedSpace / this.maxStorageSize) * 100;
 
       return {
-        totalFiles: totalStats.totalFiles || 0,
+        totalFiles: totalStats?.totalFiles || 0,
         totalSize: usedSpace,
         categorySizes,
         recentUploads,
@@ -330,8 +338,9 @@ export class StorageService {
         }
       };
     } catch (error) {
-      logger.error('Error getting storage stats:', error);
-      throw new Error(`Failed to get storage statistics: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Error getting storage stats:', { error: errorMessage });
+      throw new Error(`Failed to get storage statistics: ${errorMessage}`);
     }
   }
 
@@ -365,32 +374,33 @@ export class StorageService {
         for (const file of expiredFiles) {
           try {
             // Remove physical file
-            await fs.remove(file.path);
+            await fs.remove(file.filePath);
 
             // Remove variants
             const variants = await db
               .select()
               .from(fileVariants)
-              .where(eq(fileVariants.fileId, file.id));
+              .where(eq(fileVariants.originalFileId, file.id));
 
             for (const variant of variants) {
-              await fs.remove(variant.path).catch(() => {
+              await fs.remove(variant.filePath).catch(() => {
                 // Ignore errors for variant deletion
               });
             }
 
             // Remove from database
             await db.transaction(async (tx) => {
-              await tx.delete(fileVariants).where(eq(fileVariants.fileId, file.id));
+              await tx.delete(fileVariants).where(eq(fileVariants.originalFileId, file.id));
               await tx.delete(files).where(eq(files.id, file.id));
             });
 
             deletedCount++;
             logger.debug('Cleaned up expired file', { fileId: file.id });
           } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             logger.warn('Failed to cleanup file:', { 
               fileId: file.id, 
-              error: error.message 
+              error: errorMessage 
             });
           }
         }
@@ -402,8 +412,9 @@ export class StorageService {
 
       return deletedCount;
     } catch (error) {
-      logger.error('Error during cleanup:', error);
-      throw new Error(`Cleanup failed: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Error during cleanup:', { error: errorMessage });
+      throw new Error(`Cleanup failed: ${errorMessage}`);
     }
   }
 
@@ -441,7 +452,7 @@ export class StorageService {
             const dbFile = await db
               .select()
               .from(files)
-              .where(eq(files.path, fullPath))
+              .where(eq(files.filePath, fullPath))
               .limit(1);
 
             if (dbFile.length === 0) {
@@ -460,8 +471,9 @@ export class StorageService {
 
       return cleanedCount;
     } catch (error) {
-      logger.error('Error cleaning orphaned files:', error);
-      throw new Error(`Orphaned files cleanup failed: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Error cleaning orphaned files:', { error: errorMessage });
+      throw new Error(`Orphaned files cleanup failed: ${errorMessage}`);
     }
   }
 
@@ -498,23 +510,25 @@ export class StorageService {
       }
 
       // Check for failed uploads
-      const [failedUploads] = await db
+      const failedUploadsResult = await db
         .select({ count: sql<number>`count(*)` })
         .from(files)
         .where(eq(files.status, 'failed'));
 
-      if (failedUploads.count > 10) {
+      const failedUploads = failedUploadsResult[0];
+      if (failedUploads && failedUploads.count > 10) {
         issues.push(`${failedUploads.count} failed uploads detected`);
         recommendations.push('Investigate and cleanup failed uploads');
       }
 
       // Check for quarantined files
-      const [quarantinedFiles] = await db
+      const quarantinedFilesResult = await db
         .select({ count: sql<number>`count(*)` })
         .from(files)
         .where(eq(files.status, 'quarantined'));
 
-      if (quarantinedFiles.count > 0) {
+      const quarantinedFiles = quarantinedFilesResult[0];
+      if (quarantinedFiles && quarantinedFiles.count > 0) {
         issues.push(`${quarantinedFiles.count} quarantined files detected`);
         recommendations.push('Review and handle quarantined files');
       }
@@ -568,28 +582,29 @@ export class StorageService {
           eq(files.category, 'image'),
           eq(files.status, 'ready'),
           lt(files.uploadedAt, cutoffDate),
-          sql`${files.size} > 1048576` // > 1MB
+          sql`${files.fileSize} > 1048576` // > 1MB
         ))
         .limit(50);
 
       for (const file of largeFiles) {
         try {
-          const originalSize = file.size;
+          const originalSize = file.fileSize;
           
           // This would integrate with ImageProcessingService
           // For now, just log what would be optimized
           logger.info('Would optimize file', { 
             fileId: file.id, 
             originalSize,
-            path: file.path 
+            path: file.filePath 
           });
           
           filesProcessed++;
           // spaceReclaimed += (originalSize - newSize);
         } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
           logger.warn('Failed to optimize file:', { 
             fileId: file.id, 
-            error: error.message 
+            error: errorMessage 
           });
         }
       }
@@ -601,8 +616,9 @@ export class StorageService {
 
       return { filesProcessed, spaceReclaimed };
     } catch (error) {
-      logger.error('Error optimizing storage:', error);
-      throw new Error(`Storage optimization failed: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Error optimizing storage:', { error: errorMessage });
+      throw new Error(`Storage optimization failed: ${errorMessage}`);
     }
   }
 }

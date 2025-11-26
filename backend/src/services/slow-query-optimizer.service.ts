@@ -235,7 +235,8 @@ class SlowQueryOptimizerService {
 
       logger.info('Performance Schema enabled for statement monitoring');
     } catch (error) {
-      logger.debug('Could not configure Performance Schema', { error: error.message });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.debug('Could not configure Performance Schema', { error: errorMessage });
     }
   }
 
@@ -484,9 +485,10 @@ class SlowQueryOptimizerService {
         this.optimizations.set(stats.queryFingerprint, optimization);
       }
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logger.debug('Could not analyze query for optimization', {
         fingerprint: stats.queryFingerprint,
-        error: error.message
+        error: errorMessage
       });
     }
   }
@@ -506,7 +508,7 @@ class SlowQueryOptimizerService {
     }
   }
 
-  private generateQueryOptimization(stats: QueryPerformanceStats, executionPlan: any[]): QueryOptimization | null {
+  private generateQueryOptimization(stats: QueryPerformanceStats, _executionPlan: any[]): QueryOptimization | null {
     const suggestions: string[] = [];
     const indexSuggestions: string[] = [];
     
@@ -621,7 +623,7 @@ class SlowQueryOptimizerService {
   private async analyzeTableIndexNeeds(tableName: string): Promise<IndexRecommendation | null> {
     try {
       // Get existing indexes
-      const [indexes] = await connection.execute(`
+      await connection.execute(`
         SHOW INDEXES FROM ${tableName}
       `);
 
@@ -652,14 +654,14 @@ class SlowQueryOptimizerService {
     return null;
   }
 
-  private extractCommonFilterColumns(queries: QueryPerformanceStats[], tableName: string): string[] {
+  private extractCommonFilterColumns(queries: QueryPerformanceStats[], _tableName: string): string[] {
     // Simplified column extraction - in production, use proper SQL parsing
     const columnCounts = new Map<string, number>();
     
     queries.forEach(query => {
       // Look for WHERE clauses
       const whereMatch = query.normalizedQuery.match(/where\s+(.+?)(?:\s+order|\s+group|\s+limit|$)/i);
-      if (whereMatch) {
+      if (whereMatch && whereMatch[1]) {
         const whereClause = whereMatch[1];
         // Extract column names (simplified)
         const columns = whereClause.match(/\b[a-zA-Z_][a-zA-Z0-9_]*\b/g) || [];

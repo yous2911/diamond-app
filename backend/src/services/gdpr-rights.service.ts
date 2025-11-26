@@ -184,6 +184,7 @@ export class GDPRRightsService {
         },
         ipAddress: validatedData.ipAddress,
         userAgent: validatedData.userAgent,
+        timestamp: new Date(),
         severity: 'medium',
         category: 'compliance'
       });
@@ -216,7 +217,8 @@ export class GDPRRightsService {
       };
 
     } catch (error) {
-      logger.error('Error submitting GDPR request:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Error submitting GDPR request:', { error: errorMessage });
       throw new Error('Failed to submit GDPR request');
     }
   }
@@ -262,6 +264,7 @@ export class GDPRRightsService {
           verificationToken,
           verifiedAt: new Date()
         },
+        timestamp: new Date(),
         severity: 'medium',
         category: 'compliance'
       });
@@ -275,8 +278,12 @@ export class GDPRRightsService {
       };
 
     } catch (error) {
-      logger.error('Error verifying GDPR request:', error);
-      throw error;
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Error verifying GDPR request:', { error: errorMessage });
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error(errorMessage);
     }
   }
 
@@ -322,6 +329,7 @@ export class GDPRRightsService {
           dataExported: true,
           portfolioSections: Object.keys(portfolio.personalData)
         },
+        timestamp: new Date(),
         severity: 'high',
         category: 'data_access'
       });
@@ -401,6 +409,7 @@ export class GDPRRightsService {
           retainedData: erasureAnalysis.retainedData,
           reason
         },
+        timestamp: new Date(),
         severity: 'high',
         category: 'compliance'
       });
@@ -478,6 +487,7 @@ export class GDPRRightsService {
           exportFile,
           dataCategories: Object.keys(portableData)
         },
+        timestamp: new Date(),
         severity: 'medium',
         category: 'data_access'
       });

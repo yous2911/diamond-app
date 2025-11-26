@@ -213,7 +213,7 @@ export default async function analyticsRoutes(fastify: FastifyInstance): Promise
         totalExercises: analyticsData.reduce((sum, day) => sum + (day.totalExercises || 0), 0),
         totalCompletedExercises: analyticsData.reduce((sum, day) => sum + (day.completedExercises || 0), 0),
         averageScore: analyticsData.length > 0 ? 
-          analyticsData.reduce((sum, day) => sum + parseFloat(day.averageScore.toString()), 0) / analyticsData.length : 0,
+          analyticsData.reduce((sum, day) => sum + parseFloat((day.averageScore ?? 0).toString()), 0) / analyticsData.length : 0,
         totalXpEarned: 0,
         totalCompetencesMastered: analyticsData.reduce((sum, day) => sum + (day.competencesWorked || 0), 0),
         maxStreakDays: 0,
@@ -230,7 +230,7 @@ export default async function analyticsRoutes(fastify: FastifyInstance): Promise
             sessionTime: day.totalTimeMinutes || 0,
             exercisesAttempted: day.totalExercises || 0,
             exercisesCompleted: day.completedExercises || 0,
-            averageScore: parseFloat(day.averageScore.toString()),
+            averageScore: parseFloat((day.averageScore ?? 0).toString()),
             xpEarned: 0,
             competencesMastered: day.competencesWorked || 0,
             competencesProgressed: day.competencesWorked || 0,
@@ -301,7 +301,7 @@ export default async function analyticsRoutes(fastify: FastifyInstance): Promise
         duration: Math.floor((session.sessionEnd.getTime() - session.sessionStart.getTime()) / 1000),
         exercisesAttempted: 0,
         exercisesCompleted: 0,
-        averageScore: parseFloat(session.averageScore.toString()),
+        averageScore: parseFloat((session.averageScore ?? 0).toString()),
         xpEarned: 0,
         focusScore: session.focusTime || 0,
         motivationLevel: 0
@@ -318,7 +318,7 @@ export default async function analyticsRoutes(fastify: FastifyInstance): Promise
         totalExercisesCompleted: 0,
         overallCompletionRate: 0,
         averageScore: formattedSessions.length > 0
-          ? formattedSessions.reduce((sum, session) => sum + session.averageScore, 0) / formattedSessions.length
+          ? formattedSessions.reduce((sum, session) => sum + (session.averageScore ?? 0), 0) / formattedSessions.length
           : 0,
         totalXpEarned: 0,
         averageFocusScore: formattedSessions.length > 0

@@ -42,7 +42,7 @@ export async function seedTestStudent(app: FastifyInstance, studentData: TestStu
   };
 }
 
-export async function cleanupTestData(app: FastifyInstance): Promise<void> {
+export async function cleanupTestData(_app: FastifyInstance): Promise<void> {
   // Add cleanup logic here if needed
   // For now, we'll rely on the test database being reset between runs
   console.log('Test data cleanup completed');

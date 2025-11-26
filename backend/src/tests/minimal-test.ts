@@ -44,7 +44,8 @@ describe('Minimal Setup Test', () => {
       expect(typeof authToken).toBe('string');
     } catch (error) {
       // If auth endpoints don't exist, that's okay for this test
-      console.log('Auth endpoints not available:', error.message);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.log('Auth endpoints not available:', errorMessage);
     }
   });
 });

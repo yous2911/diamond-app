@@ -202,8 +202,12 @@ async function registerPlugins() {
     logger.info('🔧 Error handler registered successfully');
     
   } catch (error) {
-    logger.error({ err: error }, '❌ Error during plugin/route registration:');
-    throw error;
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    logger.error({ err: error instanceof Error ? error : new Error(errorMessage) }, '❌ Error during plugin/route registration:');
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error(errorMessage);
   }
 }
 
@@ -221,7 +225,8 @@ async function gracefulShutdown() {
     logger.info('Graceful shutdown completed');
     process.exit(0);
   } catch (error) {
-    logger.error({ err: error }, 'Error during graceful shutdown:');
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    logger.error({ err: error instanceof Error ? error : new Error(errorMessage) }, 'Error during graceful shutdown:');
     process.exit(1);
   }
 }

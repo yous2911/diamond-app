@@ -3,16 +3,14 @@
  * Implements N+1 problem prevention, efficient joins, and query optimization
  */
 
-import { eq, and, or, like, desc, asc, inArray, sql, gt, lt, gte, lte, isNotNull, isNull } from 'drizzle-orm';
+import { eq, and, or, desc, asc, inArray, sql, gt, gte, lte, isNull } from 'drizzle-orm';
 import { db } from './connection';
-import { 
-  students, 
-  exercises, 
-  studentProgress, 
-  studentLearningPath, 
-  sessions, 
-  revisions, 
-  modules 
+import {
+  students,
+  exercises,
+  studentProgress,
+  studentLearningPath,
+  sessions
 } from './schema';
 import { logger } from '../utils/logger';
 
@@ -67,19 +65,21 @@ class OptimizedQueries {
       if (result.length === 0) return null;
 
       // Group results to prevent data duplication
-      const student = result[0].student;
+      const student = result[0]?.student;
+      if (!student) return null;
+      
       const progressMap = new Map();
       const exerciseMap = new Map();
       const learningPathMap = new Map();
 
       result.forEach(row => {
-        if (row.progress && !progressMap.has(row.progress.id)) {
+        if (row.progress && row.progress.id && !progressMap.has(row.progress.id)) {
           progressMap.set(row.progress.id, row.progress);
         }
-        if (row.exercise && !exerciseMap.has(row.exercise.id)) {
+        if (row.exercise && row.exercise.id && !exerciseMap.has(row.exercise.id)) {
           exerciseMap.set(row.exercise.id, row.exercise);
         }
-        if (row.learningPath && !learningPathMap.has(row.learningPath.id)) {
+        if (row.learningPath && row.learningPath.id && !learningPathMap.has(row.learningPath.id)) {
           learningPathMap.set(row.learningPath.id, row.learningPath);
         }
       });
@@ -100,8 +100,12 @@ class OptimizedQueries {
         learningPath: Array.from(learningPathMap.values()),
       };
     } catch (error) {
-      logger.error('Failed to get student with progress', { studentId, error });
-      throw error;
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Failed to get student with progress', { studentId, error: errorMessage });
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error(errorMessage);
     }
   }
 
@@ -163,8 +167,12 @@ class OptimizedQueries {
 
       return exercisesWithStats;
     } catch (error) {
-      logger.error('Failed to get exercises with stats', { filters, error });
-      throw error;
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Failed to get exercises with stats', { filters, error: errorMessage });
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error(errorMessage);
     }
   }
 
@@ -228,8 +236,12 @@ class OptimizedQueries {
 
       return summary;
     } catch (error) {
-      logger.error('Failed to get competence progress summary', { competenceCode, error });
-      throw error;
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Failed to get competence progress summary', { competenceCode, error: errorMessage });
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error(errorMessage);
     }
   }
 
@@ -268,8 +280,12 @@ class OptimizedQueries {
 
       return result;
     } catch (error) {
-      logger.error('Failed to get active sessions', { error });
-      throw error;
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Failed to get active sessions', { error: errorMessage });
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error(errorMessage);
     }
   }
 
@@ -352,8 +368,12 @@ class OptimizedQueries {
 
       return studentsWithPriority;
     } catch (error) {
-      logger.error('Failed to get students needing revision', { error });
-      throw error;
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Failed to get students needing revision', { error: errorMessage });
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error(errorMessage);
     }
   }
 
@@ -471,8 +491,12 @@ class OptimizedQueries {
 
       return result;
     } catch (error) {
-      logger.error('Failed to get learning analytics', { studentId, error });
-      throw error;
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Failed to get learning analytics', { studentId, error: errorMessage });
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error(errorMessage);
     }
   }
 
@@ -521,8 +545,12 @@ class OptimizedQueries {
         updateCount: updates.length 
       });
     } catch (error) {
-      logger.error('Failed to batch update progress', { updateCount: updates.length, error });
-      throw error;
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Failed to batch update progress', { updateCount: updates.length, error: errorMessage });
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error(errorMessage);
     }
   }
 
@@ -616,7 +644,7 @@ class OptimizedQueries {
           }
 
           // Penalize if too advanced
-          if (row.competenceProgress < 30 && row.exercise.difficulte === 'maitrise') {
+          if (row.competenceProgress < 30 && row.exercise?.difficulte === 'maitrise') {
             score -= 25;
             reason = 'Too advanced for current level';
           }
@@ -645,8 +673,12 @@ class OptimizedQueries {
 
       return recommendations;
     } catch (error) {
-      logger.error('Failed to get recommended exercises', { studentId, error });
-      throw error;
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      logger.error('Failed to get recommended exercises', { studentId, error: errorMessage });
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error(errorMessage);
     }
   }
 }

@@ -36,7 +36,8 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
 
       reply.send({ success: true, data: competencies, cached: false });
     } catch (error) {
-      fastify.log.error('Error listing competencies');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      fastify.log.error({ err: error }, 'Error listing competencies');
       reply.status(500).send({
         success: false,
         error: { message: 'Failed to list competencies', code: 'COMPETENCIES_LIST_ERROR' }
@@ -45,7 +46,7 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
   });
 
   // GET /api/competences/:code - Get specific competency with JSON content
-  fastify.get('/:code', { schema: GetCompetenceSchema }, async (request, reply) => {
+  fastify.get<{ Params: { code: string } }>('/:code', { schema: GetCompetenceSchema }, async (request, reply) => {
     try {
       const { code } = request.params;
       const cacheKey = competenciesService.generateItemCacheKey(code);
@@ -78,7 +79,8 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
 
       reply.send({ success: true, data: competency, cached: false });
     } catch (error) {
-      fastify.log.error('Error getting competency');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      fastify.log.error({ err: error }, 'Error getting competency');
       reply.status(500).send({
         success: false,
         error: { message: 'Failed to get competency', code: 'COMPETENCY_GET_ERROR' }
@@ -87,7 +89,10 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
   });
 
   // GET /api/competences/:code/prerequisites - Get prerequisites for a competence
-  fastify.get('/:code/prerequisites', { schema: GetPrerequisitesSchema }, async (request, reply) => {
+  fastify.get<{
+    Params: { code: string };
+    Querystring: { includePrerequisiteDetails?: boolean; studentId?: number; depth?: number };
+  }>('/:code/prerequisites', { schema: GetPrerequisitesSchema }, async (request, reply) => {
     try {
       const { code: competenceCode } = request.params;
       const { includePrerequisiteDetails, studentId, depth } = request.query;
@@ -111,18 +116,18 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
         );
         
         return {
-          id: prereq.id,
+          id: prereq.id ?? 0,
           competenceCode: competenceCode,
-          prerequisiteCode: prereq.prerequisiteCode,
+          prerequisiteCode: prereq.prerequisiteCode ?? '',
           isRequired: true,
           weight: 1,
-          minimumLevel: prereq.minimumLevel,
+          minimumLevel: prereq.minimumLevel ?? 0,
           studentProgress: studentProgress ? {
-            masteryLevel: studentProgress.masteryLevel,
-            currentScore: parseFloat(studentProgress.currentScore.toString()),
-            totalAttempts: studentProgress.totalAttempts,
-            successfulAttempts: studentProgress.successfulAttempts,
-            lastAttemptAt: studentProgress.lastAttemptAt
+            masteryLevel: studentProgress.masteryLevel ?? 'decouverte',
+            currentScore: parseFloat((studentProgress.currentScore ?? 0).toString()),
+            totalAttempts: studentProgress.totalAttempts ?? 0,
+            successfulAttempts: studentProgress.successfulAttempts ?? 0,
+            lastAttemptAt: studentProgress.lastAttemptAt ?? null
           } : null
         };
       }));
@@ -160,7 +165,8 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
       });
 
     } catch (error) {
-      fastify.log.error('Error getting competence prerequisites:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      fastify.log.error({ err: error }, 'Error getting competence prerequisites:');
       reply.status(500).send({
         success: false,
         error: {
@@ -172,7 +178,10 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
   });
 
   // GET /api/competences/:code/progress - Get competence progress
-  fastify.get('/:code/progress', { schema: GetProgressSchema }, async (request, reply) => {
+  fastify.get<{
+    Params: { code: string };
+    Querystring: { studentId?: number };
+  }>('/:code/progress', { schema: GetProgressSchema }, async (request, reply) => {
     try {
       const { code: competenceCode } = request.params;
       const { studentId } = request.query;
@@ -200,13 +209,13 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
             competenceCode,
             studentId,
             progress: {
-              masteryLevel: studentProgress.masteryLevel,
-              currentScore: parseFloat(studentProgress.currentScore.toString()),
-              totalAttempts: studentProgress.totalAttempts,
-              successfulAttempts: studentProgress.successfulAttempts,
-              lastAttemptAt: studentProgress.lastAttemptAt,
-              createdAt: studentProgress.createdAt,
-              updatedAt: studentProgress.updatedAt
+              masteryLevel: studentProgress.masteryLevel ?? 'decouverte',
+              currentScore: parseFloat((studentProgress.currentScore ?? 0).toString()),
+              totalAttempts: studentProgress.totalAttempts ?? 0,
+              successfulAttempts: studentProgress.successfulAttempts ?? 0,
+              lastAttemptAt: studentProgress.lastAttemptAt ?? null,
+              createdAt: studentProgress.createdAt ?? new Date(),
+              updatedAt: studentProgress.updatedAt ?? new Date()
             }
           }
         });
@@ -221,7 +230,8 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
       }
 
     } catch (error) {
-      fastify.log.error('Error getting competence progress:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      fastify.log.error({ err: error }, 'Error getting competence progress:');
       reply.status(500).send({
         success: false,
         error: {

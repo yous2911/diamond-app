@@ -2,8 +2,10 @@
 import { beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import { build } from '../app-test';
 import type { FastifyInstance } from 'fastify';
-import { connectDatabase, disconnectDatabase, getDatabase } from '../db/connection';
-import { setupDatabase, resetDatabase } from '../db/setup';
+import { connectDatabase, disconnectDatabase, db } from '../db/connection';
+import { setupDatabase } from '../db/setup';
+import { students, exercises } from '../db/schema';
+import { sql } from 'drizzle-orm';
 
 // Load test environment variables
 process.env.NODE_ENV = 'test';
@@ -89,8 +91,6 @@ let setupComplete = false;
 // Database test utilities
 export const testUtils = {
   async cleanDatabase() {
-    const db = getDatabase();
-
     // Clean test data in reverse order to respect foreign keys
     const tables = [
       'student_progress',
@@ -105,61 +105,48 @@ export const testUtils = {
 
     for (const table of tables) {
       try {
-        await db.execute(`DELETE FROM ${table} WHERE 1=1`);
+        await db.execute(sql.raw(`DELETE FROM ${table} WHERE 1=1`));
       } catch (error) {
         // Table might not exist, continue
-        console.log(`Warning: Could not clean table ${table}:`, error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        console.log(`Warning: Could not clean table ${table}:`, errorMessage);
       }
     }
   },
 
   async seedTestData() {
-    const db = getDatabase();
-
     // Insert test student
-    await db.insert({
-      id: 1,
+    await db.insert(students).values({
       prenom: 'Alice',
       nom: 'Test',
       email: 'alice.test@example.com',
-      dateNaissance: new Date('2015-03-15'),
+      dateNaissance: '2015-03-15',
       niveauActuel: 'CP',
       niveauScolaire: 'CP',
       totalPoints: 150,
       serieJours: 5,
-      mascotteType: 'dragon',
-      createdAt: new Date(),
-      updatedAt: new Date()
-    }).into('students');
-
-    // Insert test competency
-    await db.insert({
-      id: 1,
-      code: 'CP.MA.NUM.01',
-      titre: 'Compter jusqu\'à 10',
-      description: 'Savoir compter de 1 à 10',
-      niveau: 'CP',
-      matiere: 'mathematiques',
-      createdAt: new Date()
-    }).into('competencies');
+      mascotteType: 'dragon'
+    });
 
     // Insert test exercise
-    await db.insert({
-      id: 1,
+    await db.insert(exercises).values({
       titre: 'Compter les pommes',
-      competenceId: 1,
+      matiere: 'mathematiques',
       niveau: 'CP',
-      type: 'qcm',
       difficulte: 'decouverte',
-      pointsMax: 10,
-      tempsEstime: 120,
-      contenu: JSON.stringify({
+      competenceCode: 'CP.MA.NUM.01',
+      typeExercice: 'qcm',
+      contenu: {
         question: 'Combien y a-t-il de pommes ?',
         reponses: ['5', '6', '7', '8'],
         bonneReponse: 1
-      }),
-      createdAt: new Date()
-    }).into('exercises');
+      },
+      solution: {
+        bonneReponse: 1
+      },
+      pointsRecompense: 10,
+      tempsEstime: 120
+    });
   }
 };
 

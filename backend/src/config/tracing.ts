@@ -1,6 +1,5 @@
 // Conditional OpenTelemetry import
 let openTelemetryApi: any;
-let NodeSDK: any;
 
 try {
   openTelemetryApi = require('@opentelemetry/api');
@@ -13,13 +12,14 @@ try {
   sdk.start();
   console.log('OpenTelemetry initialized successfully');
 } catch (error) {
-  console.warn('OpenTelemetry not installed, tracing disabled:', error);
+  const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+  console.warn('OpenTelemetry not installed, tracing disabled:', errorMessage);
   
   // Mock OpenTelemetry API
   openTelemetryApi = {
     trace: {
       getTracer: () => ({
-        startSpan: (name: string) => ({
+        startSpan: (_name: string) => ({
           end: () => {},
           setStatus: () => {},
           setAttributes: () => {},

@@ -105,7 +105,7 @@ const customMetrics = new Map<string, prometheus.Counter | prometheus.Gauge | pr
 // Initialize monitoring
 export const initializeMonitoring = (app: FastifyInstance) => {
   // Register metrics endpoint
-  app.get('/metrics', async (request: FastifyRequest, reply: FastifyReply): Promise<string | void> => {
+  app.get('/metrics', async (_request: FastifyRequest, reply: FastifyReply): Promise<string | void> => {
     try {
       reply.header('Content-Type', register.contentType);
       return await register.metrics();
@@ -116,7 +116,7 @@ export const initializeMonitoring = (app: FastifyInstance) => {
   });
 
   // Register health check endpoint
-  app.get('/health', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.get('/health', async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
       const health = await performHealthCheck();
       const statusCode = health.status === 'healthy' ? 200 : 503;
@@ -148,7 +148,7 @@ export const initializeMonitoring = (app: FastifyInstance) => {
   });
 
   // Register detailed health check
-  app.get('/health/detailed', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.get('/health/detailed', async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
       const health = await performDetailedHealthCheck();
       const statusCode = health.status === 'healthy' ? 200 : 503;
@@ -165,7 +165,7 @@ export const initializeMonitoring = (app: FastifyInstance) => {
   });
 
   // Register readiness check
-  app.get('/ready', async (request: FastifyRequest, reply: FastifyReply) => {
+  app.get('/ready', async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
       const readiness = await performReadinessCheck();
       const statusCode = readiness.ready ? 200 : 503;

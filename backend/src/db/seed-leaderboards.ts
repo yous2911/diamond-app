@@ -16,7 +16,8 @@ async function seedLeaderboards() {
       return;
     }
 
-    console.log(`👥 Found ${students.length} students`);
+    const studentsArray = Array.isArray(students[0]) ? students[0] : [];
+    console.log(`👥 Found ${studentsArray.length} students`);
 
     // Clear existing data
     await db.execute(sql`DELETE FROM leaderboards`);
@@ -24,17 +25,20 @@ async function seedLeaderboards() {
     await db.execute(sql`DELETE FROM competitions`);
 
     // Create sample leaderboard entries
-    const leaderboardData = students.map((student: any, index: number) => {
+    const studentsArray = Array.isArray(students[0]) ? students[0] : [];
+    const leaderboardData = studentsArray.map((student: any, index: number) => {
+      if (!student || !student.id) return null;
+      
       const score = Math.floor(Math.random() * 1000) + 500; // 500-1500 points
       const rank = index + 1;
       
       return {
         student_id: student.id,
-        student_name: `${student.prenom} ${student.nom}`,
+        student_name: `${student.prenom ?? ''} ${student.nom ?? ''}`,
         score,
         rank
       };
-    });
+    }).filter((entry): entry is NonNullable<typeof entry> => entry !== null);
 
     // Sort by score descending
     leaderboardData.sort((a, b) => b.score - a.score);
@@ -46,12 +50,14 @@ async function seedLeaderboards() {
 
     // Insert leaderboard entries one by one
     for (const entry of leaderboardData) {
+      if (!entry || !entry.student_id) continue;
+      
       await db.execute(sql`
         INSERT INTO leaderboards 
         (type, category, student_id, score, \`rank\`, period, metadata, created_at) 
         VALUES 
-        ('global', 'points', ${entry.student_id}, ${entry.score}, ${entry.rank}, 
-         'all-time', JSON_OBJECT('name', ${entry.student_name}), NOW())
+        ('global', 'points', ${entry.student_id}, ${entry.score ?? 0}, ${entry.rank ?? 0}, 
+         'all-time', JSON_OBJECT('name', ${entry.student_name ?? ''}), NOW())
       `);
     }
 
@@ -62,11 +68,11 @@ async function seedLeaderboards() {
       VALUES 
       (1, '🚀 Défi de la Semaine', 'Complétez 20 exercices cette semaine !', 
        'weekly_challenge', NOW() - INTERVAL 2 DAY, NOW() + INTERVAL 5 DAY, 
-       ${Math.floor(students.length * 0.6)}, JSON_ARRAY('🏆 Badge Spécial', '💎 100 Points Bonus'), true),
+       ${Math.floor(studentsArray.length * 0.6)}, JSON_ARRAY('🏆 Badge Spécial', '💎 100 Points Bonus'), true),
        
       (2, '⚡ Marathon Mathématique', 'Résolvez un maximum d\\'exercices de maths !', 
        'monthly_competition', NOW() - INTERVAL 10 DAY, NOW() + INTERVAL 20 DAY,
-       ${Math.floor(students.length * 0.8)}, JSON_ARRAY('👑 Couronne Dorée', '🎁 Surprise Spéciale'), true)
+       ${Math.floor(studentsArray.length * 0.8)}, JSON_ARRAY('👑 Couronne Dorée', '🎁 Surprise Spéciale'), true)
     `);
 
     // Award badges to top 3
@@ -79,6 +85,8 @@ async function seedLeaderboards() {
 
     for (let i = 0; i < topStudents.length; i++) {
       const student = topStudents[i];
+      if (!student || !student.student_id) continue;
+      
       const badge = badgeTypes[Math.min(i, badgeTypes.length - 1)];
       
       await db.execute(sql`
@@ -86,7 +94,7 @@ async function seedLeaderboards() {
         (student_id, badge_type, title, description, rarity, metadata, earned_at) 
         VALUES 
         (${student.student_id}, ${badge.type}, ${badge.title}, ${badge.description}, 
-         ${badge.rarity}, JSON_OBJECT('rank', ${student.rank}, 'score', ${student.score}), NOW())
+         ${badge.rarity}, JSON_OBJECT('rank', ${student.rank ?? 0}, 'score', ${student.score ?? 0}), NOW())
       `);
     }
 
@@ -96,8 +104,12 @@ async function seedLeaderboards() {
     console.log('🎉 Leaderboard seeding completed!');
 
   } catch (error) {
-    console.error('❌ Seeding failed:', error);
-    throw error;
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('❌ Seeding failed:', errorMessage);
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error(errorMessage);
   }
 }
 
@@ -109,7 +121,8 @@ if (require.main === module) {
       process.exit(0);
     })
     .catch((error) => {
-      console.error('💥 Seeding failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('💥 Seeding failed:', errorMessage);
       process.exit(1);
     });
 }

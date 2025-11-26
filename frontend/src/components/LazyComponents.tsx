@@ -6,9 +6,10 @@ import SkeletonLoader from './ui/SkeletonLoader';
 // =============================================================================
 
 // Lazy load heavy 3D components - these have default exports
-export const LazyAdvancedMascotSystem = lazy(() => import('./AdvancedMascotSystem'));
-export const LazyMascotWardrobe3D = lazy(() => import('./mascot/MascotWardrobe3D'));
-export const LazyAdvancedParticleEngine = lazy(() => import('./AdvancedParticleEngine'));
+// TODO: Create these components
+// export const LazyAdvancedMascotSystem = lazy(() => import('./AdvancedMascotSystem'));
+// export const LazyMascotWardrobe3D = lazy(() => import('./mascot/MascotWardrobe3D'));
+// export const LazyAdvancedParticleEngine = lazy(() => import('./AdvancedParticleEngine'));
 
 
 // Lazy load exercise components - these have default exports
@@ -55,35 +56,36 @@ export const LazyComponentWrapper: React.FC<LazyComponentWrapperProps> = ({
 // PERFORMANCE-OPTIMIZED COMPONENT EXPORTS
 // =============================================================================
 
+// TODO: Create these components before enabling
 // Mascot system with smart loading
-export const SmartMascotSystem = (props: any) => (
-  <LazyComponentWrapper
-    component={LazyAdvancedMascotSystem}
-    skeletonType="mascot"
-    className="w-64 h-64"
-    {...props}
-  />
-);
+// export const SmartMascotSystem = (props: any) => (
+//   <LazyComponentWrapper
+//     component={LazyAdvancedMascotSystem}
+//     skeletonType="mascot"
+//     className="w-64 h-64"
+//     {...props}
+//   />
+// );
 
 // 3D Wardrobe with loading state
-export const SmartWardrobe3D = (props: any) => (
-  <LazyComponentWrapper
-    component={LazyMascotWardrobe3D}
-    skeletonType="wardrobe"
-    className="w-full h-96"
-    {...props}
-  />
-);
+// export const SmartWardrobe3D = (props: any) => (
+//   <LazyComponentWrapper
+//     component={LazyMascotWardrobe3D}
+//     skeletonType="wardrobe"
+//     className="w-full h-96"
+//     {...props}
+//   />
+// );
 
 // Particle engine with loading
-export const SmartParticleEngine = (props: any) => (
-  <LazyComponentWrapper
-    component={LazyAdvancedParticleEngine}
-    skeletonType="card"
-    className="w-full h-64"
-    {...props}
-  />
-);
+// export const SmartParticleEngine = (props: any) => (
+//   <LazyComponentWrapper
+//     component={LazyAdvancedParticleEngine}
+//     skeletonType="card"
+//     className="w-full h-64"
+//     {...props}
+//   />
+// );
 
 
 // Exercises with loading states

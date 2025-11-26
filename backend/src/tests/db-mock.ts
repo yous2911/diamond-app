@@ -16,38 +16,16 @@ let mockStudents: any[] = [
   }
 ];
 
-let mockExercises: any[] = [
-  {
-    id: 1,
-    titre: 'Test Addition',
-    description: 'Test exercise',
-    matiere: 'mathematiques',
-    niveau: 'CP',
-    difficulte: 'decouverte',
-    competenceCode: 'MATH_TEST_01',
-    typeExercice: 'calcul',
-    type: 'CALCUL',
-    contenu: { question: '2 + 2 = ?', type: 'addition' },
-    solution: { bonneReponse: '4' },
-    xp: 10,
-    pointsRecompense: 10
-  }
-];
-
-let mockProgress: any[] = [];
-let mockSessions: any[] = [];
-let mockRevisions: any[] = [];
-
 // Mock Drizzle DB implementation
 const mockDb = {
   select: vi.fn(() => ({
-    from: vi.fn((table: any) => ({
+    from: vi.fn((_table: any) => ({
       limit: vi.fn(() => Promise.resolve(mockStudents.slice(0, 1))),
       where: vi.fn(() => Promise.resolve(mockStudents)),
       then: vi.fn((callback: any) => callback(mockStudents))
     }))
   })),
-  insert: vi.fn((table: any) => ({
+  insert: vi.fn((_table: any) => ({
     values: vi.fn((values: any) => {
       const newItems = Array.isArray(values) ? values : [values];
       newItems.forEach((item: any, index: number) => {

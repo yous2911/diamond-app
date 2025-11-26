@@ -1,13 +1,13 @@
 // Export all components
 export * from './exercises';
-export * from './games';
+// export * from './games'; // TODO: Add games components
 export * from './ui';
 
-// Core components
-export { default as NextLevelXPSystem } from './NextLevelXPSystem';
-export { default as LoginScreen } from './LoginScreen';
-export { default as AdvancedMascotSystem } from './AdvancedMascotSystem';
-export { default as AdvancedParticleEngine } from './AdvancedParticleEngine';
+// Core components (TODO: Add missing components)
+// export { default as NextLevelXPSystem } from './NextLevelXPSystem';
+// export { default as LoginScreen } from './LoginScreen';
+// export { default as AdvancedMascotSystem } from './AdvancedMascotSystem';
+// export { default as AdvancedParticleEngine } from './AdvancedParticleEngine';
 
 // Component categories
 export const COMPONENT_CATEGORIES = {

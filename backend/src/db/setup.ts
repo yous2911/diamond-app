@@ -1,22 +1,12 @@
 import { db } from './connection';
-import { 
-  students, 
-  exercises, 
+import {
+  students,
+  exercises,
   studentProgress,
   sessions,
-  revisions,
-  modules,
-  parentalConsent,
-  gdprRequests,
-  auditLogs,
-  encryptionKeys,
-  retentionPolicies,
-  consentPreferences,
-  gdprConsentRequests,
-  gdprDataProcessingLog
+  revisions
 } from './schema';
 import { sql } from 'drizzle-orm';
-import { config } from '../config/config';
 
 export async function setupDatabase() {
   try {
@@ -122,15 +112,21 @@ export async function setupDatabase() {
         console.log('✅ Database already has data, skipping seed');
       }
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.log('⚠️  Could not check/seed data - tables may not exist yet');
       console.log('   This is normal if running migrations separately');
+      console.log('   Error:', errorMessage);
     }
 
     console.log('🎉 Database setup complete!');
     
   } catch (error) {
-    console.error('❌ Database setup failed:', error);
-    throw error;
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('❌ Database setup failed:', errorMessage);
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error(errorMessage);
   }
 }
 
@@ -151,8 +147,12 @@ export async function resetDatabase() {
     await setupDatabase();
     
   } catch (error) {
-    console.error('❌ Database reset failed:', error);
-    throw error;
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('❌ Database reset failed:', errorMessage);
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error(errorMessage);
   }
 }
 
@@ -170,7 +170,8 @@ export async function checkDatabaseSetup() {
       exerciseCount
     };
   } catch (error) {
-    console.error('❌ Database check failed:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('❌ Database check failed:', errorMessage);
     return {
       isSetup: false,
       error: error instanceof Error ? error.message : 'Unknown error'

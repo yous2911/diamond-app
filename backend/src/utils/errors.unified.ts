@@ -386,7 +386,9 @@ export class ErrorContextBuilder {
       .withUrl(request.url)
       .withUserAgent(request.headers['user-agent'])
       .withIp(request.ip)
-      .withCorrelationId(request.headers['x-correlation-id'])
+      .withCorrelationId(Array.isArray(request.headers['x-correlation-id']) 
+        ? request.headers['x-correlation-id'][0] 
+        : request.headers['x-correlation-id'] || '')
       .withTimestamp();
   }
 
@@ -456,7 +458,7 @@ export function createError(
   message: string,
   statusCode = 500,
   code?: string,
-  details?: any
+  _details?: any
 ): BaseError {
   return new TechnicalError(message, statusCode, code || 'LEGACY_ERROR');
 }
