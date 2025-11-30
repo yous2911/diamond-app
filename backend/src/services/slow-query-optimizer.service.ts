@@ -74,11 +74,11 @@ interface IndexRecommendation {
 
 class SlowQueryOptimizerService {
   private config: SlowQueryConfig;
-  private slowQueries: SlowQueryEntry[] = [];
+  private _slowQueries: SlowQueryEntry[] = [];
   private queryStats = new Map<string, QueryPerformanceStats>();
   private optimizations = new Map<string, QueryOptimization>();
   private indexRecommendations: IndexRecommendation[] = [];
-  private isInitialized = false;
+  private _isInitialized = false;
   private scheduledTasks = new Map<string, any>();
 
   constructor() {
@@ -122,10 +122,10 @@ class SlowQueryOptimizerService {
       // Enable performance schema if available
       await this.enablePerformanceSchema();
 
-      this.isInitialized = true;
+      this._isInitialized = true;
       logger.info('Slow query optimizer service initialized successfully');
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Failed to initialize slow query optimizer service', { error });
       throw error;
     }
@@ -152,7 +152,7 @@ class SlowQueryOptimizerService {
         threshold: this.config.logThreshold,
         logQueriesNotUsingIndexes: true
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.warn('Could not configure MySQL slow query logging - insufficient privileges', { error });
     }
   }
@@ -207,7 +207,7 @@ class SlowQueryOptimizerService {
       logger.info('Loaded existing slow queries from performance schema', {
         queriesLoaded: this.queryStats.size
       });
-    } catch (error) {
+    } catch (error: any) {
       logger.debug('Could not load from performance schema', { error: error.message });
     }
   }

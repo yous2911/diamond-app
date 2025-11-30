@@ -64,7 +64,7 @@ export class SecureRateLimiterService {
         await this.redis.ping();
         logger.info('✅ Redis connected for rate limiting');
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.warn('⚠️ Redis not available, using in-memory rate limiting', { error: error.message });
       this.redis = null;
     }
@@ -95,7 +95,7 @@ export class SecureRateLimiterService {
       const allowed = !rateLimitInfo.blocked && rateLimitInfo.count <= config.maxAttempts;
 
       // Headers de rate limiting
-      const headers = {
+      const headers: Record<string, string> = {
         'X-RateLimit-Limit': config.maxAttempts.toString(),
         'X-RateLimit-Remaining': Math.max(0, config.maxAttempts - rateLimitInfo.count).toString(),
         'X-RateLimit-Reset': new Date(rateLimitInfo.resetTime).toISOString(),
@@ -126,8 +126,6 @@ export class SecureRateLimiterService {
     config: RateLimitConfig,
     now: number
   ): Promise<RateLimitInfo> {
-    const pipe = this.redis.pipeline();
-    
     // Script Lua pour opération atomique
     const luaScript = `
       local key = KEYS[1]

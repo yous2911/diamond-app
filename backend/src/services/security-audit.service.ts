@@ -499,7 +499,7 @@ export class SecurityAuditService {
 
   private getCountryFromIP(ip: string): string | undefined {
     // Placeholder - would use GeoIP service in real implementation
-    return 'Unknown';
+    return ip === 'manual' ? undefined : 'Unknown';
   }
 
   private sanitizeHeaders(headers: any): Record<string, string> {
@@ -625,12 +625,12 @@ export class SecurityAuditService {
     // Convert to timeline format
     return Object.entries(buckets).map(([timeKey, severityCounts]) => {
       const totalCount = Object.values(severityCounts).reduce((sum, count) => sum + count, 0);
-      const highestSeverity = Object.entries(severityCounts)
+      const highestSeverity = (Object.entries(severityCounts)
         .filter(([, count]) => count > 0)
         .sort(([a], [b]) => {
-          const severityOrder = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
-          return severityOrder[b as SecuritySeverity] - severityOrder[a as SecuritySeverity];
-        })[0]?.[0] as SecuritySeverity || SecuritySeverity.LOW;
+          const severityOrder: Record<string, number> = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
+          return severityOrder[b] - severityOrder[a];
+        })[0]?.[0] as SecuritySeverity) || SecuritySeverity.LOW;
 
       return {
         timestamp: new Date(timeKey + ':00:00.000Z'),
@@ -642,7 +642,7 @@ export class SecurityAuditService {
 
   private generateRecommendations(
     metrics: SecurityMetrics,
-    incidents: SecurityIncident[]
+    _incidents: SecurityIncident[]
   ): string[] {
     const recommendations: string[] = [];
 

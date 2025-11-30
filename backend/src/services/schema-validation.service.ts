@@ -137,7 +137,7 @@ class SchemaValidationService {
   private validationHistory: ValidationResult[] = [];
   private driftHistory: SchemaDrift[] = [];
   private scheduledTasks = new Map<string, any>();
-  private isInitialized = false;
+  private _isInitialized = false;
 
   constructor() {
     this.schemaPath = process.env.SCHEMA_DEFINITION_PATH || 
@@ -160,10 +160,10 @@ class SchemaValidationService {
       // Setup drift monitoring
       this.setupDriftMonitoring();
 
-      this.isInitialized = true;
+      this._isInitialized = true;
       logger.info('Schema validation service initialized successfully');
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Failed to initialize schema validation service', { error });
       throw error;
     }
@@ -182,7 +182,7 @@ class SchemaValidationService {
         logger.warn('Schema definition file not found, generating from current database...');
         await this.generateSchemaDefinition();
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Failed to load expected schema', { error });
       throw error;
     }
@@ -226,7 +226,7 @@ class SchemaValidationService {
         indexes: schema.indexes.length
       });
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Failed to generate schema definition', { error });
       throw error;
     }
@@ -318,7 +318,6 @@ class SchemaValidationService {
   }
 
   private async extractIndexes(): Promise<IndexDefinition[]> {
-    const indexes: IndexDefinition[] = [];
     const indexMap = new Map<string, IndexDefinition>();
 
     const [indexRows] = await connection.execute(`
@@ -416,7 +415,7 @@ class SchemaValidationService {
           body: row.ACTION_STATEMENT
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.debug('Could not extract triggers', { error: error.message });
     }
 
@@ -451,7 +450,7 @@ class SchemaValidationService {
           comment: row.ROUTINE_COMMENT
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       logger.debug('Could not extract procedures', { error: error.message });
     }
 
@@ -558,7 +557,7 @@ class SchemaValidationService {
 
       return result;
 
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Schema validation failed', { error });
       throw error;
     }
@@ -666,7 +665,7 @@ class SchemaValidationService {
     }
   }
 
-  private async validateIndexes(errors: ValidationError[], warnings: ValidationWarning[]): Promise<void> {
+  private async validateIndexes(errors: ValidationError[], _warnings: ValidationWarning[]): Promise<void> {
     if (!this.expectedSchema || !this.currentSchema) return;
 
     for (const expectedIndex of this.expectedSchema.indexes) {
@@ -697,7 +696,7 @@ class SchemaValidationService {
     }
   }
 
-  private async validateConstraints(errors: ValidationError[], warnings: ValidationWarning[]): Promise<void> {
+  private async validateConstraints(errors: ValidationError[], _warnings: ValidationWarning[]): Promise<void> {
     if (!this.expectedSchema || !this.currentSchema) return;
 
     for (const expectedConstraint of this.expectedSchema.constraints) {
@@ -716,7 +715,7 @@ class SchemaValidationService {
     }
   }
 
-  private async validateTriggers(errors: ValidationError[], warnings: ValidationWarning[]): Promise<void> {
+  private async validateTriggers(_errors: ValidationError[], warnings: ValidationWarning[]): Promise<void> {
     if (!this.expectedSchema || !this.currentSchema) return;
 
     for (const expectedTrigger of this.expectedSchema.triggers) {
@@ -734,7 +733,7 @@ class SchemaValidationService {
     }
   }
 
-  private async validateProcedures(errors: ValidationError[], warnings: ValidationWarning[]): Promise<void> {
+  private async validateProcedures(_errors: ValidationError[], warnings: ValidationWarning[]): Promise<void> {
     if (!this.expectedSchema || !this.currentSchema) return;
 
     for (const expectedProcedure of this.expectedSchema.procedures) {
