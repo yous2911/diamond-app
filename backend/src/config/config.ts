@@ -10,11 +10,10 @@ if (process.env.NODE_ENV === 'test') {
   process.env.DB_USER = process.env.DB_USER || 'root';
   process.env.DB_PASSWORD = process.env.DB_PASSWORD || 'thisisREALLYIT29!';
   process.env.DB_NAME = process.env.DB_NAME || 'reved_kids';
-  // Set required secrets for tests
-  process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only';
-  process.env.JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'test-jwt-refresh-secret-for-testing-only-32-chars';
-  process.env.ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || 'testtesttest32charabcdefghijklmn';
-  process.env.COOKIE_SECRET = process.env.COOKIE_SECRET || 'test-cookie-secret-for-testing-only-32-chars';
+  // Set required secrets for tests - ensure these are set in your CI/CD or .env.test
+  if (!process.env.JWT_SECRET || !process.env.ENCRYPTION_KEY) {
+    console.warn('⚠️  Running tests without explicit secrets. Please set JWT_SECRET, etc. in your environment.');
+  }
   // Disable rate limiting for tests
   process.env.RATE_LIMIT_MAX = '10000';
   process.env.RATE_LIMIT_AUTH_MAX = '1000';
@@ -280,7 +279,7 @@ export const helmetConfig = {
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'"],
       scriptSrc: ["'self'"],
       imgSrc: ["'self'", "data:", "https:"],
       connectSrc: ["'self'"],

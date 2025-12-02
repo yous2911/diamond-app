@@ -18,7 +18,7 @@ const fastify = Fastify({
       },
     } : undefined,
   },
-  trustProxy: true,
+  trustProxy: config.TRUST_PROXY,
   bodyLimit: 10485760, // 10MB
   keepAliveTimeout: 5000,
   requestIdHeader: 'x-request-id',
@@ -42,15 +42,18 @@ async function registerPlugins() {
     logger.info('📦 Registering cors plugin...');
     await fastify.register(import('./plugins/cors'));
     
+    logger.info('📦 Registering compression plugin...');
+    await fastify.register(import('@fastify/compress'));
+
     logger.info('📦 Registering security plugin (Helmet)...');
     await fastify.register(import('./plugins/security'));
 
-    // CSRF temporarily disabled - re-enable after CSR grant presentation
-    // logger.info('📦 Registering CSRF protection plugin...');
-    // await fastify.register(import('./plugins/csrf'));
-
     logger.info('📦 Registering auth plugin...');
     await fastify.register(import('./plugins/auth'));
+
+    // CSRF protection enabled
+    logger.info('📦 Registering CSRF protection plugin...');
+    await fastify.register(import('./plugins/csrf'));
 
     logger.info('📦 Registering rate-limit plugin...');
     await fastify.register(import('./plugins/rate-limit'));
