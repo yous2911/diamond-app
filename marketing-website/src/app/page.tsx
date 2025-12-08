@@ -1,5 +1,6 @@
 import Hero from "../components/sections/Hero";
 import Method from "../components/sections/Method";
+import WhyItWorks from "../components/sections/WhyItWorks";
 import SocialProof from "../components/sections/SocialProof";
 import Science from "../components/sections/Science";
 import MasteryGuarantee from "../components/sections/MasteryGuarantee";
@@ -14,6 +15,7 @@ export default function Home() {
     <main id="main" className="min-h-screen bg-white">
       <Hero />
       <Method />
+      <WhyItWorks />
       <SocialProof />
       <Science />
       <MasteryGuarantee />
