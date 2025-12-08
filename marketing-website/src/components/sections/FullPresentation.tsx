@@ -2,12 +2,12 @@ import YouTubeEmbed from "../ui/YouTubeEmbed";
 
 export default function FullPresentation() {
   return (
-    <section id="presentation" className="py-20 px-6 md:px-10 border-y border-white/10">
+    <section id="presentation" className="py-20 px-6 md:px-10 bg-warm-white">
       <div className="max-w-4xl mx-auto text-center">
-        <h2 className="font-sora text-4xl md:text-5xl mb-4">
+        <h2 className="font-sora text-4xl md:text-5xl mb-4 text-text-dark">
           Notre Mission, Expliquée en Vidéo
         </h2>
-        <p className="text-white/75 max-w-2xl mx-auto mb-10">
+        <p className="text-text-medium max-w-2xl mx-auto mb-10 text-lg">
           Découvrez comment RevEd réinvente l&apos;apprentissage grâce à une méthode fondée sur la science et un engagement pour l&apos;impact social.
         </p>
         <YouTubeEmbed

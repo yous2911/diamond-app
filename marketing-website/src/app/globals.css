@@ -1,6 +1,6 @@
 @import "tailwindcss";
 
-:root { color-scheme: dark; }
+:root { color-scheme: light; }
 
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-in-up { animation: none !important; }

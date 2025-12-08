@@ -10,10 +10,14 @@ const config: Config = {
     extend: {
       colors: {
         'deep-space': '#0D0B14',
+        'light-bg': '#F8FAFC',
+        'warm-white': '#FFFFFF',
         'cognitive-gold': '#FFD700',
         'mastery-blue': '#4A90E2',
         'spark-turquoise': '#40E0D0',
         'clarity-white': '#FFFFFF',
+        'text-dark': '#1E293B',
+        'text-medium': '#475569',
       },
       fontFamily: {
         sora: ['var(--font-sora)', 'sans-serif'],

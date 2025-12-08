@@ -4,21 +4,21 @@ import React from 'react';
 function Item({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = React.useState(false);
   return (
-    <div className="border-b border-white/10 py-4">
-      <button className="w-full text-left flex justify-between items-center" onClick={() => setOpen(o => !o)} aria-expanded={open}>
-        <span className="font-sora text-lg">{q}</span>
-        <span className="text-white/50 text-2xl">{open ? '–' : '+'}</span>
+    <div className="border-b-2 border-text-medium/10 py-4">
+      <button className="w-full text-left flex justify-between items-center hover:text-cognitive-gold transition-colors" onClick={() => setOpen(o => !o)} aria-expanded={open}>
+        <span className="font-sora text-lg text-text-dark font-medium">{q}</span>
+        <span className="text-cognitive-gold text-2xl font-bold">{open ? '–' : '+'}</span>
       </button>
-      {open && <p className="mt-2 text-white/80">{a}</p>}
+      {open && <p className="mt-2 text-text-medium">{a}</p>}
     </div>
   );
 }
 
 export default function FAQ() {
   return (
-    <section className="py-16 px-6">
+    <section className="py-16 px-6 bg-light-bg">
       <div className="max-w-3xl mx-auto">
-        <h3 className="font-sora text-3xl md:text-4xl mb-6 text-center">Questions Fréquentes</h3>
+        <h3 className="font-sora text-3xl md:text-4xl mb-6 text-center text-text-dark">Questions Fréquentes</h3>
         <Item q="Pourquoi ajouter encore de l&apos;écran ?" a="Nous remplaçons 30 minutes d&apos;écran passif par 30 minutes actives et structurées, avec un objectif de compétence et des tests de rétention." />
         <Item q="Comment fonctionne la Garantie Maîtrise ?" a="Respectez le protocole (30 min/jour, 5 j/sem). Si la compétence n&apos;est pas maîtrisée (Tests A & B ≥ 85% + rétention J+7 ≥ 80%), nous remboursons la période concernée." />
         <Item q="Qu&apos;est-ce que le 1 acheté = 1 offert ?" a="Chaque abonnement finance un accès pour un élève d&apos;une zone reculée via nos partenaires (écoles/associations). La transparence est totale." />
