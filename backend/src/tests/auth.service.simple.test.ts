@@ -2,8 +2,7 @@
  * Simple test to debug AuthService import issues
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-
+import { describe, it, expect, vi } from 'vitest';
 // Mock all dependencies first
 vi.mock('bcrypt');
 vi.mock('../db/connection', () => ({

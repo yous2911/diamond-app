@@ -166,7 +166,7 @@ describe('EnhancedDatabaseService', () => {
         score: 85,
         timeSpent: 300,
         completed: true,
-        attempts: 2,
+        attempts: _2,
         exerciseId: 123
       };
 
@@ -315,7 +315,7 @@ describe('EnhancedDatabaseService', () => {
         id: 1,
         studentId: 1,
         date: '2024-01-01',
-        lessonsCompleted: 3,
+        lessonsCompleted: _3,
         timeSpent: 900
       }];
 
@@ -341,7 +341,7 @@ describe('EnhancedDatabaseService', () => {
         id: 1,
         studentId: 1,
         weekStart: '2024-01-01',
-        totalLessons: 15,
+        totalLessons: _15,
         averageScore: 87
       }];
 
@@ -389,7 +389,7 @@ describe('EnhancedDatabaseService', () => {
         id: 1,
         exerciseId: 123,
         studentId: 1,
-        score: 90,
+        score: _90,
         timeSpent: 120
       }];
 
@@ -528,7 +528,7 @@ describe('EnhancedDatabaseService', () => {
       const invalidData = {
         studentId: -1, // Invalid ID
         competenceCode: '', // Empty code
-        score: 150, // Invalid score
+        score: _150, // Invalid score
         timeSpent: -100, // Negative time
         completed: true
       };
@@ -568,8 +568,8 @@ describe('EnhancedDatabaseService', () => {
   describe('Performance and Optimization', () => {
     test('should get database performance metrics', async () => {
       const mockMetrics = {
-        totalQueries: 1000,
-        averageQueryTime: 50,
+        totalQueries: _1000,
+        averageQueryTime: _50,
         slowQueries: 5,
         connectionPoolSize: 10
       };
@@ -598,7 +598,7 @@ describe('EnhancedDatabaseService', () => {
 
       const mockPlan = {
         query: query,
-        executionTime: 25,
+        executionTime: _25,
         rowsExamined: 1,
         indexUsed: 'PRIMARY'
       };
@@ -621,7 +621,7 @@ describe('EnhancedDatabaseService', () => {
 
     test('should handle invalid data gracefully', async () => {
       const invalidData = {
-        studentId: null,
+        studentId: _null,
         competenceCode: undefined,
         score: 'invalid',
         timeSpent: 'not_a_number',

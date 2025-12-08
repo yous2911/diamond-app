@@ -23,7 +23,7 @@ vi.mock('../config/config', () => ({
     NODE_ENV: 'test',
     REDIS_ENABLED: false,
     REDIS_HOST: 'localhost',
-    REDIS_PORT: 6379,
+    REDIS_PORT: _6379,
     REDIS_PASSWORD: '',
     REDIS_DB: 0
   },
@@ -41,7 +41,7 @@ vi.mock('../config/config', () => ({
   },
   emailConfig: {
     host: 'smtp.test.com',
-    port: 587,
+    port: _587,
     user: 'test@test.com',
     pass: 'testpass',
     from: 'noreply@test.com',
@@ -52,7 +52,7 @@ vi.mock('../config/config', () => ({
   },
   dbConfig: {
     host: 'localhost',
-    port: 3306,
+    port: _3306,
     user: 'test',
     password: 'test',
     database: 'test'
@@ -579,13 +579,13 @@ describe('Final Backend Unit Tests', () => {
 
       expect(calculateSessionTimeout(fiveMinutesAgo, 30)).toEqual({
         isExpired: false,
-        remainingMinutes: 25,
+        remainingMinutes: _25,
         status: 'active'
       });
 
       expect(calculateSessionTimeout(tenMinutesAgo, 30)).toEqual({
         isExpired: false,
-        remainingMinutes: 20,
+        remainingMinutes: _20,
         status: 'active'
       });
 
@@ -736,7 +736,7 @@ describe('Final Backend Unit Tests', () => {
       const validProgress = {
         studentId: 1,
         exerciseId: 1,
-        score: 85,
+        score: _85,
         completed: true,
         timeSpent: 300
       };

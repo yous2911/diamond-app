@@ -46,6 +46,9 @@ if (process.env.NODE_ENV === 'test') {
   }
 
   console.log('✅ Loaded environment from:', envPath);
+  
+  // Explicitly log Redis status for debugging
+  console.log(`📊 Redis Configuration: REDIS_ENABLED=${process.env.REDIS_ENABLED} (raw value)`);
 }
 // Configuration chargée - variables sensibles non loggées pour la sécurité
 
@@ -74,7 +77,14 @@ const configSchema = z.object({
   REDIS_PORT: z.coerce.number().default(6379),
   REDIS_PASSWORD: z.string().optional(),
   REDIS_DB: z.coerce.number().default(0),
-  REDIS_ENABLED: z.coerce.boolean().default(false), // Disabled by default for easier setup
+  REDIS_ENABLED: z.preprocess(
+    (val) => {
+      if (val === 'false' || val === false || val === '0' || val === 0) return false;
+      if (val === 'true' || val === true || val === '1' || val === 1) return true;
+      return false; // Default to false for safety
+    },
+    z.boolean().default(false)
+  ), // Disabled by default for easier setup
   
   // Security (with development fallbacks)
   JWT_SECRET: z.string().min(32, { message: 'JWT_SECRET must be at least 32 characters long' }),
@@ -126,7 +136,7 @@ const configSchema = z.object({
   BODY_LIMIT: z.coerce.number().default(10485760),
   
   // CORS
-  CORS_ORIGIN: z.string().default('http://localhost:3000,http://localhost:3001'),
+  CORS_ORIGIN: z.string().default('http://localhost:3003'),
   CORS_CREDENTIALS: z.coerce.boolean().default(true),
   
   // Structured Logging
@@ -172,10 +182,10 @@ const configSchema = z.object({
 );
 
 // Directly parse the environment. If it fails, the app will crash. This is what we want.
-let config;
+let config: z.infer<typeof configSchema>;
 try {
   config = configSchema.parse(process.env);
-} catch (error) {
+} catch (error: unknown) {
   if (error instanceof z.ZodError) {
     console.error('❌ Invalid environment variables:');
     error.errors.forEach((err) => {
@@ -190,7 +200,10 @@ try {
 // Environment helpers
 export const isDevelopment = config.NODE_ENV === 'development';
 export const isProduction = config.NODE_ENV === 'production';
-export const isTest = config.NODE_ENV === 'test';
+
+// Log Redis config status
+console.log(`🔧 Redis Status: ${config.REDIS_ENABLED ? 'ENABLED' : 'DISABLED'} (using ${config.REDIS_ENABLED ? 'Redis' : 'memory cache'})`);
+export const _isTest = config.NODE_ENV === 'test';
 
 // Now, call your validation function to perform production-specific checks.
 validateEnvironment();
@@ -276,7 +289,7 @@ export const ddosConfig = {
 };
 
 // Helmet configuration
-export const helmetConfig = {
+export const _helmetConfig = {
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
@@ -295,9 +308,9 @@ export const helmetConfig = {
 };
 
 // CORS configuration
-export const corsConfig = {
+export const _corsConfig = {
   origin: isDevelopment 
-    ? ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3004', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001', 'http://127.0.0.1:3004']
+    ? ['http://localhost:3003', 'http://127.0.0.1:3003']
     : config.CORS_ORIGIN.split(',').map(origin => origin.trim()),
   credentials: config.CORS_CREDENTIALS,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
@@ -346,7 +359,7 @@ export const uploadConfig = {
 };
 
 // Monitoring configuration
-export const monitoringConfig = {
+export const _monitoringConfig = {
   enableMetrics: config.ENABLE_METRICS,
   metricsInterval: config.METRICS_INTERVAL,
   healthCheckTimeout: config.HEALTH_CHECK_TIMEOUT,
@@ -355,7 +368,7 @@ export const monitoringConfig = {
 };
 
 // Logging configuration
-export const loggingConfig = {
+export const _loggingConfig = {
   level: config.LOG_LEVEL,
   file: config.LOG_FILE,
   format: config.LOG_FORMAT,

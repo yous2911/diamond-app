@@ -110,7 +110,7 @@ describe('EmailService', () => {
       const progressData = {
         exercisesCompleted: 15,
         studyTime: '2h 30min',
-        averageScore: 85,
+        averageScore: _85,
         subjects: ['Mathématiques', 'Français']
       };
 

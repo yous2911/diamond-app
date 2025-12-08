@@ -29,7 +29,7 @@ export async function seedTestStudent(app: FastifyInstance, studentData: TestStu
     if (response.statusCode === 201) {
       return JSON.parse(response.body);
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.log('Student might already exist, continuing...');
   }
 

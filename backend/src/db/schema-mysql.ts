@@ -1,5 +1,5 @@
 import { mysqlTable, varchar, int, decimal, timestamp, text, boolean, json, date } from 'drizzle-orm/mysql-core';
-import { InferInsertModel, InferSelectModel, relations, sql } from 'drizzle-orm';
+import { InferInsertModel, InferSelectModel, relations } from 'drizzle-orm';
 
 // =============================================================================
 // CORE TABLES
@@ -144,19 +144,19 @@ export type NewModule = InferInsertModel<typeof modules>;
 // RELATIONS
 // =============================================================================
 
-export const studentsRelations = relations(students, ({ many }) => ({
+export const _studentsRelations = relations(students, ({ many }) => ({
   progress: many(studentProgress),
   sessions: many(sessions),
   revisions: many(revisions),
   learningPath: many(studentLearningPath)
 }));
 
-export const exercisesRelations = relations(exercises, ({ many }) => ({
+export const _exercisesRelations = relations(exercises, ({ many }) => ({
   progress: many(studentProgress),
   revisions: many(revisions)
 }));
 
-export const studentProgressRelations = relations(studentProgress, ({ one }) => ({
+export const _studentProgressRelations = relations(studentProgress, ({ one }) => ({
   student: one(students, {
     fields: [studentProgress.studentId],
     references: [students.id]

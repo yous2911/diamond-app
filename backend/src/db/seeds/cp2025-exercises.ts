@@ -88,7 +88,7 @@ async function seedCP2025Exercises(): Promise<void> {
     await db.insert(schema.exercises).values(exercisesData);
     
     console.log('✅ CP2025 exercises seeded successfully');
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('❌ Error seeding CP2025 exercises:', error);
     throw error;
   }

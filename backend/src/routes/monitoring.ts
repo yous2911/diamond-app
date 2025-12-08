@@ -95,7 +95,7 @@ const monitoringRoutes: FastifyPluginAsync = async (fastify) => {
           },
           message: 'Cache statistics retrieved successfully'
         });
-      } catch (error) {
+      } catch (error: unknown) {
         return reply.status(500).send({
           success: false,
           error: { message: 'Erreur cache', code: 'CACHE_ERROR' }
@@ -119,7 +119,7 @@ const monitoringRoutes: FastifyPluginAsync = async (fastify) => {
           },
           message: 'Statistiques du cache récupérées'
         });
-      } catch (error) {
+      } catch (error: unknown) {
         return reply.status(500).send({
           success: false,
           error: { message: 'Erreur cache', code: 'CACHE_ERROR' }
@@ -145,7 +145,7 @@ const monitoringRoutes: FastifyPluginAsync = async (fastify) => {
           success: true,
           message: 'Cache vidé avec succès'
         });
-      } catch (error) {
+      } catch (error: unknown) {
         return reply.status(500).send({
           success: false,
           error: { message: 'Erreur lors du vidage du cache', code: 'CACHE_CLEAR_ERROR' }

@@ -644,7 +644,7 @@ vi.mock('../services/encryption.service', () => {
     decryptStudentData: vi.fn((encryptedData) => {
       try {
         return Promise.resolve(JSON.parse(Buffer.from(encryptedData.encryptedData, 'base64').toString()));
-      } catch (error) {
+      } catch (error: unknown) {
         return Promise.reject(new Error('Decryption failed'));
       }
     }),
@@ -1452,7 +1452,7 @@ vi.mock('../middleware/input-sanitization.middleware', () => {
         
         req.sanitizedBody = sanitizedBody;
         req.sanitizationWarnings = sanitizationWarnings;
-      } catch (error) {
+      } catch (error: unknown) {
         return reply.status(400).send({
           error: 'Invalid input data',
           message: 'Request contains potentially harmful content'
@@ -2157,7 +2157,7 @@ beforeAll(async () => {
     
     setupComplete = true;
     console.log('✅ Test environment setup complete');
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('❌ Test setup failed:', error);
     throw error;
   }

@@ -128,7 +128,9 @@ export class ParentalConsentService {
           consentTypes: validatedData.consentTypes
         },
         ipAddress: validatedData.ipAddress,
-        userAgent: validatedData.userAgent
+        userAgent: validatedData.userAgent,
+        timestamp: new Date(),
+        severity: 'medium'
       });
 
       // Send first consent email
@@ -144,8 +146,8 @@ export class ParentalConsentService {
         message: 'Un email de confirmation a été envoyé à l\'adresse parentale.'
       };
 
-    } catch (error) {
-      logger.error('Error initiating parental consent:', error);
+    } catch (error: unknown) {
+      logger.error('Error initiating parental consent', { err: error });
       throw error;
     }
   }
@@ -195,7 +197,9 @@ export class ParentalConsentService {
           firstConsentDate: new Date()
         },
         ipAddress: validatedData.ipAddress,
-        userAgent: validatedData.userAgent
+        userAgent: validatedData.userAgent,
+        timestamp: new Date(),
+        severity: 'medium'
       });
 
       // Send second consent email
@@ -214,8 +218,8 @@ export class ParentalConsentService {
         requiresSecondConsent: true
       };
 
-    } catch (error) {
-      logger.error('Error processing first consent:', error);
+    } catch (error: unknown) {
+      logger.error('Error processing first consent', { err: error });
       throw error;
     }
   }
@@ -274,7 +278,9 @@ export class ParentalConsentService {
           verificationDate
         },
         ipAddress: validatedData.ipAddress,
-        userAgent: validatedData.userAgent
+        userAgent: validatedData.userAgent,
+        timestamp: new Date(),
+        severity: 'medium'
       });
 
       // Send confirmation email
@@ -292,8 +298,8 @@ export class ParentalConsentService {
         message: 'Consentement parental vérifié avec succès. Le compte élève a été créé.'
       };
 
-    } catch (error) {
-      logger.error('Error processing second consent:', error);
+    } catch (error: unknown) {
+      logger.error('Error processing second consent');
       throw error;
     }
   }
@@ -334,7 +340,9 @@ export class ParentalConsentService {
           revokedAt: new Date()
         },
         ipAddress: '',
-        userAgent: ''
+        userAgent: '',
+        timestamp: new Date(),
+        severity: 'high'
       });
 
       // If consent was verified, anonymize student data
@@ -348,8 +356,8 @@ export class ParentalConsentService {
         reason 
       });
 
-    } catch (error) {
-      logger.error('Error revoking consent:', error);
+    } catch (error: unknown) {
+      logger.error('Error revoking consent');
       throw error;
     }
   }
@@ -382,8 +390,8 @@ export class ParentalConsentService {
         expiryDate: consent.expiryDate
       };
 
-    } catch (error) {
-      logger.error('Error getting consent status:', error);
+    } catch (error: unknown) {
+      logger.error('Error getting consent status');
       throw error;
     }
   }
@@ -402,8 +410,8 @@ export class ParentalConsentService {
              consent.consentTypes.includes(processingType) &&
              new Date() <= consent.expiryDate;
 
-    } catch (error) {
-      logger.error('Error checking consent validity:', error);
+    } catch (error: unknown) {
+      logger.error('Error checking consent validity');
       return false;
     }
   }
@@ -511,8 +519,8 @@ export class ParentalConsentService {
 
       return result;
 
-    } catch (error) {
-      logger.error('Error creating student account:', error);
+    } catch (error: unknown) {
+      logger.error('Error creating student account');
       throw new Error('Échec de la création du compte élève');
     }
   }
@@ -552,12 +560,13 @@ export class ParentalConsentService {
           parentEmail: consent.parentEmail,
           studentId: studentRecord?.id
         },
+        timestamp: new Date(),
         severity: 'high',
         category: 'compliance'
       });
 
-    } catch (error) {
-      logger.error('Error handling consent revocation:', error);
+    } catch (error: unknown) {
+      logger.error('Error handling consent revocation');
       throw error;
     }
   }
@@ -590,12 +599,13 @@ export class ParentalConsentService {
         entityId: consentId,
         action: 'verified',
         includeDetails: true,
-        limit: 1
+        limit: 1,
+        offset: 0
       });
 
       if (auditResult.entries.length > 0) {
         const entry = auditResult.entries[0];
-        if (entry.details?.studentId) {
+        if (entry && entry.details?.studentId) {
           const studentId = parseInt(entry.details.studentId);
           return { id: studentId };
         }
@@ -603,8 +613,8 @@ export class ParentalConsentService {
 
       return null;
 
-    } catch (error) {
-      logger.error('Error finding student by consent ID:', error);
+    } catch (error: unknown) {
+      logger.error('Error finding student by consent ID');
       return null;
     }
   }
@@ -640,14 +650,15 @@ export class ParentalConsentService {
           ipAddress: consent.ipAddress,
           userAgent: consent.userAgent,
           severity: 'medium',
-          category: 'compliance'
+          category: 'compliance',
+          timestamp: new Date()
         });
       });
 
       logger.debug('Consent saved to database', { consentId: consent.id });
 
-    } catch (error) {
-      logger.error('Error saving consent to database:', error);
+    } catch (error: unknown) {
+      logger.error('Error saving consent to database');
       throw new Error('Échec de l\'enregistrement du consentement');
     }
   }
@@ -687,14 +698,15 @@ export class ParentalConsentService {
             updatedAt: new Date()
           },
           severity: 'low',
-          category: 'compliance'
+          category: 'compliance',
+          timestamp: new Date()
         });
       });
 
       logger.debug('Consent updated in database', { consentId: id, updates });
 
-    } catch (error) {
-      logger.error('Error updating consent in database:', error);
+    } catch (error: unknown) {
+      logger.error('Error updating consent in database');
       throw new Error('Échec de la mise à jour du consentement');
     }
   }
@@ -707,7 +719,8 @@ export class ParentalConsentService {
         entityId: id,
         action: 'create',
         includeDetails: true,
-        limit: 1
+        limit: 1,
+        offset: 0
       });
 
       if (auditResult.entries.length === 0) {
@@ -715,6 +728,9 @@ export class ParentalConsentService {
       }
 
       const storedEntry = auditResult.entries[0];
+      if (!storedEntry) {
+        return null;
+      }
       const details = storedEntry.details;
 
       // Get latest status from most recent audit entry
@@ -722,7 +738,8 @@ export class ParentalConsentService {
         entityType: 'parental_consent',
         entityId: id,
         includeDetails: true,
-        limit: 10
+        limit: 10,
+        offset: 0
       });
 
       let currentStatus = 'pending';
@@ -768,16 +785,16 @@ export class ParentalConsentService {
         secondConsentDate,
         verificationDate,
         expiryDate,
-        ipAddress: storedEntry.ipAddress || '',
-        userAgent: storedEntry.userAgent || '',
-        createdAt: storedEntry.timestamp,
-        updatedAt: statusResult.entries[0]?.timestamp || storedEntry.timestamp
+        ipAddress: storedEntry?.ipAddress || '',
+        userAgent: storedEntry?.userAgent || '',
+        createdAt: storedEntry?.timestamp || new Date(),
+        updatedAt: statusResult.entries[0]?.timestamp || storedEntry?.timestamp || new Date()
       };
 
       return consent;
 
-    } catch (error) {
-      logger.error('Error finding consent by ID:', error);
+    } catch (error: unknown) {
+      logger.error('Error finding consent by ID');
       return null;
     }
   }
@@ -789,7 +806,8 @@ export class ParentalConsentService {
         entityType: 'parental_consent',
         action: 'create',
         includeDetails: true,
-        limit: 20
+        limit: 20,
+        offset: 0
       });
 
       // Filter by parent email and pending status
@@ -804,8 +822,8 @@ export class ParentalConsentService {
 
       return null;
 
-    } catch (error) {
-      logger.error('Error finding pending consent by email:', error);
+    } catch (error: unknown) {
+      logger.error('Error finding pending consent by email');
       return null;
     }
   }
@@ -817,7 +835,8 @@ export class ParentalConsentService {
         entityType: 'parental_consent',
         action: 'create',
         includeDetails: true,
-        limit: 50
+        limit: 50,
+        offset: 0
       });
 
       for (const entry of auditResult.entries) {
@@ -828,8 +847,8 @@ export class ParentalConsentService {
 
       return null;
 
-    } catch (error) {
-      logger.error('Error finding consent by first token:', error);
+    } catch (error: unknown) {
+      logger.error('Error finding consent by first token');
       return null;
     }
   }
@@ -840,7 +859,8 @@ export class ParentalConsentService {
       const auditResult = await this.auditService.queryAuditLogs({
         entityType: 'parental_consent',
         includeDetails: true,
-        limit: 100
+        limit: 100,
+        offset: 0
       });
 
       for (const entry of auditResult.entries) {
@@ -851,8 +871,8 @@ export class ParentalConsentService {
 
       return null;
 
-    } catch (error) {
-      logger.error('Error finding consent by second token:', error);
+    } catch (error: unknown) {
+      logger.error('Error finding consent by second token');
       return null;
     }
   }
@@ -864,7 +884,8 @@ export class ParentalConsentService {
         entityType: 'parental_consent',
         action: 'verified',
         includeDetails: true,
-        limit: 50
+        limit: 50,
+        offset: 0
       });
 
       for (const entry of auditResult.entries) {
@@ -875,8 +896,8 @@ export class ParentalConsentService {
 
       return null;
 
-    } catch (error) {
-      logger.error('Error finding consent by student ID:', error);
+    } catch (error: unknown) {
+      logger.error('Error finding consent by student ID');
       return null;
     }
   }

@@ -40,7 +40,7 @@ interface CacheInterface {
 export let redis: Redis.Redis | null = null;
 
 const redisPlugin = async (fastify: any) => {
-  const logger = fastify.log;
+  const _logger = fastify.log;
   let isRedisAvailable = false;
   
   // Fallback memory cache
@@ -57,8 +57,8 @@ const redisPlugin = async (fastify: any) => {
     }
   };
 
-  // Try to connect to Redis if enabled
-  if (config.REDIS_ENABLED) {
+  // Try to connect to Redis if enabled (explicitly check for true)
+  if (config.REDIS_ENABLED === true || String(config.REDIS_ENABLED) === 'true') {
     try {
       fastify.log.info('Attempting Redis connection...', {
         host: redisConfig.host,
@@ -79,17 +79,15 @@ const redisPlugin = async (fastify: any) => {
         enableOfflineQueue: false, // Don't queue commands when offline
         enableReadyCheck: true,
 
-        // Connection retry configuration - stop after 3 attempts
+        // Connection retry configuration - stop after 1 attempt for local dev
         retryStrategy: (times) => {
-          if (times > 3) {
-            fastify.log.error('Redis connection failed after 3 retries, falling back to memory cache');
+          if (times > 1) {
+            fastify.log.warn('Redis connection failed, falling back to memory cache (Redis not required for local dev)');
             redis = null; // Clear the redis instance
             isRedisAvailable = false;
-            return null; // Stop retrying
+            return null; // Stop retrying immediately
           }
-          const delay = Math.min(times * 50, 2000);
-          fastify.log.warn(`Redis connection retry ${times} in ${delay}ms`);
-          return delay;
+          return null; // Don't retry at all - use memory cache
         },
 
         // Prevent reconnection on errors
@@ -105,23 +103,38 @@ const redisPlugin = async (fastify: any) => {
       redis.on('error', (error) => {
         isRedisAvailable = false;
         stats.operations.errors++;
-        fastify.log.warn('Redis connection error, falling back to memory cache:', {
-          error: error.message 
-        });
+        // Only log once, then stop
+        if (stats.operations.errors <= 1) {
+          fastify.log.warn('Redis connection error, falling back to memory cache (this is OK for local dev):', {
+            error: error.message 
+          });
+        }
+        // Stop reconnecting
+        redis = null;
       });
       
       redis.on('close', () => {
         isRedisAvailable = false;
-        fastify.log.warn('Redis connection closed, using memory cache');
+        // Don't log repeatedly
+        redis = null; // Stop trying
       });
 
-      // Test connection
-      await redis.ping();
-      isRedisAvailable = true;
-      
-      fastify.log.info('✅ Redis connected successfully');
+      // Test connection with timeout
+      try {
+        await Promise.race([
+          redis.ping(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Connection timeout')), 2000))
+        ]);
+        isRedisAvailable = true;
+        fastify.log.info('✅ Redis connected successfully');
+      } catch (pingError: unknown) {
+        // Connection failed, use memory cache
+        fastify.log.warn('Redis ping failed, using memory cache (this is OK for local dev)');
+        redis = null;
+        isRedisAvailable = false;
+      }
 
-    } catch (error) {
+    } catch (error: unknown) {
       fastify.log.warn('Redis connection failed, using memory cache fallback:', {
         error: error instanceof Error ? error.message : 'Unknown error'
       });
@@ -147,7 +160,7 @@ const redisPlugin = async (fastify: any) => {
           stats.misses++;
           return null;
         }
-      } catch (error) {
+      } catch (error: unknown) {
         stats.operations.errors++;
         fastify.log.warn('Redis get error, falling back to memory cache:', {
           key, 
@@ -176,7 +189,7 @@ const redisPlugin = async (fastify: any) => {
           await redis.setex(key, actualTtl, value);
           return;
         }
-      } catch (error) {
+      } catch (error: unknown) {
         stats.operations.errors++;
         fastify.log.warn('Redis set error, falling back to memory cache:', {
           key, 
@@ -199,7 +212,7 @@ const redisPlugin = async (fastify: any) => {
           const values = await redis.mget(...keys);
           return values;
         }
-      } catch (error) {
+      } catch (error: unknown) {
         stats.operations.errors++;
         fastify.log.warn('Redis mget error:', error);
       }
@@ -223,7 +236,7 @@ const redisPlugin = async (fastify: any) => {
           await pipeline.exec();
           return;
         }
-      } catch (error) {
+      } catch (error: unknown) {
         stats.operations.errors++;
         fastify.log.warn('Redis mset error:', error);
       }
@@ -243,7 +256,7 @@ const redisPlugin = async (fastify: any) => {
         if (redis && isRedisAvailable) {
           return await redis.del(...keys);
         }
-      } catch (error) {
+      } catch (error: unknown) {
         stats.operations.errors++;
         fastify.log.warn('Redis del error:', error);
       }
@@ -263,7 +276,7 @@ const redisPlugin = async (fastify: any) => {
         if (redis && isRedisAvailable) {
           return await redis.exists(key);
         }
-      } catch (error) {
+      } catch (error: unknown) {
         stats.operations.errors++;
         fastify.log.warn('Redis exists error:', error);
       }
@@ -278,7 +291,7 @@ const redisPlugin = async (fastify: any) => {
         if (redis && isRedisAvailable) {
           return await redis.expire(key, ttl);
         }
-      } catch (error) {
+      } catch (error: unknown) {
         stats.operations.errors++;
         fastify.log.warn('Redis expire error:', error);
       }
@@ -301,7 +314,7 @@ const redisPlugin = async (fastify: any) => {
           }
           return value;
         }
-      } catch (error) {
+      } catch (error: unknown) {
         stats.operations.errors++;
         fastify.log.warn('Redis incr error:', error);
       }
@@ -322,7 +335,7 @@ const redisPlugin = async (fastify: any) => {
         if (redis && isRedisAvailable) {
           await redis.flushdb();
         }
-      } catch (error) {
+      } catch (error: unknown) {
         stats.operations.errors++;
         fastify.log.warn('Redis flush error:', error);
       }
@@ -336,7 +349,7 @@ const redisPlugin = async (fastify: any) => {
         if (redis && isRedisAvailable) {
           return await redis.keys(pattern);
         }
-      } catch (error) {
+      } catch (error: unknown) {
         stats.operations.errors++;
         fastify.log.warn('Redis keys error:', error);
       }
@@ -354,7 +367,7 @@ const redisPlugin = async (fastify: any) => {
         if (redis && isRedisAvailable) {
           return await redis.ping();
         }
-      } catch (error) {
+      } catch (error: unknown) {
         fastify.log.warn('Redis ping error:', error);
       }
       
@@ -367,7 +380,7 @@ const redisPlugin = async (fastify: any) => {
           const info = await redis.info('memory');
           return { redis: true, info };
         }
-      } catch (error) {
+      } catch (error: unknown) {
         fastify.log.warn('Redis info error:', error);
       }
       
@@ -407,7 +420,7 @@ const redisPlugin = async (fastify: any) => {
           const keyCount = await redis.dbsize();
           baseStats.keys = keyCount;
         }
-      } catch (error) {
+      } catch (error: unknown) {
         fastify.log.warn('Redis stats error:', error);
       }
       
@@ -424,7 +437,7 @@ const redisPlugin = async (fastify: any) => {
       
       try {
         return JSON.parse(value);
-      } catch (error) {
+      } catch (error: unknown) {
         fastify.log.warn('JSON parse error for cache key:', { key, error });
         return null;
       }

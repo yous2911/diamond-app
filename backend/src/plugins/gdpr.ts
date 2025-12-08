@@ -1,6 +1,6 @@
 import fp from 'fastify-plugin';
 import { FastifyInstance } from 'fastify';
-import { gdprConfig, emailConfig } from '../config/config';
+import { gdprConfig } from '../config/config';
 import { AuditTrailService } from '../services/audit-trail.service';
 import { EncryptionService } from '../services/encryption.service';
 import { EmailService } from '../services/email.service';
@@ -97,13 +97,13 @@ const gdprPlugin = async (fastify: FastifyInstance, options: GDPRPluginOptions =
           setImmediate(async () => {
             try {
               await auditService.logAction(auditData);
-            } catch (auditError) {
+            } catch (auditError: unknown) {
               (fastify.log as any).warn('Audit logging failed:', auditError);
             }
           });
 
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        } catch (error: unknown) {
+          const _errorMessage = error instanceof Error ? error.message : 'Unknown error';
           (fastify.log as any).warn({ err: error }, 'GDPR audit middleware error:');
           // Ne pas faire échouer la requête si l'audit échoue
         }
@@ -147,8 +147,8 @@ const gdprPlugin = async (fastify: FastifyInstance, options: GDPRPluginOptions =
                   }
                 });
               }
-            } catch (error) {
-              const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            } catch (error: unknown) {
+              const _errorMessage = error instanceof Error ? error.message : 'Unknown error';
               (fastify.log as any).warn({ err: error }, 'Consent verification failed:');
               // En cas d'erreur, permettre l'accès mais logger l'incident
               await auditService.logAction({
@@ -182,8 +182,8 @@ const gdprPlugin = async (fastify: FastifyInstance, options: GDPRPluginOptions =
         try {
           await encryptionService.cleanupExpiredKeys();
           (fastify.log as any).info('🧹 Cleaned up expired encryption keys');
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        } catch (error: unknown) {
+          const _errorMessage = error instanceof Error ? error.message : 'Unknown error';
           (fastify.log as any).error({ err: error }, 'Error cleaning up expired keys:');
         }
       }, 24 * 60 * 60 * 1000); // 24 heures
@@ -193,8 +193,8 @@ const gdprPlugin = async (fastify: FastifyInstance, options: GDPRPluginOptions =
         try {
           await retentionService.executeRetentionPolicies();
           (fastify.log as any).debug('✅ Retention policies applied');
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        } catch (error: unknown) {
+          const _errorMessage = error instanceof Error ? error.message : 'Unknown error';
           (fastify.log as any).error({ err: error }, 'Error applying retention policies:');
         }
       }, 6 * 60 * 60 * 1000); // 6 heures
@@ -216,7 +216,7 @@ const gdprPlugin = async (fastify: FastifyInstance, options: GDPRPluginOptions =
       - Key rotation: ${gdprConfig.encryptionKeyRotationDays} days
       - Audit retention: ${gdprConfig.auditLogRetentionDays} days`);
 
-  } catch (error) {
+  } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     (fastify.log as any).error({ err: error }, '❌ Failed to initialize GDPR plugin:');
     if (error instanceof Error) {

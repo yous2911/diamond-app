@@ -5,6 +5,7 @@
 
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { logger } from '../utils/logger';
+import { config } from '../config/config';
 
 export interface RateLimitConfig {
   maxAttempts: number;
@@ -47,9 +48,8 @@ export class SecureRateLimiterService {
   private async initializeRedis() {
     try {
       // Essayer d'importer et initialiser Redis
-      const redisEnabled = process.env.REDIS_ENABLED === 'true';
-      
-      if (redisEnabled) {
+      // Use config object for consistency
+      if (config.REDIS_ENABLED === true || String(config.REDIS_ENABLED) === 'true') {
         const Redis = require('ioredis');
         this.redis = new Redis({
           host: process.env.REDIS_HOST || 'localhost',
@@ -107,8 +107,8 @@ export class SecureRateLimiterService {
 
       return { allowed, rateLimitInfo, headers };
 
-    } catch (error) {
-      logger.error('Rate limit check error:', error);
+    } catch (error: unknown) {
+      logger.error('Rate limit check error', { err: error });
       // En cas d'erreur, autoriser la requête mais logger l'incident
       return {
         allowed: true,
@@ -249,8 +249,8 @@ export class SecureRateLimiterService {
         this.memoryStore.delete(key);
       }
       logger.info('Rate limit reset', { key });
-    } catch (error) {
-      logger.error('Error resetting rate limit:', error);
+    } catch (error: unknown) {
+      logger.error('Error resetting rate limit', { err: error });
     }
   }
 
@@ -272,8 +272,8 @@ export class SecureRateLimiterService {
       } else {
         return this.memoryStore.get(key) || null;
       }
-    } catch (error) {
-      logger.error('Error getting rate limit info:', error);
+    } catch (error: unknown) {
+      logger.error('Error getting rate limit info', { err: error });
       return null;
     }
   }
@@ -385,8 +385,8 @@ export function createSecureAuthRateLimiter(config?: Partial<RateLimitConfig>) {
         });
         return;
       }
-    } catch (error) {
-      logger.error('Rate limiter error:', error);
+    } catch (error: unknown) {
+      logger.error('Rate limiter error', { err: error });
       // En cas d'erreur, on laisse passer mais on log l'incident
     }
   };

@@ -423,7 +423,7 @@ describe('SecurityAuditService', () => {
       });
 
       expect(incidents).toHaveLength(1);
-      expect(incidents[0].type).toBe(SecurityIncidentType.XSS_ATTEMPT);
+      expect(incidents[0]?.type).toBe(SecurityIncidentType.XSS_ATTEMPT);
     });
 
     it('should retrieve incidents by severity', () => {
@@ -432,7 +432,7 @@ describe('SecurityAuditService', () => {
       });
 
       expect(incidents).toHaveLength(1);
-      expect(incidents[0].severity).toBe(SecuritySeverity.CRITICAL);
+      expect(incidents[0]?.severity).toBe(SecuritySeverity.CRITICAL);
     });
 
     it('should retrieve incidents by component', () => {
@@ -463,7 +463,7 @@ describe('SecurityAuditService', () => {
 
       expect(page1).toHaveLength(2);
       expect(page2).toHaveLength(1);
-      expect(page1[0].id).not.toBe(page2[0].id);
+      expect(page1[0]?.id).not.toBe(page2[0]?.id);
     });
 
     it('should retrieve incidents within time range', () => {
@@ -542,18 +542,18 @@ describe('SecurityAuditService', () => {
       const metrics = securityAuditService.getMetrics();
 
       expect(metrics.topAttackerIPs).toHaveLength(2);
-      expect(metrics.topAttackerIPs[0].ip).toBe('192.168.1.100');
-      expect(metrics.topAttackerIPs[0].count).toBe(2);
-      expect(metrics.topAttackerIPs[1].ip).toBe('192.168.1.200');
-      expect(metrics.topAttackerIPs[1].count).toBe(1);
+      expect(metrics.topAttackerIPs[0]?.ip).toBe('192.168.1.100');
+      expect(metrics.topAttackerIPs[0]?.count).toBe(2);
+      expect(metrics.topAttackerIPs[1]?.ip).toBe('192.168.1.200');
+      expect(metrics.topAttackerIPs[1]?.count).toBe(1);
     });
 
     it('should identify top target routes', () => {
       const metrics = securityAuditService.getMetrics();
 
       expect(metrics.topTargetRoutes).toHaveLength(1);
-      expect(metrics.topTargetRoutes[0].route).toBe('/api/test');
-      expect(metrics.topTargetRoutes[0].count).toBe(3);
+      expect(metrics.topTargetRoutes[0]?.route).toBe('/api/test');
+      expect(metrics.topTargetRoutes[0]?.count).toBe(3);
     });
 
     it('should generate timeline data', () => {
@@ -707,8 +707,8 @@ describe('SecurityAuditService', () => {
       const report = securityAuditService.generateReport(timeRange);
 
       expect(report.topThreats).toHaveLength(1);
-      expect(report.topThreats[0].severity).toBe(SecuritySeverity.CRITICAL);
-      expect(report.topThreats[0].type).toBe(SecurityIncidentType.SQL_INJECTION);
+      expect(report.topThreats[0]?.severity).toBe(SecuritySeverity.CRITICAL);
+      expect(report.topThreats[0]?.type).toBe(SecurityIncidentType.SQL_INJECTION);
     });
 
     it('should generate security recommendations', () => {

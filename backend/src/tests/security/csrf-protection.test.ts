@@ -268,7 +268,7 @@ describe('CSRFProtectionService', () => {
 
   describe('Token Endpoint', () => {
     it('should generate and return token', async () => {
-      const result = await service.getTokenEndpoint(
+      const _result = await service.getTokenEndpoint(
         mockRequest as FastifyRequest,
         mockReply as FastifyReply
       );

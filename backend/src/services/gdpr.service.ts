@@ -1,11 +1,7 @@
 // src/services/gdpr.service.ts
-import { eq, inArray } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { getDatabase } from '../db/connection';
-import { 
-  students, studentProgress, sessions, revisions, gdprFiles, 
-  gdprDataProcessingLog, type NewGdprDataProcessingLog 
-} from '../db/schema';
-
+import { students, studentProgress, sessions, revisions, gdprFiles, gdprDataProcessingLog, type NewGdprDataProcessingLog } from '../db/schema';
 class GdprService {
   private db = getDatabase();
 

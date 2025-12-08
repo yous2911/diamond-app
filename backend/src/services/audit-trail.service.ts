@@ -219,8 +219,8 @@ export class AuditTrailService {
 
       return auditId;
 
-    } catch (error) {
-      logger.error('Error logging audit action:', error);
+    } catch (error: unknown) {
+      logger.error('Error logging audit action', { err: error });
       // Don't throw - audit failures shouldn't break main functionality
       return '';
     }
@@ -250,8 +250,9 @@ export class AuditTrailService {
             try {
               entry.details = await this.encryptionService.decryptStudentData(entry.details as any);
               entry.encrypted = false;
-            } catch (error) {
-              logger.warn(`Failed to decrypt audit details for entry ${entry.id}:`, error);
+            } catch (error: unknown) {
+              const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+              logger.warn(`Failed to decrypt audit details for entry ${entry.id}:`, { err: errorMessage });
             }
           }
         }
@@ -261,8 +262,8 @@ export class AuditTrailService {
 
       return { entries, total, hasMore };
 
-    } catch (error) {
-      logger.error('Error querying audit logs:', error);
+    } catch (error: unknown) {
+      logger.error('Error querying audit logs', { err: error });
       throw new Error('Failed to query audit logs');
     }
   }
@@ -333,8 +334,8 @@ export class AuditTrailService {
 
       return report;
 
-    } catch (error) {
-      logger.error('Error generating compliance report:', error);
+    } catch (error: unknown) {
+      logger.error('Error generating compliance report', { err: error });
       throw new Error('Failed to generate compliance report');
     }
   }
@@ -368,8 +369,8 @@ export class AuditTrailService {
 
       return entries.entries;
 
-    } catch (error) {
-      logger.error('Error getting student audit trail:', error);
+    } catch (error: unknown) {
+      logger.error('Error getting student audit trail', { err: error });
       throw new Error('Failed to retrieve student audit trail');
     }
   }
@@ -419,8 +420,8 @@ export class AuditTrailService {
 
       return anonymizedCount;
 
-    } catch (error) {
-      logger.error('Error anonymizing student audit logs:', error);
+    } catch (error: unknown) {
+      logger.error('Error anonymizing student audit logs', { err: error });
       throw new Error('Failed to anonymize audit logs');
     }
   }
@@ -462,8 +463,8 @@ export class AuditTrailService {
         tampering: !valid
       };
 
-    } catch (error) {
-      logger.error('Error verifying audit integrity:', error);
+    } catch (error: unknown) {
+      logger.error('Error verifying audit integrity', { err: error });
       throw new Error('Failed to verify audit integrity');
     }
   }
@@ -517,8 +518,8 @@ export class AuditTrailService {
         await this.notifySecurityTeam(alert);
       }
 
-    } catch (error) {
-      logger.error('Error detecting security anomalies:', error);
+    } catch (error: unknown) {
+      logger.error('Error detecting security anomalies', { err: error });
     }
   }
 
@@ -719,8 +720,8 @@ export class AuditTrailService {
       });
 
       logger.debug('Audit entry stored successfully', { auditId: entry.id });
-    } catch (error) {
-      logger.error('Failed to store audit entry:', error);
+    } catch (error: unknown) {
+      logger.error('Failed to store audit entry', { err: error });
       throw new Error(`Failed to store audit entry: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -812,8 +813,8 @@ export class AuditTrailService {
 
       return { entries, total };
 
-    } catch (error) {
-      logger.error('Error executing audit query:', error);
+    } catch (error: unknown) {
+      logger.error('Error executing audit query', { err: error });
       throw new Error(`Failed to execute audit query: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -853,8 +854,8 @@ export class AuditTrailService {
         encrypted: result.encrypted || false
       };
 
-    } catch (error) {
-      logger.error('Error getting audit entry:', error);
+    } catch (error: unknown) {
+      logger.error('Error getting audit entry', { err: error });
       throw new Error(`Failed to get audit entry: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -878,8 +879,8 @@ export class AuditTrailService {
       });
 
       logger.debug('Audit entry updated successfully', { auditId: entry.id });
-    } catch (error) {
-      logger.error('Error updating audit entry:', error);
+    } catch (error: unknown) {
+      logger.error('Error updating audit entry', { err: error });
       throw new Error(`Failed to update audit entry: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -925,8 +926,8 @@ export class AuditTrailService {
         encrypted: row.encrypted || false
       }));
 
-    } catch (error) {
-      logger.error('Error getting audit entries for period:', error);
+    } catch (error: unknown) {
+      logger.error('Error getting audit entries for period', { err: error });
       throw new Error(`Failed to get audit entries for period: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -969,8 +970,8 @@ export class AuditTrailService {
         encrypted: row.encrypted || false
       }));
 
-    } catch (error) {
-      logger.error('Error getting recent student accesses:', error);
+    } catch (error: unknown) {
+      logger.error('Error getting recent student accesses', { err: error });
       return []; // Don't throw - this is for security detection
     }
   }
@@ -1013,8 +1014,8 @@ export class AuditTrailService {
         encrypted: row.encrypted || false
       }));
 
-    } catch (error) {
-      logger.error('Error getting failed login attempts:', error);
+    } catch (error: unknown) {
+      logger.error('Error getting failed login attempts', { err: error });
       return []; // Don't throw - this is for security detection
     }
   }
@@ -1039,8 +1040,8 @@ export class AuditTrailService {
       });
 
       logger.info('Security alert stored', { alertId: alert.id, type: alert.type });
-    } catch (error) {
-      logger.error('Error storing security alert:', error);
+    } catch (error: unknown) {
+      logger.error('Error storing security alert', { err: error });
       // Don't throw - alert storage failure shouldn't break main flow
     }
   }
@@ -1063,8 +1064,8 @@ export class AuditTrailService {
       // TODO: Implement actual notification (email, Slack webhook, etc.)
       // For now, ensure it's logged at warn level for monitoring systems
       
-    } catch (error) {
-      logger.error('Error notifying security team:', error);
+    } catch (error: unknown) {
+      logger.error('Error notifying security team', { err: error });
       // Don't throw - notification failure shouldn't break main flow
     }
   }
@@ -1136,9 +1137,11 @@ export class AuditTrailService {
         throw new Error(`Unsupported export format: ${format}`);
       }
 
-    } catch (error) {
-      logger.error('Error exporting report:', error);
+    } catch (error: unknown) {
+      logger.error('Error exporting report', { err: error });
       throw new Error(`Failed to export report: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 }
+
+export const auditTrailService = new AuditTrailService();

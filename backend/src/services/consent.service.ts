@@ -1,5 +1,5 @@
 // src/services/consent.service.ts
-import { eq, and, gte } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { getDatabase } from '../db/connection';
 import { gdprConsentRequests, type NewGdprConsentRequest, type GdprConsentRequest } from '../db/schema';
 import crypto from 'crypto';
@@ -30,7 +30,11 @@ class ConsentService {
     await this.db.insert(gdprConsentRequests).values(newRequest);
     // For MySQL, we need to fetch the inserted record separately
     const result = await this.db.select().from(gdprConsentRequests).where(eq(gdprConsentRequests.requestToken, requestToken)).limit(1);
-    return result[0];
+    const consent = result[0];
+    if (!consent) {
+      throw new Error('Failed to create consent request');
+    }
+    return consent;
   }
 
   async findConsentByToken(token: string): Promise<GdprConsentRequest | null> {
@@ -43,8 +47,9 @@ class ConsentService {
     if (results.length === 0) return null;
     
     const consent = results[0];
+    if (!consent) return null;
     const now = new Date();
-    const expiresAt = new Date(consent.expiresAt);
+    const expiresAt = consent.expiresAt ? new Date(consent.expiresAt) : new Date(0);
     
     // Check if token is expired
     if (expiresAt < now) return null;
@@ -82,7 +87,7 @@ class ConsentService {
     
     // Check each request and delete if expired
     for (const request of pendingRequests) {
-      const expiresAt = new Date(request.expiresAt);
+      const expiresAt = request.expiresAt ? new Date(request.expiresAt) : new Date(0);
       if (expiresAt < now) {
         await this.db
           .delete(gdprConsentRequests)

@@ -84,7 +84,7 @@ class EnhancedCacheService {
       this.isEnabled = true;
       logger.info('Redis cache service initialized successfully');
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to initialize Redis cache service', { error });
       this.isEnabled = false;
       this.fallbackToMemoryCache();
@@ -162,13 +162,13 @@ class EnhancedCacheService {
       if (this.redis && this.isEnabled) {
         const info = await this.redis.info('memory');
         const memoryMatch = info.match(/used_memory_human:(.+)/);
-        if (memoryMatch) {
+        if (memoryMatch && memoryMatch[1]) {
           this.stats.memoryUsage = memoryMatch[1].trim();
         }
 
         this.stats.totalKeys = await this.redis.dbsize();
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.debug('Failed to update cache stats', { error });
     }
   }
@@ -199,7 +199,7 @@ class EnhancedCacheService {
       } else {
         return JSON.parse(data);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to decompress cache data', { error });
       throw error;
     }
@@ -244,7 +244,7 @@ class EnhancedCacheService {
 
       return result;
 
-    } catch (error) {
+    } catch (error: unknown) {
       this.stats.errors++;
       logger.error('Cache get operation failed', { key: fullKey, error });
       return null;
@@ -294,7 +294,7 @@ class EnhancedCacheService {
 
       return true;
 
-    } catch (error) {
+    } catch (error: unknown) {
       this.stats.errors++;
       logger.error('Cache set operation failed', { key: fullKey, error });
       return false;
@@ -314,7 +314,7 @@ class EnhancedCacheService {
       } else {
         return this.fallbackCache.delete(fullKey);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       this.stats.errors++;
       logger.error('Cache delete operation failed', { key: fullKey, error });
       return false;
@@ -353,7 +353,7 @@ class EnhancedCacheService {
 
       return totalDeleted;
 
-    } catch (error) {
+    } catch (error: unknown) {
       this.stats.errors++;
       logger.error('Cache invalidation by tags failed', { tags, error });
       return 0;
@@ -413,7 +413,7 @@ class EnhancedCacheService {
         }
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       this.stats.errors++;
       logger.error('Batch cache get operation failed', { keys, error });
       return keys.map(() => null);
@@ -452,7 +452,7 @@ class EnhancedCacheService {
       await pipeline.exec();
       return true;
 
-    } catch (error) {
+    } catch (error: unknown) {
       this.stats.errors++;
       logger.error('Batch cache set operation failed', { entries: entries.length, error });
       return false;
@@ -473,7 +473,7 @@ class EnhancedCacheService {
       logger.info('Cache cleared successfully');
       return true;
 
-    } catch (error) {
+    } catch (error: unknown) {
       this.stats.errors++;
       logger.error('Failed to clear cache', { error });
       return false;
@@ -555,7 +555,7 @@ class EnhancedCacheService {
         }
       };
 
-    } catch (error) {
+    } catch (error: unknown) {
       return {
         status: 'unhealthy',
         details: {
@@ -580,7 +580,7 @@ class EnhancedCacheService {
       this.isEnabled = false;
       
       logger.info('Cache service disconnected');
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error during cache service disconnect', { error });
     }
   }

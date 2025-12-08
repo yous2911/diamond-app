@@ -3,8 +3,7 @@
  * Testing individual functions with mocked dependencies
  */
 
-import { describe, test, expect, beforeEach, vi } from 'vitest';
-
+import { describe, test, expect, vi } from 'vitest';
 // Mock all external dependencies
 vi.mock('../db/connection', () => ({
   db: {
@@ -656,8 +655,8 @@ describe('Complete Backend Unit Tests', () => {
       const calculateTimeout = (queryType: string, recordCount: number): number => {
         const baseTimeouts = {
           select: 5000,
-          insert: 10000,
-          update: 15000,
+          insert: _10000,
+          update: _15000,
           delete: 20000
         };
         

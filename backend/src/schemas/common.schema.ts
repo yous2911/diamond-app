@@ -1,8 +1,8 @@
-import { Type, Kind, TSchema, TString, StringOptions } from '@sinclair/typebox';
+import { Type, StringOptions } from '@sinclair/typebox';
 import xss from 'xss';
 
 // Custom TypeBox keyword for sanitization
-const SANITIZE_KEY = 'xss-clean';
+const _SANITIZE_KEY = 'xss-clean';
 
 // Custom TypeBox type for sanitized strings
 export function SanitizedString<T extends StringOptions>(options?: T) {
@@ -23,7 +23,7 @@ export const IdOrCode = Type.String({
 });
 
 // Common parameter schemas
-export const CommonParams = Type.Object({
+export const _CommonParams = Type.Object({
   id: IdOrCode
 });
 
@@ -38,12 +38,12 @@ export const PaginationQuery = Type.Object({
 });
 
 // Common response schemas
-export const SuccessResponse = Type.Object({
+export const _SuccessResponse = Type.Object({
   success: Type.Boolean(),
   message: Type.Optional(Type.String())
 });
 
-export const ErrorResponse = Type.Object({
+export const _ErrorResponse = Type.Object({
   success: Type.Literal(false),
   error: Type.Object({
     code: Type.String(),

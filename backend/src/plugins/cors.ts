@@ -43,12 +43,8 @@ export class CorsConfigurationService {
     // Add default development origins if in development
     if (process.env.NODE_ENV === 'development') {
       origins.push(
-        'http://localhost:3000',
-        'http://localhost:3001',
-        'http://localhost:3004',
-        'http://127.0.0.1:3000',
-        'http://127.0.0.1:3001',
-        'http://127.0.0.1:3004',
+        'http://localhost:3003',
+        'http://127.0.0.1:3003',
         'http://localhost:5173', // Vite default
         'http://localhost:4173'  // Vite preview
       );
@@ -223,8 +219,8 @@ export class CorsConfigurationService {
 /**
  * CORS middleware with additional security features
  */
-export const createCorsMiddleware = () => {
-  const corsService = new CorsConfigurationService();
+export const _createCorsMiddleware = () => {
+  const _corsService = new CorsConfigurationService();
   
   return async (request: FastifyRequest, reply: any) => {
     const origin = request.headers.origin;
@@ -263,7 +259,7 @@ export const createCorsMiddleware = () => {
 
       // Rate limit preflight requests more aggressively
       if (request.method === 'OPTIONS') {
-        const preflightKey = `preflight:${request.ip}:${origin}`;
+        const _preflightKey = `preflight:${request.ip}:${origin}`;
         // This would integrate with rate limiting service
       }
     }

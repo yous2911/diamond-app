@@ -18,8 +18,8 @@ const cachePlugin: FastifyPluginAsync = async (fastify: FastifyInstance) => {
   const memoryCache = new Map<string, { value: string; expires: number }>();
   const stats = { hits: 0, misses: 0 };
 
-  // Try to connect to Redis if host is configured
-  if (config.REDIS_HOST) {
+  // Try to connect to Redis if enabled
+  if (config.REDIS_ENABLED === true || String(config.REDIS_ENABLED) === 'true') {
     try {
       const { Redis } = await import('ioredis');
       redis = new Redis({
@@ -63,7 +63,7 @@ const cachePlugin: FastifyPluginAsync = async (fastify: FastifyInstance) => {
         redis = null;
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       (fastify.log as any).warn('Redis not available, using memory cache:', error instanceof Error ? error.message : String(error));
       redis = null;
     }
@@ -84,7 +84,7 @@ const cachePlugin: FastifyPluginAsync = async (fastify: FastifyInstance) => {
             stats.misses++;
             return null;
           }
-        } catch (error) {
+        } catch (error: unknown) {
           (fastify.log as any).debug('Redis get error, falling back to memory cache:', error instanceof Error ? error.message : String(error));
           // Fall through to memory cache
         }
@@ -107,7 +107,7 @@ const cachePlugin: FastifyPluginAsync = async (fastify: FastifyInstance) => {
         try {
           await redis.setex(key, ttl, value);
           return;
-        } catch (error) {
+        } catch (error: unknown) {
           (fastify.log as any).debug('Redis set error, falling back to memory cache:', error instanceof Error ? error.message : String(error));
           // Fall through to memory cache
         }
@@ -125,7 +125,7 @@ const cachePlugin: FastifyPluginAsync = async (fastify: FastifyInstance) => {
         try {
           await redis.del(key);
           return;
-        } catch (error) {
+        } catch (error: unknown) {
           (fastify.log as any).debug('Redis del error:', error instanceof Error ? error.message : String(error));
         }
       }
@@ -139,7 +139,7 @@ const cachePlugin: FastifyPluginAsync = async (fastify: FastifyInstance) => {
         try {
           await redis.flushdb();
           return;
-        } catch (error) {
+        } catch (error: unknown) {
           (fastify.log as any).debug('Redis flush error:', error instanceof Error ? error.message : String(error));
         }
       }
@@ -158,7 +158,7 @@ const cachePlugin: FastifyPluginAsync = async (fastify: FastifyInstance) => {
         try {
           const keys = await redis.dbsize();
           return { ...stats, keys };
-        } catch (error) {
+        } catch (error: unknown) {
           (fastify.log as any).debug('Redis stats error:', error instanceof Error ? error.message : String(error));
         }
       }
@@ -177,7 +177,7 @@ const cachePlugin: FastifyPluginAsync = async (fastify: FastifyInstance) => {
       try {
         await redis.quit();
         (fastify.log as any).info('Redis connection closed');
-      } catch (error) {
+      } catch (error: unknown) {
         (fastify.log as any).warn('Error closing Redis connection:', error instanceof Error ? error.message : String(error));
       }
     }

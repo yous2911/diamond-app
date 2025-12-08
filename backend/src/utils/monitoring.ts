@@ -103,13 +103,13 @@ const eventLoopLag = new prometheus.Histogram({
 const customMetrics = new Map<string, prometheus.Counter | prometheus.Gauge | prometheus.Histogram>();
 
 // Initialize monitoring
-export const initializeMonitoring = (app: FastifyInstance) => {
+export const _initializeMonitoring = (app: FastifyInstance) => {
   // Register metrics endpoint
   app.get('/metrics', async (_request: FastifyRequest, reply: FastifyReply): Promise<string | void> => {
     try {
       reply.header('Content-Type', register.contentType);
       return await register.metrics();
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error generating metrics', { error });
       return reply.status(500).send({ error: 'Failed to generate metrics' });
     }
@@ -125,23 +125,23 @@ export const initializeMonitoring = (app: FastifyInstance) => {
       const enhancedHealth = {
         ...health,
         frontends: {
-          'CM1/CM2': 'http://localhost:3000',
-          'CP/CE1/CE2': 'http://localhost:3001'
+          'CM1/CM2': process.env.FRONTEND_URL || 'http://localhost:3003',
+          'CP/CE1/CE2': process.env.FRONTEND_URL || 'http://localhost:3003'
         },
         version: '2.0.0',
         environment: process.env.NODE_ENV || 'development'
       };
       
       reply.status(statusCode).send(enhancedHealth);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Health check failed', { error });
       reply.status(503).send({
         status: 'unhealthy',
         error: 'Health check failed',
         timestamp: new Date().toISOString(),
         frontends: {
-          'CM1/CM2': 'http://localhost:3000',
-          'CP/CE1/CE2': 'http://localhost:3001'
+          'CM1/CM2': process.env.FRONTEND_URL || 'http://localhost:3003',
+          'CP/CE1/CE2': process.env.FRONTEND_URL || 'http://localhost:3003'
         }
       });
     }
@@ -154,7 +154,7 @@ export const initializeMonitoring = (app: FastifyInstance) => {
       const statusCode = health.status === 'healthy' ? 200 : 503;
       
       reply.status(statusCode).send(health);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Detailed health check failed', { error });
       reply.status(503).send({
         status: 'unhealthy',
@@ -171,7 +171,7 @@ export const initializeMonitoring = (app: FastifyInstance) => {
       const statusCode = readiness.ready ? 200 : 503;
       
       reply.status(statusCode).send(readiness);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Readiness check failed', { error });
       reply.status(503).send({
         ready: false,
@@ -382,7 +382,7 @@ const checkDatabaseHealth = async () => {
     // This would use your actual database connection
     // await db.raw('SELECT 1');
     return { status: 'healthy', message: 'Database connection successful' };
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Database health check failed', { error });
     const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
     return { status: 'unhealthy', message: 'Database connection failed', error: errorMessage };
@@ -395,7 +395,7 @@ const checkRedisHealth = async () => {
     // This would use your actual Redis connection
     // await redis.ping();
     return { status: 'healthy', message: 'Redis connection successful' };
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Redis health check failed', { error });
     const errorMessage = error instanceof Error ? error.message : 'Unknown Redis error';
     return { status: 'unhealthy', message: 'Redis connection failed', error: errorMessage };
@@ -431,7 +431,7 @@ const checkDatabaseHealthDetailed = async () => {
   try {
     // Add more detailed database checks
     return { status: 'healthy', message: 'Database detailed check passed' };
-  } catch (error) {
+  } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
     return { status: 'unhealthy', message: 'Database detailed check failed', error: errorMessage };
   }
@@ -441,7 +441,7 @@ const checkRedisHealthDetailed = async () => {
   try {
     // Add more detailed Redis checks
     return { status: 'healthy', message: 'Redis detailed check passed' };
-  } catch (error) {
+  } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown Redis error';
     return { status: 'unhealthy', message: 'Redis detailed check failed', error: errorMessage };
   }
@@ -488,7 +488,7 @@ const checkDatabaseReadiness = async () => {
   try {
     // Check if database is ready to accept connections
     return { ready: true, message: 'Database ready' };
-  } catch (error) {
+  } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown database error';
     return { ready: false, message: 'Database not ready', error: errorMessage };
   }
@@ -498,7 +498,7 @@ const checkRedisReadiness = async () => {
   try {
     // Check if Redis is ready to accept connections
     return { ready: true, message: 'Redis ready' };
-  } catch (error) {
+  } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown Redis error';
     return { ready: false, message: 'Redis not ready', error: errorMessage };
   }
@@ -510,28 +510,28 @@ const checkApplicationReadiness = () => {
 };
 
 // Metric recording functions
-export const recordDatabaseQuery = (operation: string, table: string, duration: number) => {
+export const _recordDatabaseQuery = (operation: string, table: string, duration: number) => {
   dbQueryDuration.observe({ operation, table }, duration);
 };
 
-export const recordRedisOperation = (operation: string, duration: number, status: 'success' | 'error') => {
+export const _recordRedisOperation = (operation: string, duration: number, status: 'success' | 'error') => {
   redisOperationDuration.observe({ operation }, duration);
   redisOperationsTotal.inc({ operation, status });
 };
 
-export const recordUserRegistration = () => {
+export const _recordUserRegistration = () => {
   userRegistrations.inc();
 };
 
-export const recordLessonCompletion = (lessonType: string, difficulty: string) => {
+export const _recordLessonCompletion = (lessonType: string, difficulty: string) => {
   lessonCompletions.inc({ lesson_type: lessonType, difficulty });
 };
 
-export const recordActiveUser = (count: number) => {
+export const _recordActiveUser = (count: number) => {
   activeUsers.set(count);
 };
 
-export const recordKioskModeSession = (durationMinutes: number) => {
+export const _recordKioskModeSession = (durationMinutes: number) => {
   let durationRange = 'short';
   if (durationMinutes > 60) durationRange = 'long';
   else if (durationMinutes > 30) durationRange = 'medium';
@@ -539,11 +539,11 @@ export const recordKioskModeSession = (durationMinutes: number) => {
   kioskModeSessions.inc({ duration_range: durationRange });
 };
 
-export const recordDatabaseConnection = (active: number) => {
+export const _recordDatabaseConnection = (active: number) => {
   dbConnectionsActive.set(active);
 };
 
-export const recordDatabaseConnectionTotal = () => {
+export const _recordDatabaseConnectionTotal = () => {
   dbConnectionsTotal.inc();
 };
 
@@ -552,21 +552,21 @@ export const getCustomMetric = (name: string) => {
   return customMetrics.get(name);
 };
 
-export const incrementCustomCounter = (name: string, labels: Record<string, string> = {}) => {
+export const _incrementCustomCounter = (name: string, labels: Record<string, string> = {}) => {
   const metric = customMetrics.get(name) as prometheus.Counter;
   if (metric) {
     metric.inc(labels);
   }
 };
 
-export const setCustomGauge = (name: string, value: number, labels: Record<string, string> = {}) => {
+export const _setCustomGauge = (name: string, value: number, labels: Record<string, string> = {}) => {
   const metric = customMetrics.get(name) as prometheus.Gauge;
   if (metric) {
     metric.set(labels, value);
   }
 };
 
-export const observeCustomHistogram = (name: string, value: number, labels: Record<string, string> = {}) => {
+export const _observeCustomHistogram = (name: string, value: number, labels: Record<string, string> = {}) => {
   const metric = customMetrics.get(name) as prometheus.Histogram;
   if (metric) {
     metric.observe(labels, value);
@@ -574,7 +574,7 @@ export const observeCustomHistogram = (name: string, value: number, labels: Reco
 };
 
 // Performance monitoring
-export const measureAsync = async <T>(
+export const _measureAsync = async <T>(
   operation: string,
   fn: () => Promise<T>,
   labels: Record<string, string> = {}
@@ -591,7 +591,7 @@ export const measureAsync = async <T>(
     }
     
     return result;
-  } catch (error) {
+  } catch (error: unknown) {
     const duration = (Date.now() - startTime) / 1000;
     
     // Record error metric

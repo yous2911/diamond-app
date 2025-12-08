@@ -70,7 +70,7 @@ async function migrateLeaderboards() {
     // Now populate with real student data
     await populateLeaderboardData();
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('❌ Error creating leaderboard tables:', error);
     throw error;
   }
@@ -86,12 +86,12 @@ async function populateLeaderboardData() {
     // Get real students from database
     const students = await db.execute(sql`SELECT * FROM students LIMIT 50`);
     
-    if (!students || !Array.isArray(students[0]) || students[0].length === 0) {
+    if (!students || !Array.isArray(students[0]) || students[0]?.length === 0) {
       console.log('⚠️ No students found - creating sample data');
       return;
     }
 
-    console.log(`📋 Found ${students[0].length} students`);
+    console.log(`📋 Found ${students[0]?.length} students`);
 
     // Get student progress for scoring
     const progressData = await db.execute(sql`
@@ -202,7 +202,7 @@ async function populateLeaderboardData() {
     console.log(`🏅 Awarded badges to top ${topStudents.length} students`);
     console.log(`🎮 Created 2 active competitions`);
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('❌ Error populating leaderboard data:', error);
     throw error;
   }

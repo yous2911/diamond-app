@@ -56,7 +56,7 @@ const websocketPlugin: FastifyPluginAsync = async (fastify: FastifyInstance) => 
             default:
               (fastify.log as any).warn('Unknown WebSocket message type:', data.type);
           }
-        } catch (error) {
+        } catch (error: unknown) {
           (fastify.log as any).error('WebSocket message parsing error:', error);
           connection.socket.send(JSON.stringify({ 
             type: 'error', 
@@ -87,13 +87,13 @@ const websocketPlugin: FastifyPluginAsync = async (fastify: FastifyInstance) => 
   // Enhanced broadcast helper integrated with real-time progress service
   fastify.decorate('broadcastToStudent', (studentId: number, message: any) => {
     // This will be handled by the real-time progress service
-    const payload = JSON.stringify(message);
+    const _payload = JSON.stringify(message);
     (fastify.log as any).info(`Broadcasting to student ${studentId}:`, message.type);
   });
 
   fastify.decorate('broadcastToParent', (parentId: number, message: any) => {
     // This will be handled by the real-time progress service
-    const payload = JSON.stringify(message);
+    const _payload = JSON.stringify(message);
     (fastify.log as any).info(`Broadcasting to parent ${parentId}:`, message.type);
   });
 

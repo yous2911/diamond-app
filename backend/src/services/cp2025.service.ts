@@ -74,7 +74,7 @@ export class CP2025Service {
       });
 
       return stats;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error getting module statistics:', error);
       return {
         totalModules: 0,

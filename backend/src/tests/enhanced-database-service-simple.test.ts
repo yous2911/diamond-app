@@ -236,7 +236,7 @@ describe('EnhancedDatabaseService - Simple Tests', () => {
         exerciseId: 123
       };
 
-      const mockResult = {
+      const _mockResult = {
         id: 1,
         masteryLevel: 'intermediate',
         progressPercent: 75,
@@ -361,7 +361,7 @@ describe('EnhancedDatabaseService - Simple Tests', () => {
     test('should reject invalid progress data', () => {
       const invalidData = {
         competenceCode: '', // Empty code
-        score: 150, // Invalid score
+        score: _150, // Invalid score
         timeSpent: -100, // Negative time
         completed: 'maybe' // Invalid type
       };
@@ -447,10 +447,10 @@ describe('EnhancedDatabaseService - Simple Tests', () => {
 
       const result = processAnalytics(mockData);
 
-      expect(result[0].completionRate).toBe(80);
-      expect(result[0].efficiency).toBeCloseTo(28.33, 1);
-      expect(result[1].completionRate).toBe(62.5);
-      expect(result[1].efficiency).toBeCloseTo(36.8, 1);
+      expect(result[0]?.completionRate).toBe(80);
+      expect(result[0]?.efficiency).toBeCloseTo(28.33, 1);
+      expect(result[1]?.completionRate).toBe(62.5);
+      expect(result[1]?.efficiency).toBeCloseTo(36.8, 1);
     });
 
     test('should aggregate student statistics', () => {
@@ -472,7 +472,7 @@ describe('EnhancedDatabaseService - Simple Tests', () => {
       const mockProgress = [
         { completed: true, score: 85, timeSpent: 300 },
         { completed: true, score: 92, timeSpent: 250 },
-        { completed: false, score: 0, timeSpent: 0 }
+        { completed: _false, score: 0, timeSpent: 0 }
       ];
 
       const stats = aggregateStats(mockProgress);

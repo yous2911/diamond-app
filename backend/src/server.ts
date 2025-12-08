@@ -201,7 +201,7 @@ async function registerPlugins() {
     fastify.setErrorHandler(errorHandler);
     logger.info('🔧 Error handler registered successfully');
     
-  } catch (error) {
+  } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     logger.error({ err: error instanceof Error ? error : new Error(errorMessage) }, '❌ Error during plugin/route registration:');
     if (error instanceof Error) {
@@ -224,7 +224,7 @@ async function gracefulShutdown() {
     
     logger.info('Graceful shutdown completed');
     process.exit(0);
-  } catch (error) {
+  } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     logger.error({ err: error instanceof Error ? error : new Error(errorMessage) }, 'Error during graceful shutdown:');
     process.exit(1);
@@ -267,7 +267,7 @@ async function start() {
     logger.info(`🔒 GDPR Compliance: ${config.GDPR_ENABLED ? 'ENABLED' : 'DISABLED'}`);
     logger.info(`🛡️ GDPR Endpoints: ${address}/api/gdpr`);
 
-  } catch (error) {
+  } catch (error: unknown) {
     // Use console.error here as the logger might not be initialized
     console.error('❌ Error starting server:', error);
     console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');

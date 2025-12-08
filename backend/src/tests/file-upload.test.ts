@@ -44,7 +44,7 @@ describe('File Upload System Tests', () => {
   let imageProcessor: ImageProcessingService;
   let storageService: StorageService;
   let securityService: FileSecurityService;
-  let testFilesDir: string;
+  let testFilesDir: _string;
 
   beforeAll(async () => {
     app = await build();
@@ -134,8 +134,8 @@ describe('File Upload System Tests', () => {
     // Create a large image for size testing
     const largeImage = await sharp({
       create: {
-        width: 4000,
-        height: 3000,
+        width: _4000,
+        height: _3000,
         channels: 3,
         background: { r: 128, g: 128, b: 128 }
       }
@@ -178,12 +178,12 @@ describe('File Upload System Tests', () => {
 
       expect(result.success).toBe(true);
       expect(result.files).toHaveLength(1);
-      expect(result.files[0].originalName).toBe('test-image.jpg');
-      expect(result.files[0].mimetype).toBe('image/jpeg');
-      expect(result.files[0].category).toBe('image');
-      expect(result.files[0].uploadedBy).toBe('test-student-123');
-      expect(result.files[0].status).toBe('ready');
-      expect(result.files[0].checksum).toBeTruthy();
+      expect(result.files[0]?.originalName).toBe('test-image.jpg');
+      expect(result.files[0]?.mimetype).toBe('image/jpeg');
+      expect(result.files[0]?.category).toBe('image');
+      expect(result.files[0]?.uploadedBy).toBe('test-student-123');
+      expect(result.files[0]?.status).toBe('ready');
+      expect(result.files[0]?.checksum).toBeTruthy();
     });
 
     it('should reject files with dangerous extensions', async () => {
@@ -258,8 +258,8 @@ describe('File Upload System Tests', () => {
       
       // Should have different IDs but same checksum (duplicate detection)
       if (result1.files[0] && result2.files[0]) {
-        expect(result1.files[0].id).not.toBe(result2.files[0].id);
-        expect(result1.files[0].checksum).toBe(result2.files[0].checksum);
+        expect(result1.files[0]?.id).not.toBe(result2.files[0]?.id);
+        expect(result1.files[0]?.checksum).toBe(result2.files[0]?.checksum);
       }
     });
   });
@@ -298,8 +298,8 @@ describe('File Upload System Tests', () => {
       const variants = await imageProcessor.generateThumbnails(imagePath, thumbnailSizes);
 
       expect(variants).toHaveLength(2);
-      expect(variants[0].type).toBe('small');
-      expect(variants[1].type).toBe('medium');
+      expect(variants[0]?.type).toBe('small');
+      expect(variants[1]?.type).toBe('medium');
       
       // Verify thumbnail files exist
       for (const variant of variants) {
@@ -342,7 +342,7 @@ describe('File Upload System Tests', () => {
         text: 'RevEd Kids',
         position: 'bottom-right',
         opacity: 0.7,
-        fontSize: 24,
+        fontSize: _24,
         color: '#ffffff'
       });
 
@@ -724,7 +724,7 @@ describe('File Upload System Tests', () => {
         );
         // If we get here, the test should fail
         expect(true).toBe(false);
-      } catch (error) {
+      } catch (error: unknown) {
         expect(error.message).toBe('Operation timed out');
       }
     });

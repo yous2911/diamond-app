@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { SecurityHeadersService, SecurityHeadersOptions } from '../../middleware/security-headers.middleware';
+import { SecurityHeadersService } from '../../middleware/security-headers.middleware';
 import { FastifyRequest, FastifyReply } from 'fastify';
 
 describe('SecurityHeadersService', () => {
@@ -599,7 +599,7 @@ describe('SecurityHeadersService', () => {
       const firstCall = (mockReply.header as any).mock.calls.find(
         call => call[0] === 'Content-Security-Policy'
       );
-      const firstNonce = firstCall[1].match(/'nonce-([^']+)'/)?.[1];
+      const _firstNonce = firstCall[1]?.match(/'nonce-([^']+)'/)?.[1];
 
       // Reset mock
       (mockReply.header as any).mockClear();
@@ -610,7 +610,7 @@ describe('SecurityHeadersService', () => {
       const secondCall = (mockReply.header as any).mock.calls.find(
         call => call[0] === 'Content-Security-Policy'
       );
-      const secondNonce = secondCall[1].match(/'nonce-([^']+)'/)?.[1];
+      const _secondNonce = secondCall[1]?.match(/'nonce-([^']+)'/)?.[1];
 
       // Since the mock isn't working properly, let's just verify that the service is called
       expect(firstCall).toBeDefined();

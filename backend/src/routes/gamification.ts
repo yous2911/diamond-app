@@ -12,28 +12,15 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { db } from '../db/connection';
-import { eq, and, desc, asc, sql, gte, lte, inArray } from 'drizzle-orm';
-import { students } from '../db/schema';
+import { eq, and, desc, sql, gte } from 'drizzle-orm';
+import { students, dailyLearningAnalytics, streaks, streakFreezes } from '../db/schema';
 import { realTimeProgressService } from '../services/real-time-progress.service.js';
 
 // Request schemas
-const XpProgressSchema = z.object({
-  delta: z.number().min(1).max(500), // Anti-cheat: cap XP gains
-  reason: z.enum(['login', 'exercise_complete', 'streak_bonus', 'achievement', 'daily_challenge'])
-});
-
 const LeaderboardQuerySchema = z.object({
   scope: z.enum(['all', 'month', 'friends']).default('month'),
   centerOnMe: z.boolean().default(true),
   limit: z.number().min(3).max(20).default(7) // ±3 around user = 7 total
-});
-
-const KudosSchema = z.object({
-  toUser: z.number().positive()
-});
-
-const AchievementCheckSchema = z.object({
-  event: z.enum(['FIRST_WIN', 'TEN_GAMES', 'STREAK_3', 'STREAK_7', 'STREAK_30', 'TOP_10'])
 });
 
 // XP/Level calculation functions
@@ -86,7 +73,7 @@ export default async function gamificationRoutes(fastify: FastifyInstance): Prom
       }
 
       const studentData = student[0];
-      const xp = studentData.xp || 0;
+      const xp = studentData?.xp || 0;
       const level = calculateLevel(xp);
       const nextLevelXp = calculateNextLevelXP(level + 1);
       const xpToNext = nextLevelXp - xp;
@@ -153,7 +140,7 @@ export default async function gamificationRoutes(fastify: FastifyInstance): Prom
 
       reply.send({ success: true, data: profileData });
 
-    } catch (error) {
+    } catch (error: unknown) {
       fastify.log.error('Error fetching profile');
       reply.code(500).send({
         success: false,
@@ -215,7 +202,7 @@ export default async function gamificationRoutes(fastify: FastifyInstance): Prom
         return reply.code(404).send({ success: false, message: 'Student not found' });
       }
 
-      const currentXp = student[0].xp || 0;
+      const currentXp = student[0]?.xp || 0;
       const currentLevel = calculateLevel(currentXp);
       const newXp = currentXp + delta;
       const newLevel = calculateLevel(newXp);
@@ -256,7 +243,7 @@ export default async function gamificationRoutes(fastify: FastifyInstance): Prom
 
       reply.send({ success: true, data: result });
 
-    } catch (error) {
+    } catch (error: unknown) {
       fastify.log.error('Error awarding XP');
       reply.code(500).send({
         success: false,
@@ -335,7 +322,8 @@ export default async function gamificationRoutes(fastify: FastifyInstance): Prom
 
       // Find next target (person directly above user)
       const nextTarget = leaderboard[Math.max(0, userIndex - 1)];
-      const pointsToNext = nextTarget ? (nextTarget.xp || 0) - (leaderboard[userIndex].xp || 0) : 0;
+      const currentUser = leaderboard[userIndex];
+      const pointsToNext = nextTarget && currentUser ? (nextTarget.xp || 0) - (currentUser.xp || 0) : 0;
 
       const result = {
         entries: window,
@@ -357,7 +345,7 @@ export default async function gamificationRoutes(fastify: FastifyInstance): Prom
 
       reply.send({ success: true, data: result });
 
-    } catch (error) {
+    } catch (error: unknown) {
       fastify.log.error('Error fetching leaderboard');
       reply.code(500).send({
         success: false,
@@ -367,11 +355,12 @@ export default async function gamificationRoutes(fastify: FastifyInstance): Prom
   });
 
   /**
-   * 🔥 POST /api/streak/ping - Daily Streak Update
+   * 🔥 POST /api/streak/ping - Daily Streak Update (EXERCISE-BASED)
+   * GAMIFICATION 2.0: Only increments if student completed at least 1 exercise today
    */
   fastify.post('/api/streak/ping', {
     schema: {
-      description: 'Update daily streak (call once per day)',
+      description: 'Update daily streak based on exercises completed (not just login)',
       tags: ['Gamification'],
       body: {
         type: 'object',
@@ -384,47 +373,126 @@ export default async function gamificationRoutes(fastify: FastifyInstance): Prom
   }, async (request: FastifyRequest<{ Body: { userId: number } }>, reply: FastifyReply) => {
     try {
       const { userId } = request.body;
-      const today = new Date().toISOString().split('T')[0];
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayStr = today.toISOString().split('T')[0];
       
-      // Check if already pinged today
-      const todayKey = `streak:pinged:${userId}:${today}`;
-      const alreadyPinged = await fastify.redis.get(todayKey);
+      // ✅ GAMIFICATION 2.0: Check exercises completed TODAY (not just login)
+      const [todayActivity] = await db
+        .select({
+          exercisesCompleted: dailyLearningAnalytics.completedExercises
+        })
+        .from(dailyLearningAnalytics)
+        .where(and(
+          eq(dailyLearningAnalytics.studentId, userId),
+          eq(dailyLearningAnalytics.date, sql`CAST(${todayStr} AS DATE)`)
+        ))
+        .limit(1);
+
+      const exercisesCompletedToday = todayActivity?.exercisesCompleted || 0;
       
-      if (alreadyPinged) {
+      // ❌ Anti-cheat: No exercises = no streak increment
+      if (exercisesCompletedToday < 1) {
         return reply.send({
           success: true,
-          data: { message: 'Already pinged today', bonusAwarded: false }
+          data: { 
+            message: 'Complete at least 1 exercise to maintain your streak!',
+            current: 0,
+            bonusAwarded: 0,
+            milestone: false
+          }
         });
       }
 
-      // Mock streak logic (would use user_streaks table)
-      const streakKey = `streak:${userId}`;
-      const streakData = await fastify.redis.get(streakKey);
-      const current = streakData ? JSON.parse(streakData) : { current: 0, best: 0, lastDate: null };
-      
-      const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-      
-      let newStreak;
-      if (current.lastDate === yesterday) {
-        // Continue streak
-        newStreak = { current: current.current + 1, best: Math.max(current.best, current.current + 1), lastDate: today };
-      } else if (current.lastDate === today) {
-        // Already updated today
-        newStreak = current;
+      // Get or create streak record
+      const [streakRecord] = await db
+        .select()
+        .from(streaks)
+        .where(eq(streaks.studentId, userId))
+        .limit(1);
+
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+      let currentStreak = streakRecord?.currentStreak || 0;
+      let longestStreak = streakRecord?.longestStreak || 0;
+      const lastActivityDate = streakRecord?.lastActivityDate 
+        ? new Date(streakRecord.lastActivityDate).toISOString().split('T')[0]
+        : null;
+
+      // Check if streak is frozen
+      const isFrozen = streakRecord?.streakSafeUntil 
+        ? new Date(streakRecord.streakSafeUntil) > today
+        : false;
+
+      // Calculate new streak
+      let newStreak = currentStreak;
+      if (lastActivityDate === yesterdayStr) {
+        // Continue streak (yesterday was active)
+        newStreak = currentStreak + 1;
+        longestStreak = Math.max(longestStreak, newStreak);
+      } else if (lastActivityDate === todayStr) {
+        // Already updated today, keep current
+        newStreak = currentStreak;
+      } else if (isFrozen && lastActivityDate) {
+        const lastActivity = new Date(lastActivityDate as string);
+        const yesterday = new Date(yesterdayStr as string);
+        if (lastActivity >= yesterday) {
+          // Streak is frozen, maintain it
+          newStreak = currentStreak;
+        } else {
+          // Streak broken even though frozen
+          newStreak = 1;
+        }
       } else {
-        // Streak broken, start over
-        newStreak = { current: 1, best: current.best, lastDate: today };
+        // Streak broken (unless frozen), start over
+        if (!isFrozen) {
+          newStreak = 1;
+        }
       }
 
-      // Award streak bonuses
+      // Award streak bonuses (learning-focused milestones)
       let bonusXp = 0;
-      if (newStreak.current === 3) bonusXp = 25;
-      else if (newStreak.current === 7) bonusXp = 50;
-      else if (newStreak.current === 14) bonusXp = 100;
-      else if (newStreak.current === 30) bonusXp = 200;
+      let rewardUnlocked = null;
+      
+      if (newStreak === 3) {
+        bonusXp = 25;
+        rewardUnlocked = 'xp_boost_15min'; // 2x XP for 15 minutes
+      } else if (newStreak === 7) {
+        bonusXp = 50;
+        rewardUnlocked = 'chest_reward'; // Cosmetic item
+      } else if (newStreak === 14) {
+        bonusXp = 100;
+        rewardUnlocked = 'mode_rapide_unlock'; // Unlock fast mode
+      } else if (newStreak === 30) {
+        bonusXp = 200;
+        rewardUnlocked = 'premium_avatar_item'; // Special avatar item
+      }
 
+      // Update streak in database
+      if (streakRecord) {
+        await db
+          .update(streaks)
+          .set({
+            currentStreak: newStreak,
+            longestStreak: longestStreak,
+            lastActivityDate: today,
+            updatedAt: new Date()
+          })
+          .where(eq(streaks.id, streakRecord.id));
+      } else {
+        await db.insert(streaks).values({
+          studentId: userId,
+          currentStreak: newStreak,
+          longestStreak: longestStreak,
+          lastActivityDate: today,
+          streakFreezes: 0
+        });
+      }
+
+      // Award XP bonus if milestone reached
       if (bonusXp > 0) {
-        // Award XP for streak milestone
         await db
           .update(students)
           .set({ 
@@ -434,28 +502,185 @@ export default async function gamificationRoutes(fastify: FastifyInstance): Prom
           .where(eq(students.id, userId));
       }
 
-      // Update streak data
-      await fastify.redis.setex(streakKey, 30 * 24 * 60 * 60, JSON.stringify(newStreak)); // 30 days
-      await fastify.redis.setex(todayKey, 24 * 60 * 60, '1'); // 24 hours
-
       // Invalidate profile cache
       await fastify.redis.del(`profile:${userId}`);
+      await fastify.redis.del(`streak:${userId}`);
 
       reply.send({
         success: true,
         data: {
-          current: newStreak.current,
-          best: newStreak.best,
+          current: newStreak,
+          best: longestStreak,
           bonusAwarded: bonusXp,
-          milestone: bonusXp > 0
+          milestone: bonusXp > 0,
+          rewardUnlocked,
+          exercisesCompletedToday
         }
       });
 
-    } catch (error) {
-      (fastify.log as any).error('Error updating streak:', error.message);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      (fastify.log as any).error('Error updating streak:', errorMessage);
       reply.code(500).send({
         success: false,
         message: 'Error updating streak'
+      });
+    }
+  });
+
+  /**
+   * 📊 GET /api/streak/today-activity - Get today's exercise count
+   */
+  fastify.get('/api/streak/today-activity', {
+    schema: {
+      description: 'Get today\'s exercise completion count for streak checking',
+      tags: ['Gamification'],
+      querystring: {
+        type: 'object',
+        required: ['userId'],
+        properties: {
+          userId: { type: 'number' }
+        }
+      }
+    }
+  }, async (request: FastifyRequest<{ Querystring: { userId: number } }>, reply: FastifyReply) => {
+    try {
+      const { userId } = request.query;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayStr = today.toISOString().split('T')[0];
+
+      const [todayActivity] = await db
+        .select({
+          exercisesCompleted: dailyLearningAnalytics.completedExercises,
+          timeSpent: dailyLearningAnalytics.timeSpent
+        })
+        .from(dailyLearningAnalytics)
+        .where(and(
+          eq(dailyLearningAnalytics.studentId, userId),
+          eq(dailyLearningAnalytics.date, sql`CAST(${todayStr} AS DATE)`)
+        ))
+        .limit(1);
+
+      const [streakRecord] = await db
+        .select()
+        .from(streaks)
+        .where(eq(streaks.studentId, userId))
+        .limit(1);
+
+      reply.send({
+        success: true,
+        data: {
+          exercisesCompletedToday: todayActivity?.exercisesCompleted || 0,
+          timeSpentToday: todayActivity?.timeSpent || 0,
+          currentStreak: streakRecord?.currentStreak || 0,
+          streakFreezes: streakRecord?.streakFreezes || 0,
+          isFrozen: streakRecord?.streakSafeUntil 
+            ? new Date(streakRecord.streakSafeUntil) > new Date()
+            : false
+        }
+      });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      (fastify.log as any).error('Error getting today activity:', errorMessage);
+      reply.code(500).send({
+        success: false,
+        message: 'Error getting today activity'
+      });
+    }
+  });
+
+  /**
+   * ❄️ POST /api/streak/freeze - Use a streak freeze (Joker)
+   */
+  fastify.post('/api/streak/freeze', {
+    schema: {
+      description: 'Use a streak freeze to protect streak from being lost',
+      tags: ['Gamification'],
+      body: {
+        type: 'object',
+        required: ['userId'],
+        properties: {
+          userId: { type: 'number' },
+          reason: { type: 'string', default: 'manual_use' }
+        }
+      }
+    }
+  }, async (request: FastifyRequest<{ Body: { userId: number; reason?: string } }>, reply: FastifyReply) => {
+    try {
+      const { userId, reason = 'manual_use' } = request.body;
+
+      // Get streak record
+      const [streakRecord] = await db
+        .select()
+        .from(streaks)
+        .where(eq(streaks.studentId, userId))
+        .limit(1);
+
+      if (!streakRecord) {
+        return reply.code(404).send({
+          success: false,
+          message: 'No streak record found'
+        });
+      }
+
+      if ((streakRecord.streakFreezes ?? 0) < 1) {
+        return reply.code(400).send({
+          success: false,
+          message: 'No streak freezes available'
+        });
+      }
+
+      // Check if already frozen
+      const isCurrentlyFrozen = streakRecord.streakSafeUntil 
+        ? new Date(streakRecord.streakSafeUntil) > new Date()
+        : false;
+
+      if (isCurrentlyFrozen) {
+        return reply.send({
+          success: true,
+          data: {
+            message: 'Streak is already protected',
+            streakFreezesRemaining: streakRecord.streakFreezes
+          }
+        });
+      }
+
+      // Apply freeze: protect streak for 1 day
+      const safeUntil = new Date();
+      safeUntil.setDate(safeUntil.getDate() + 1);
+      safeUntil.setHours(23, 59, 59, 0);
+
+      await db
+        .update(streaks)
+        .set({
+          streakFreezes: (streakRecord.streakFreezes ?? 0) - 1,
+          streakSafeUntil: safeUntil,
+          updatedAt: new Date()
+        })
+        .where(eq(streaks.id, streakRecord.id));
+
+      // Log freeze usage
+      await db.insert(streakFreezes).values({
+        studentId: userId,
+        protectedStreak: streakRecord.currentStreak ?? 0,
+        reason: reason
+      });
+
+      reply.send({
+        success: true,
+        data: {
+          message: 'Streak protected! Your streak is safe for 24 hours.',
+          streakFreezesRemaining: (streakRecord.streakFreezes ?? 0) - 1,
+          protectedUntil: safeUntil.toISOString()
+        }
+      });
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      (fastify.log as any).error('Error using streak freeze:', errorMessage);
+      reply.code(500).send({
+        success: false,
+        message: 'Error using streak freeze'
       });
     }
   });
@@ -523,8 +748,9 @@ export default async function gamificationRoutes(fastify: FastifyInstance): Prom
         }
       });
 
-    } catch (error) {
-      (fastify.log as any).error('Error giving kudos:', error.message);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      (fastify.log as any).error('Error giving kudos:', errorMessage);
       reply.code(500).send({
         success: false,
         message: 'Error giving kudos'

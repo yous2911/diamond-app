@@ -340,7 +340,7 @@ describe('Monitoring Utils', () => {
       it('should measure successful async operations', async () => {
         const operation = 'test_operation';
         const mockFn = vi.fn().mockResolvedValue('success');
-        const mockSuccessMetric = { observe: vi.fn() };
+        const _mockSuccessMetric = { observe: vi.fn() };
         
         vi.spyOn(Date, 'now')
           .mockReturnValueOnce(1000)
@@ -459,8 +459,8 @@ describe('Monitoring Utils', () => {
           expect.objectContaining({
             status: 'healthy',
             frontends: {
-              'CM1/CM2': 'http://localhost:3000',
-              'CP/CE1/CE2': 'http://localhost:3001'
+              'CM1/CM2': 'http://localhost:3003',
+              'CP/CE1/CE2': 'http://localhost:3003'
             },
             version: '2.0.0'
           })

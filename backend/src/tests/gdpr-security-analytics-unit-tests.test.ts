@@ -25,7 +25,7 @@ vi.mock('../config/config', () => ({
   },
   emailConfig: {
     host: 'smtp.test.com',
-    port: 587,
+    port: _587,
     user: 'test@test.com',
     pass: 'testpass',
     from: 'noreply@test.com',
@@ -36,7 +36,7 @@ vi.mock('../config/config', () => ({
   },
   dbConfig: {
     host: 'localhost',
-    port: 3306,
+    port: _3306,
     user: 'test',
     password: 'test',
     database: 'test'
@@ -279,7 +279,7 @@ describe('GDPR, Security & Analytics Unit Tests', () => {
     test('should detect suspicious patterns', () => {
       const detectSuspiciousPattern = (requests: string[]): boolean => {
         // Check for rapid repeated requests
-        const timeWindow = 60000; // 1 minute
+        const _timeWindow = 60000; // 1 minute
         const threshold = 10; // 10 requests per minute
         
         // Simulate request timestamps

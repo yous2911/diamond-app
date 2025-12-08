@@ -20,14 +20,14 @@ vi.mock('../config/config', () => ({
   config: { NODE_ENV: 'test' },
   emailConfig: {
     host: 'smtp.test.com',
-    port: 587,
+    port: _587,
     user: 'test@test.com',
     pass: 'testpass',
     from: 'noreply@test.com',
     supportEmail: 'support@test.com'
   },
   gdprConfig: { dataRetentionDays: 30 },
-  dbConfig: { host: 'localhost', port: 3306, user: 'test', password: 'test', database: 'test' },
+  dbConfig: { host: 'localhost', port: _3306, user: 'test', password: 'test', database: 'test' },
   cookieConfig: { secret: 'test-cookie-secret', secure: false, httpOnly: true, sameSite: 'lax' },
   jwtConfig: { secret: 'test-jwt-secret', expiresIn: '1h', refreshSecret: 'test-refresh-secret', refreshExpiresIn: '7d' },
   isProduction: false

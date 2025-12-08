@@ -11,7 +11,7 @@ try {
   
   sdk.start();
   console.log('OpenTelemetry initialized successfully');
-} catch (error) {
+} catch (error: unknown) {
   const errorMessage = error instanceof Error ? error.message : 'Unknown error';
   console.warn('OpenTelemetry not installed, tracing disabled:', errorMessage);
   
@@ -30,4 +30,4 @@ try {
   };
 }
 
-export const tracer = openTelemetryApi.trace.getTracer('reved-kids-fastify'); 
+export const _tracer = openTelemetryApi.trace.getTracer('reved-kids-fastify'); 

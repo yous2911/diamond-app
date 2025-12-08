@@ -118,12 +118,12 @@ export default async function leaderboardRoutes(fastify: FastifyInstance): Promi
         message: `${query.type} ${query.category} leaderboard retrieved successfully`
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       (fastify.log as any).error('Error fetching leaderboard:', error);
       reply.code(500).send({
         success: false,
         message: 'Error fetching leaderboard data',
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   });
@@ -178,12 +178,12 @@ export default async function leaderboardRoutes(fastify: FastifyInstance): Promi
         message: 'Student rank retrieved successfully'
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       (fastify.log as any).error('Error fetching student rank:', error);
       reply.code(500).send({
         success: false,
         message: 'Error fetching student rank',
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   });
@@ -237,12 +237,12 @@ export default async function leaderboardRoutes(fastify: FastifyInstance): Promi
         message: 'User-centric leaderboard retrieved successfully'
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       (fastify.log as any).error('Error fetching user-centric leaderboard:', error);
       reply.code(500).send({
         success: false,
         message: 'Error fetching user-centric leaderboard',
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   });
@@ -291,12 +291,12 @@ export default async function leaderboardRoutes(fastify: FastifyInstance): Promi
         message: 'Nearby competitors retrieved successfully'
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       (fastify.log as any).error('Error fetching competitors:', error);
       reply.code(500).send({
         success: false,
         message: 'Error fetching nearby competitors',
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   });
@@ -341,12 +341,12 @@ export default async function leaderboardRoutes(fastify: FastifyInstance): Promi
         message: 'Student badges retrieved successfully'
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       (fastify.log as any).error('Error fetching student badges:', error);
       reply.code(500).send({
         success: false,
         message: 'Error fetching student badges',
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   });
@@ -383,12 +383,12 @@ export default async function leaderboardRoutes(fastify: FastifyInstance): Promi
         jobId: job?.id
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       (fastify.log as any).error('Error updating leaderboards:', error);
       reply.code(500).send({
         success: false,
         message: 'Error updating leaderboards',
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   });
@@ -451,12 +451,12 @@ export default async function leaderboardRoutes(fastify: FastifyInstance): Promi
         message: 'Leaderboard statistics retrieved successfully'
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       (fastify.log as any).error('Error fetching leaderboard stats:', error);
       reply.code(500).send({
         success: false,
         message: 'Error fetching statistics',
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   });
@@ -520,12 +520,12 @@ export default async function leaderboardRoutes(fastify: FastifyInstance): Promi
         message: 'Active competitions retrieved successfully'
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       (fastify.log as any).error('Error fetching competitions:', error);
       reply.code(500).send({
         success: false,
         message: 'Error fetching competitions',
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   });

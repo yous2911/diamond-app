@@ -40,7 +40,7 @@ const databasePlugin: FastifyPluginAsync = async (fastify) => {
       // Decorate fastify with database instance
       fastify.decorate('db', db);
       
-    } catch (error) {
+    } catch (error: unknown) {
       (fastify.log as any).error(`❌ Database connection attempt ${attempt} failed:`, error);
       
       if (attempt < maxConnectionAttempts) {
@@ -93,7 +93,7 @@ const databasePlugin: FastifyPluginAsync = async (fastify) => {
           details: { error: healthResult.error }
         };
       }
-    } catch (error) {
+    } catch (error: unknown) {
       (fastify.log as any).error('Database health check failed:', error);
       return { 
         status: 'error', 
@@ -111,7 +111,7 @@ const databasePlugin: FastifyPluginAsync = async (fastify) => {
       // Try to disconnect first
       try {
         await disconnectDatabase();
-      } catch (error) {
+      } catch (error: unknown) {
         (fastify.log as any).warn('Error during disconnect (continuing):', error);
       }
       
@@ -123,7 +123,7 @@ const databasePlugin: FastifyPluginAsync = async (fastify) => {
       (fastify.log as any).info('✅ Database reconnection successful');
       return true;
       
-    } catch (error) {
+    } catch (error: unknown) {
       (fastify.log as any).error('❌ Database reconnection failed:', error);
       isConnected = false;
       return false;
@@ -138,7 +138,7 @@ const databasePlugin: FastifyPluginAsync = async (fastify) => {
         (fastify.log as any).warn('Database health check failed, attempting reconnection...');
         await fastify.dbReconnect();
       }
-    } catch (error) {
+    } catch (error: unknown) {
       (fastify.log as any).error('Connection monitor error:', error);
     }
   }, 30000);
@@ -154,7 +154,7 @@ const databasePlugin: FastifyPluginAsync = async (fastify) => {
       isConnected = false;
       
       (fastify.log as any).info('✅ Database connections closed gracefully');
-    } catch (error) {
+    } catch (error: unknown) {
       (fastify.log as any).error('❌ Error closing database connections:', error);
     }
   });
@@ -166,7 +166,7 @@ const databasePlugin: FastifyPluginAsync = async (fastify) => {
       
       try {
         await fastify.dbReconnect();
-      } catch (error) {
+      } catch (error: unknown) {
         (fastify.log as any).error('Failed to reconnect to database:', error);
         
         // Return 503 Service Unavailable if database is down

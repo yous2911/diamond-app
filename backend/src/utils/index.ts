@@ -130,7 +130,7 @@ export { unifiedErrorHandler as errorHandler } from './errorHandler.unified';
  * fastify.post('/users', async (request, reply) => {
  *   try {
  *     // ... logic
- *   } catch (error) {
+ *   } catch (error: unknown) {
  *     await errorHandler(error, request, reply);
  *   }
  * });

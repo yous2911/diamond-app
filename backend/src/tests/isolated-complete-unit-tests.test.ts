@@ -510,7 +510,7 @@ describe('Isolated Complete Backend Unit Tests', () => {
         return { isValid: errors.length === 0, errors };
       };
       
-      const validConfig = { host: 'smtp.example.com', port: 587, from: 'test@example.com' };
+      const validConfig = { host: 'smtp.example.com', port: _587, from: 'test@example.com' };
       const invalidConfig = { host: '', port: 0, from: '' };
       
       expect(validateConfig(validConfig).isValid).toBe(true);
@@ -590,8 +590,8 @@ describe('Isolated Complete Backend Unit Tests', () => {
       const calculateTimeout = (queryType: string, recordCount: number): number => {
         const baseTimeouts = {
           select: 5000,
-          insert: 10000,
-          update: 15000,
+          insert: _10000,
+          update: _15000,
           delete: 20000
         };
         
@@ -662,7 +662,7 @@ describe('Isolated Complete Backend Unit Tests', () => {
       };
       
       const dangerous = '  <script>alert("test")</script>  ';
-      const safe = 'script&gt;alert(&quot;test&quot;)&lt;/script&gt;';
+      const _safe = 'script&gt;alert(&quot;test&quot;)&lt;/script&gt;';
       
       expect(sanitizeString(dangerous)).toBe('scriptalert(&quot;test&quot;)/script');
     });

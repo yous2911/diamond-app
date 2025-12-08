@@ -10,24 +10,9 @@
  * - Performance analytics
  */
 
-import { eq, and, desc, asc, sql, gte, lte, inArray } from 'drizzle-orm';
+import { eq, and, asc, sql, gte, lte, inArray } from 'drizzle-orm';
 import { db } from '../db/connection';
-import { 
-  leaderboards, 
-  leaderboardHistory, 
-  studentBadges, 
-  competitions, 
-  competitionParticipants, 
-  students, 
-  studentProgress,
-  streaks,
-  type Leaderboard,
-  type NewLeaderboard,
-  type StudentBadge,
-  type NewStudentBadge,
-  type Competition,
-  type CompetitionParticipant
-} from '../db/schema';
+import { leaderboards, studentBadges, competitions, students, studentProgress, streaks, type StudentBadge, type NewLeaderboard } from '../db/schema';
 import { logger } from '../utils/logger';
 
 export interface LeaderboardEntry {
@@ -143,17 +128,36 @@ export class LeaderboardService {
         const studentBadges = badges.filter(badge => badge.studentId === entry.student.id);
         const streak = streakData.find(s => s.studentId === entry.student.id);
         
-        return {
+        const entryData: LeaderboardEntry = {
           studentId: entry.leaderboard.studentId,
           rank: entry.leaderboard.rank,
           score: entry.leaderboard.score,
-          previousRank: entry.leaderboard.previousRank || undefined,
-          rankChange: entry.leaderboard.rankChange,
-          student: entry.student,
-          badges: studentBadges,
-          streak: streak?.currentStreak,
-          metadata: entry.leaderboard.metadata
+          rankChange: entry.leaderboard.rankChange ?? 0,
+          student: {
+            prenom: entry.student.prenom,
+            nom: entry.student.nom,
+            mascotteType: entry.student.mascotteType ?? '',
+            mascotteColor: entry.student.mascotteColor ?? '',
+            niveauScolaire: entry.student.niveauScolaire
+          },
+          badges: studentBadges
         };
+        
+        // Add optional fields only if they exist
+        if (entry.leaderboard.previousRank !== null && entry.leaderboard.previousRank !== undefined) {
+          entryData.previousRank = entry.leaderboard.previousRank;
+        } else if (entry.leaderboard.previousRank === null) {
+          // Convert null to undefined for optional field
+          entryData.previousRank = undefined;
+        }
+        if (streak?.currentStreak !== undefined && streak.currentStreak !== null) {
+          entryData.streak = streak.currentStreak;
+        }
+        if (entry.leaderboard.metadata) {
+          entryData.metadata = entry.leaderboard.metadata as Record<string, unknown>;
+        }
+        
+        return entryData;
       });
 
       // Calculate stats
@@ -185,8 +189,8 @@ export class LeaderboardService {
 
       return { entries: formattedEntries, stats };
       
-    } catch (error) {
-      logger.error('Error fetching leaderboard:', { type, category, error: error.message });
+    } catch (error: unknown) {
+      logger.error('Error fetching leaderboard:', { type, category, error: error instanceof Error ? error.message : 'Unknown error' });
       return { entries: [], stats: { totalParticipants: 0, averageScore: 0, topScore: 0 } };
     }
   }
@@ -210,8 +214,8 @@ export class LeaderboardService {
 
       logger.info('✅ All leaderboards updated successfully');
       
-    } catch (error) {
-      logger.error('❌ Error updating leaderboards:', { error: error.message });
+    } catch (error: unknown) {
+      logger.error('❌ Error updating leaderboards:', { error: error instanceof Error ? error.message : 'Unknown error' });
       throw error;
     }
   }
@@ -403,8 +407,8 @@ export class LeaderboardService {
         logger.info(`Updated ${type} ${category} leaderboard: ${newEntries.length} entries`);
       }
 
-    } catch (error) {
-      logger.error(`Error updating ${type} ${category} leaderboard:`, { error: error.message });
+    } catch (error: unknown) {
+      logger.error(`Error updating ${type} ${category} leaderboard:`, { error: error instanceof Error ? error.message : 'Unknown error' });
     }
   }
 
@@ -424,8 +428,8 @@ export class LeaderboardService {
       
       logger.info('✅ All badges updated');
       
-    } catch (error) {
-      logger.error('❌ Error updating badges:', { error: error.message });
+    } catch (error: unknown) {
+      logger.error('❌ Error updating badges:', { error: error instanceof Error ? error.message : 'Unknown error' });
     }
   }
 
@@ -457,8 +461,8 @@ export class LeaderboardService {
         }
       }
       
-    } catch (error) {
-      logger.error(`Error updating badges for student ${studentId}:`, { error: error.message });
+    } catch (error: unknown) {
+      logger.error(`Error updating badges for student ${studentId}:`, { error: error instanceof Error ? error.message : 'Unknown error' });
     }
   }
 
@@ -505,15 +509,15 @@ export class LeaderboardService {
         streak: streak[0],
         progress: progressStats[0],
         leaderboardPositions,
-        totalPoints: student[0].totalPoints,
+        totalPoints: student[0]?.totalPoints,
         currentStreak: streak[0]?.currentStreak || 0,
         longestStreak: streak[0]?.longestStreak || 0,
         completionRate: progressStats[0] ? 
-          (Number(progressStats[0].completedExercises) / Number(progressStats[0].totalExercises)) * 100 : 0
+          (Number(progressStats[0]?.completedExercises) / Number(progressStats[0]?.totalExercises)) * 100 : 0
       };
       
-    } catch (error) {
-      logger.error(`Error getting student stats for ${studentId}:`, { error: error.message });
+    } catch (error: unknown) {
+      logger.error(`Error getting student stats for ${studentId}:`, { error: error instanceof Error ? error.message : 'Unknown error' });
       return {};
     }
   }
@@ -670,13 +674,13 @@ export class LeaderboardService {
         ));
 
       return {
-        rank: entry[0].rank,
-        score: entry[0].score,
+        rank: entry[0]?.rank ?? 0,
+        score: entry[0]?.score ?? 0,
         totalParticipants: Number(totalParticipants[0]?.count) || 0
       };
       
-    } catch (error) {
-      logger.error('Error getting student rank:', { studentId, type, category, error: error.message });
+    } catch (error: unknown) {
+      logger.error('Error getting student rank:', { studentId, type, category, error: error instanceof Error ? error.message : 'Unknown error' });
       return null;
     }
   }
@@ -761,11 +765,17 @@ export class LeaderboardService {
           studentId: entry.leaderboard.studentId,
           rank: entry.leaderboard.rank,
           score: entry.leaderboard.score,
-          previousRank: entry.leaderboard.previousRank || undefined,
-          rankChange: entry.leaderboard.rankChange,
-          student: entry.student,
+          previousRank: entry.leaderboard.previousRank ?? undefined,
+          rankChange: entry.leaderboard.rankChange ?? 0,
+          student: {
+            prenom: entry.student.prenom,
+            nom: entry.student.nom,
+            mascotteType: entry.student.mascotteType ?? '',
+            mascotteColor: entry.student.mascotteColor ?? '',
+            niveauScolaire: entry.student.niveauScolaire
+          },
           badges: studentBadges,
-          metadata: entry.leaderboard.metadata
+          metadata: entry.leaderboard.metadata as Record<string, unknown>
         };
       });
 
@@ -782,7 +792,7 @@ export class LeaderboardService {
       const beatingCount = studentRank.totalParticipants - studentRank.rank;
 
       return {
-        userEntry,
+        userEntry: userEntry ?? null,
         competitors,
         context: {
           totalParticipants: studentRank.totalParticipants,
@@ -793,8 +803,8 @@ export class LeaderboardService {
         }
       };
       
-    } catch (error) {
-      logger.error('Error getting user-centric leaderboard:', { studentId, error: error.message });
+    } catch (error: unknown) {
+      logger.error('Error getting user-centric leaderboard:', { studentId, error: error instanceof Error ? error.message : 'Unknown error' });
       return {
         userEntry: null,
         competitors: [],
@@ -833,8 +843,8 @@ export class LeaderboardService {
         entry.rank >= startRank && entry.rank <= endRank
       );
       
-    } catch (error) {
-      logger.error('Error getting nearby competitors:', { studentId, error: error.message });
+    } catch (error: unknown) {
+      logger.error('Error getting nearby competitors:', { studentId, error: error instanceof Error ? error.message : 'Unknown error' });
       return [];
     }
   }

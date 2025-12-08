@@ -99,7 +99,7 @@ class OptimizedQueries {
         currentExercises: Array.from(exerciseMap.values()),
         learningPath: Array.from(learningPathMap.values()),
       };
-    } catch (error) {
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logger.error('Failed to get student with progress', { studentId, error: errorMessage });
       if (error instanceof Error) {
@@ -166,7 +166,7 @@ class OptimizedQueries {
       });
 
       return exercisesWithStats;
-    } catch (error) {
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logger.error('Failed to get exercises with stats', { filters, error: errorMessage });
       if (error instanceof Error) {
@@ -235,7 +235,7 @@ class OptimizedQueries {
       });
 
       return summary;
-    } catch (error) {
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logger.error('Failed to get competence progress summary', { competenceCode, error: errorMessage });
       if (error instanceof Error) {
@@ -279,7 +279,7 @@ class OptimizedQueries {
       });
 
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logger.error('Failed to get active sessions', { error: errorMessage });
       if (error instanceof Error) {
@@ -367,7 +367,7 @@ class OptimizedQueries {
       });
 
       return studentsWithPriority;
-    } catch (error) {
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logger.error('Failed to get students needing revision', { error: errorMessage });
       if (error instanceof Error) {
@@ -490,7 +490,7 @@ class OptimizedQueries {
       });
 
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logger.error('Failed to get learning analytics', { studentId, error: errorMessage });
       if (error instanceof Error) {
@@ -544,7 +544,7 @@ class OptimizedQueries {
         queryTime, 
         updateCount: updates.length 
       });
-    } catch (error) {
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logger.error('Failed to batch update progress', { updateCount: updates.length, error: errorMessage });
       if (error instanceof Error) {
@@ -672,7 +672,7 @@ class OptimizedQueries {
       });
 
       return recommendations;
-    } catch (error) {
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logger.error('Failed to get recommended exercises', { studentId, error: errorMessage });
       if (error instanceof Error) {

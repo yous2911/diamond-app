@@ -700,7 +700,7 @@ describe('GDPR Services Layer Tests', () => {
           },
           progress: [
             { exerciseId: 1, score: 85, personalNote: 'Bob did well' },
-            { exerciseId: 2, score: 92, personalNote: 'Excellent work by Bob' }
+            { exerciseId: 2, score: _92, personalNote: 'Excellent work by Bob' }
           ]
         };
 
@@ -708,13 +708,13 @@ describe('GDPR Services Layer Tests', () => {
 
         // Nested personal data should be anonymized
         expect(result.student.prenom).not.toBe('Bob');
-        expect(result.student.contacts[0].email).not.toBe('bob@example.com');
-        expect(result.progress[0].personalNote).not.toContain('Bob');
+        expect(result.student.contacts[0]?.email).not.toBe('bob@example.com');
+        expect(result.progress[0]?.personalNote).not.toContain('Bob');
 
         // Structure should be preserved
         expect(Array.isArray(result.student.contacts)).toBe(true);
         expect(Array.isArray(result.progress)).toBe(true);
-        expect(result.progress[0].score).toBe(85);
+        expect(result.progress[0]?.score).toBe(85);
       });
 
       it('should generate consistent anonymization for same input', async () => {
@@ -829,7 +829,7 @@ describe('GDPR Services Layer Tests', () => {
         getActivePolicies: vi.fn(() => {
           return Promise.resolve([
             { id: 'policy1', name: 'GDPR Retention', retentionPeriod: 365, action: 'anonymize' },
-            { id: 'policy2', name: 'Educational Data', retentionPeriod: 730, action: 'archive' }
+            { id: 'policy2', name: 'Educational Data', retentionPeriod: _730, action: 'archive' }
           ]);
         }),
         calculateRetentionStats: vi.fn(() => {
@@ -970,7 +970,7 @@ describe('GDPR Services Layer Tests', () => {
           totalPolicies: 5,
           activePolicies: 4,
           recordsProcessedToday: 150,
-          recordsProcessedThisWeek: 800,
+          recordsProcessedThisWeek: _800,
           upcomingExpirations: 25
         };
 

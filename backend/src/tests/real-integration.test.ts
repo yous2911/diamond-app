@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { DatabaseService } from '../services/database.service';
 import { SuperMemoService } from '../services/supermemo.service';
-import { ExerciseGeneratorService } from '../services/exercise-generator.service';
+// Exercise generator service removed - exercises will be seeded directly to database
+// import { ExerciseGeneratorService } from '../services/exercise-generator.service';
 
 describe('REAL Integration Tests - No Mocks', () => {
   let db: DatabaseService;
@@ -47,7 +48,7 @@ describe('REAL Integration Tests - No Mocks', () => {
       // Test with REAL data
       const exercises = await db.getExercisesForStudent(realStudent.id);
       expect(exercises).toHaveLength(5);
-      expect(exercises[0].difficulty).toBe('medium');
+      expect(exercises[0]?.difficulty).toBe('medium');
       
       // Test SuperMemo with real data
       const superMemoResult = SuperMemoService.calculateNextReview(
@@ -66,7 +67,7 @@ describe('REAL Integration Tests - No Mocks', () => {
       });
       
       const exercises = await db.getExercisesForStudent(student.id);
-      expect(exercises[0].difficulty).toBe('easy');
+      expect(exercises[0]?.difficulty).toBe('easy');
     });
     
     it('should handle student with null lastLogin', async () => {
@@ -102,23 +103,10 @@ describe('REAL Integration Tests - No Mocks', () => {
     });
   });
   
-  describe('Real Exercise Generation Tests', () => {
-    it('should generate exercises for real student level', async () => {
-      const student = await db.createStudent({
-        prenom: "Emma",
-        nom: "Martin",
-        niveauActuel: "CE2",
-        totalPoints: 450
-      });
-      
-      const exercises = await ExerciseGeneratorService.generateExercisesForLevel(
-        student.niveauActuel,
-        student.totalPoints
-      );
-      
-      expect(exercises).toHaveLength(5);
-      expect(exercises[0].niveau).toBe('CE2');
-      expect(exercises[0].pointsMax).toBeGreaterThan(0);
+  describe.skip('Real Exercise Generation Tests - Exercise Generator Removed', () => {
+    // Exercise generator service removed - exercises will be seeded directly to database
+    it.skip('should generate exercises for real student level', async () => {
+      // Test removed - exercise generator service deleted
     });
   });
   

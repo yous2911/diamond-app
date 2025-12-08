@@ -63,7 +63,7 @@ const poolConfig = {
     if (field.type === 'JSON') {
       try {
         return JSON.parse(field.string());
-      } catch (error) {
+      } catch (error: unknown) {
         return field.string();
       }
     }
@@ -159,7 +159,7 @@ export async function testConnection(retries: number = 3): Promise<boolean> {
       });
       
       return result !== null;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.warn('Database connection test failed', {
         attempt,
         retries,
@@ -242,7 +242,7 @@ export async function checkDatabaseHealth(): Promise<{
       lastChecked
     };
     
-  } catch (error) {
+  } catch (error: unknown) {
     const responseTime = Date.now() - start;
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     
@@ -293,7 +293,7 @@ export async function connectDatabase(): Promise<void> {
       port: sanitizedConfig.port,
       database: sanitizedConfig.database,
       connectionLimit: sanitizedConfig.connectionLimit,
-      environment: config.NODE_ENV,
+      environment: config?.NODE_ENV || 'development',
       sslEnabled: !!dbConfig.ssl
     });
 
@@ -332,7 +332,7 @@ export async function connectDatabase(): Promise<void> {
       poolStats: getPoolStats()
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Failed to connect to database', {
       error: error instanceof Error ? error.message : 'Unknown error',
       config: {
@@ -383,7 +383,7 @@ export async function disconnectDatabase(): Promise<void> {
     
     logger.info('Database connection closed successfully');
     
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Error during database disconnect:', {
       error: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -402,7 +402,7 @@ export async function reconnectDatabase(): Promise<boolean> {
     await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
     await connectDatabase();
     return true;
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Database reconnection failed', {
       error: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -432,7 +432,7 @@ export async function withTransaction<T>(
       logger.debug('Transaction completed successfully', { attempt });
       return result;
       
-    } catch (error) {
+    } catch (error: unknown) {
       await conn.rollback();
       
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';

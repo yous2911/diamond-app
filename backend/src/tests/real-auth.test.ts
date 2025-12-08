@@ -3,7 +3,7 @@
  * This tests your actual authentication code
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { AuthService } from '../services/auth.service';
 import * as bcrypt from 'bcrypt';
 

@@ -6,10 +6,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { LeaderboardService } from '../services/leaderboard.service';
 import { db } from '../db/connection';
-import { 
-  leaderboards, leaderboardHistory, studentBadges, competitions,
-  competitionParticipants, students, studentProgress, streaks
-} from '../db/schema';
+import { leaderboards, studentBadges, competitions, competitionParticipants, streaks } from '../db/schema';
 import { eq, and, desc, asc, sql, gte, lte, inArray } from 'drizzle-orm';
 
 // Mock dependencies
@@ -156,7 +153,7 @@ describe('Leaderboard Service', () => {
         {
           studentId: 1,
           rank: 1,
-          score: 800,
+          score: _800,
           student: {
             prenom: 'Alice',
             nom: 'Dupont',
@@ -220,7 +217,7 @@ describe('Leaderboard Service', () => {
       expect(result).toEqual({
         rank: 5,
         score: 750,
-        percentile: 95, // (100-5)/100 * 100
+        percentile: _95, // (100-5)/100 * 100
         totalStudents: 100
       });
     });
@@ -548,7 +545,7 @@ describe('Leaderboard Service', () => {
         {
           studentId: 1,
           currentStreak: 15,
-          longestStreak: 20,
+          longestStreak: _20,
           student: {
             prenom: 'Alice',
             nom: 'Dupont',
@@ -558,8 +555,8 @@ describe('Leaderboard Service', () => {
         },
         {
           studentId: 2,
-          currentStreak: 12,
-          longestStreak: 18,
+          currentStreak: _12,
+          longestStreak: _18,
           student: {
             prenom: 'Bob',
             nom: 'Martin',
@@ -598,7 +595,7 @@ describe('Leaderboard Service', () => {
         {
           studentId: 1,
           rank: 1,
-          score: 500,
+          score: _500,
           student: {
             prenom: 'Alice',
             nom: 'Dupont',
@@ -646,7 +643,7 @@ describe('Leaderboard Service', () => {
         {
           date: new Date('2024-01-14'),
           rank: 7,
-          score: 720,
+          score: _720,
           rankChange: -1
         }
       ];

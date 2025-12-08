@@ -3,17 +3,18 @@
  * Provides rollback capabilities, validation, and safe schema changes
  */
 
-import { readdir, readFile, writeFile } from 'fs/promises';
+import { readdir, readFile } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
 import { connection, db } from './connection';
 import { logger } from '../utils/logger';
-import { sql, eq } from 'drizzle-orm';
-import { mysqlTable, varchar, timestamp, text, int, boolean } from 'drizzle-orm/mysql-core';
+import { sql } from 'drizzle-orm';
+import { mysqlTable, varchar, timestamp, text, int } from 'drizzle-orm/mysql-core';
 import * as schema from './schema';
 
 // Migration metadata table
-const migrations = mysqlTable('migrations', {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _migrations = mysqlTable('_migrations', {
   id: int('id').primaryKey().autoincrement(),
   filename: varchar('filename', { length: 255 }).notNull().unique(),
   version: varchar('version', { length: 20 }).notNull(),
@@ -69,7 +70,7 @@ export class MigrationManager {
       } else {
         throw new Error(`Migration failed: ${result.failed} failed migrations`);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Migration failed:', error);
       throw error;
     }
@@ -87,7 +88,7 @@ export class MigrationManager {
       
       console.log('✅ Database schema is ready');
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       console.log('⚠️  Database schema not found or incomplete');
       return false;
     }
@@ -121,7 +122,7 @@ export class MigrationManager {
 
       this.isInitialized = true;
       logger.info('Migration system initialized');
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to initialize migration system', { error });
       throw error;
     }
@@ -155,7 +156,7 @@ export class MigrationManager {
       }
 
       return migrations;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to load migration files', { error });
       throw error;
     }
@@ -171,8 +172,8 @@ export class MigrationManager {
       const descriptionMatch = content.match(/-- Description: (.+)/);
       
       // For files without explicit version/description, generate from filename
-      const version = versionMatch ? versionMatch[1].trim() : filename.replace('.sql', '');
-      const description = descriptionMatch ? descriptionMatch[1].trim() : `Migration ${filename}`;
+      const version = versionMatch && versionMatch[1] ? versionMatch[1]?.trim() : filename.replace('.sql', '');
+      const description = descriptionMatch && descriptionMatch[1] ? descriptionMatch[1]?.trim() : `Migration ${filename}`;
 
       // Split migration into UP and DOWN sections
       const sections = content.split(/-- === (UP|DOWN) ===/);
@@ -184,8 +185,8 @@ export class MigrationManager {
         const upIndex = sections.findIndex(section => section.trim() === 'UP') + 1;
         const downIndex = sections.findIndex(section => section.trim() === 'DOWN') + 1;
 
-        up = upIndex > 0 && upIndex < sections.length ? sections[upIndex].trim() : '';
-        down = downIndex > 0 && downIndex < sections.length ? sections[downIndex].trim() : '';
+        up = upIndex > 0 && upIndex < sections.length && sections[upIndex] ? (sections[upIndex] || '').trim() : '';
+        down = downIndex > 0 && downIndex < sections.length && sections[downIndex] ? (sections[downIndex] || '').trim() : '';
       } else {
         // If no UP/DOWN sections, treat entire content as UP
         up = content;
@@ -203,7 +204,7 @@ export class MigrationManager {
         down,
         checksum,
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to parse migration file', { filename, error });
       return null;
     }
@@ -228,7 +229,7 @@ export class MigrationManager {
       ) as any;
 
       return rows.map((row: any) => row.filename);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to get applied migrations', { error });
       throw error;
     }
@@ -301,14 +302,14 @@ export class MigrationManager {
 
         return { success: true, executionTime };
 
-      } catch (error) {
+      } catch (error: unknown) {
         await conn.rollback();
         throw error;
       } finally {
         conn.release();
       }
 
-    } catch (error) {
+    } catch (error: unknown) {
       const executionTime = Date.now() - startTime;
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       
@@ -441,7 +442,7 @@ export class MigrationManager {
         try {
           await this.rollbackMigration(row);
           rolledBack++;
-        } catch (error) {
+        } catch (error: unknown) {
           failed++;
           logger.error('Rollback failed for migration', { 
             filename: row.filename,
@@ -453,7 +454,7 @@ export class MigrationManager {
 
       return { success: failed === 0, rolledBack, failed };
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Rollback process failed', { error });
       throw error;
     }
@@ -497,7 +498,7 @@ export class MigrationManager {
         filename: migrationRecord.filename 
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       await conn.rollback();
       throw error;
     } finally {
@@ -569,8 +570,8 @@ export class MigrationManager {
       logger.info('Dropping all tables...');
       // This should be handled through rollback migrations instead
       logger.warn('Use migration rollback instead of dropTables for safer operations');
-    } catch (error) {
-      logger.error('Error dropping tables:', error);
+    } catch (error: unknown) {
+      logger.error('Error dropping tables', { err: error });
       throw error;
     }
   }

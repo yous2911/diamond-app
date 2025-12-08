@@ -32,7 +32,7 @@ const curriculumPlugin: FastifyPluginAsync = async (fastify, opts) => {
             id: exercises.id,
             titre: exercises.titre,
             description: exercises.description,
-            type: exercises.type,
+            type: exercises.typeExercice,
             difficulte: exercises.difficulte,
             xp: exercises.xp,
             configuration: exercises.configuration,
@@ -40,7 +40,7 @@ const curriculumPlugin: FastifyPluginAsync = async (fastify, opts) => {
             updatedAt: exercises.updatedAt
           })
           .from(exercises)
-          .orderBy(exercises.type, exercises.difficulte);
+          .orderBy(exercises.typeExercice, exercises.difficulte);
 
         // Return flat array of exercises for frontend compatibility
         return reply.send({
@@ -48,7 +48,7 @@ const curriculumPlugin: FastifyPluginAsync = async (fastify, opts) => {
           data: exercisesData,
           message: 'Exercices par matière récupérés avec succès'
         });
-      } catch (error) {
+      } catch (error: unknown) {
         (fastify.log as any).error('Get exercises by subject error:', error);
         return reply.status(500).send({
           success: false,
@@ -90,7 +90,7 @@ const curriculumPlugin: FastifyPluginAsync = async (fastify, opts) => {
           data: enrichedLevels,
           message: 'Niveaux disponibles récupérés'
         });
-      } catch (error) {
+      } catch (error: unknown) {
         (fastify.log as any).error('Get levels error:', error);
         return reply.status(500).send({
           success: false,
@@ -164,7 +164,7 @@ const curriculumPlugin: FastifyPluginAsync = async (fastify, opts) => {
           },
           message: `Programme ${supportedLevel.displayName} récupéré`
         });
-      } catch (error) {
+      } catch (error: unknown) {
         (fastify.log as any).error('Get curriculum error:', error);
         return reply.status(500).send({
           success: false,
@@ -202,7 +202,7 @@ const curriculumPlugin: FastifyPluginAsync = async (fastify, opts) => {
           })),
           message: `Matières pour ${level} récupérées`
         });
-      } catch (error) {
+      } catch (error: unknown) {
         (fastify.log as any).error('Get subjects error:', error);
         return reply.status(500).send({
           success: false,
@@ -263,7 +263,7 @@ const curriculumPlugin: FastifyPluginAsync = async (fastify, opts) => {
           },
           message: `Exercices pour ${level} récupérés`
         });
-      } catch (error) {
+      } catch (error: unknown) {
         (fastify.log as any).error('Get exercises error:', error);
         return reply.status(500).send({
           success: false,
@@ -294,11 +294,11 @@ const curriculumPlugin: FastifyPluginAsync = async (fastify, opts) => {
         // Get exercise type distribution (using type field from exercises)
         const exerciseTypes = await db
           .select({
-            type: exercises.type,
+            type: exercises.typeExercice,
             count: sql<number>`COUNT(*)`
           })
           .from(exercises)
-          .groupBy(exercises.type);
+          .groupBy(exercises.typeExercice);
 
         // Get difficulty distribution
         const difficultyDistribution = await db
@@ -320,7 +320,7 @@ const curriculumPlugin: FastifyPluginAsync = async (fastify, opts) => {
           },
           message: 'Statistiques du programme récupérées'
         });
-      } catch (error) {
+      } catch (error: unknown) {
         (fastify.log as any).error('Get statistics error:', error);
         return reply.status(500).send({
           success: false,

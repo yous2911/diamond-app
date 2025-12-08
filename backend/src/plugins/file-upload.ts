@@ -126,7 +126,7 @@ const fileUploadPlugin: FastifyPluginAsync<FileUploadPluginOptions> = async (
     //           cleanedFiles, 
     //           cleanedOrphans 
     //         });
-    //       } catch (error) {
+    //       } catch (error: unknown) {
     //         logger.error('Scheduled cleanup failed:', error);
     //       }
     //     },
@@ -175,11 +175,11 @@ const fileUploadPlugin: FastifyPluginAsync<FileUploadPluginOptions> = async (
             },
             timestamp: new Date().toISOString()
           });
-        } catch (error) {
-          logger.error('Upload health check failed:', error);
+        } catch (error: unknown) {
+          logger.error('Upload health check failed', { err: error });
           return reply.status(500).send({
             status: 'unhealthy',
-            error: error.message,
+            error: error instanceof Error ? error.message : String(error),
             timestamp: new Date().toISOString()
           });
         }
@@ -213,11 +213,11 @@ const fileUploadPlugin: FastifyPluginAsync<FileUploadPluginOptions> = async (
             success: true,
             ...result
           });
-        } catch (error) {
-          logger.error('Storage optimization failed:', error);
+        } catch (error: unknown) {
+          logger.error('Storage optimization failed', { err: error });
           return reply.status(500).send({
             success: false,
-            error: error.message
+            error: error instanceof Error ? error.message : String(error)
           });
         }
       }
@@ -231,8 +231,8 @@ const fileUploadPlugin: FastifyPluginAsync<FileUploadPluginOptions> = async (
       thumbnailSizes: thumbnailSizes.length
     });
 
-  } catch (error) {
-    logger.error('Failed to initialize file upload plugin:', error);
+  } catch (error: unknown) {
+    logger.error('Failed to initialize file upload plugin', { err: error });
     throw error;
   }
 };

@@ -17,7 +17,7 @@ export const health = async (fastify: FastifyInstance) => {
       try {
         // Add database connectivity check here if needed
         healthStatus.database = 'connected';
-      } catch (error) {
+      } catch (error: unknown) {
         healthStatus.database = 'disconnected';
         healthStatus.status = 'degraded';
       }
@@ -26,13 +26,13 @@ export const health = async (fastify: FastifyInstance) => {
       try {
         // Add Redis connectivity check here if needed
         healthStatus.redis = 'connected';
-      } catch (error) {
+      } catch (error: unknown) {
         healthStatus.redis = 'disconnected';
         healthStatus.status = 'degraded';
       }
 
       return reply.status(200).send(healthStatus);
-    } catch (error) {
+    } catch (error: unknown) {
       return reply.status(500).send({
         status: 'error',
         timestamp: new Date().toISOString(),

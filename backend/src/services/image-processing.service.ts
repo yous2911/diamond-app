@@ -2,13 +2,7 @@ import sharp from 'sharp';
 import * as path from 'path';
 import * as fs from 'fs-extra';
 import { logger } from '../utils/logger';
-import { 
-  ThumbnailSize, 
-  ProcessedVariant, 
-  VariantType, 
-  FileMetadata 
-} from '../types/upload.types';
-
+import { ThumbnailSize, ProcessedVariant, VariantType } from '../types/upload.types';
 export interface ImageInfo {
   width: number;
   height: number;
@@ -74,9 +68,9 @@ export class ImageProcessingService {
         hasAlpha: metadata.hasAlpha || false,
         isAnimated: metadata.pages ? metadata.pages > 1 : false
       };
-    } catch (error) {
-      logger.error('Error getting image info:', error);
-      throw new Error(`Failed to get image information: ${error.message}`);
+    } catch (error: unknown) {
+      logger.error('Error getting image info', { err: error });
+      throw new Error(`Failed to get image information: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -111,8 +105,8 @@ export class ImageProcessingService {
       }
 
       return true;
-    } catch (error) {
-      logger.error('Image validation failed:', error);
+    } catch (error: unknown) {
+      logger.error('Image validation failed', { err: error });
       throw error;
     }
   }
@@ -138,11 +132,11 @@ export class ImageProcessingService {
             size
           );
           variants.push(variant);
-        } catch (error) {
+        } catch (error: unknown) {
           logger.warn(`Failed to generate ${size.name} thumbnail:`, {
             source: sourcePath,
             size: size.name,
-            error: error.message
+            error: error instanceof Error ? error.message : 'Unknown error'
           });
         }
       }
@@ -154,9 +148,9 @@ export class ImageProcessingService {
       });
 
       return variants;
-    } catch (error) {
-      logger.error('Error generating thumbnails:', error);
-      throw new Error(`Thumbnail generation failed: ${error.message}`);
+    } catch (error: unknown) {
+      logger.error('Error generating thumbnails', { err: error });
+      throw new Error(`Thumbnail generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -279,9 +273,9 @@ export class ImageProcessingService {
       }
 
       return await image.toBuffer();
-    } catch (error) {
-      logger.error('Error compressing image:', error);
-      throw new Error(`Image compression failed: ${error.message}`);
+    } catch (error: unknown) {
+      logger.error('Error compressing image', { err: error });
+      throw new Error(`Image compression failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -323,9 +317,9 @@ export class ImageProcessingService {
       }
 
       return await image.toBuffer();
-    } catch (error) {
-      logger.error('Error resizing image:', error);
-      throw new Error(`Image resize failed: ${error.message}`);
+    } catch (error: unknown) {
+      logger.error('Error resizing image', { err: error });
+      throw new Error(`Image resize failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -369,9 +363,9 @@ export class ImageProcessingService {
           top: position.top
         }])
         .toBuffer();
-    } catch (error) {
-      logger.error('Error adding watermark:', error);
-      throw new Error(`Watermark application failed: ${error.message}`);
+    } catch (error: unknown) {
+      logger.error('Error adding watermark', { err: error });
+      throw new Error(`Watermark application failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -404,9 +398,9 @@ export class ImageProcessingService {
       }
 
       return await image.toBuffer();
-    } catch (error) {
-      logger.error('Error converting image format:', error);
-      throw new Error(`Format conversion failed: ${error.message}`);
+    } catch (error: unknown) {
+      logger.error('Error converting image format', { err: error });
+      throw new Error(`Format conversion failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -424,9 +418,9 @@ export class ImageProcessingService {
       const hexColor = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
       
       return [hexColor];
-    } catch (error) {
-      logger.error('Error extracting color palette:', error);
-      throw new Error(`Color extraction failed: ${error.message}`);
+    } catch (error: unknown) {
+      logger.error('Error extracting color palette', { err: error });
+      throw new Error(`Color extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -451,9 +445,9 @@ export class ImageProcessingService {
       if (avif) result.avif = avif;
 
       return result;
-    } catch (error) {
-      logger.error('Error optimizing image for web:', error);
-      throw new Error(`Web optimization failed: ${error.message}`);
+    } catch (error: unknown) {
+      logger.error('Error optimizing image for web', { err: error });
+      throw new Error(`Web optimization failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -528,9 +522,9 @@ export class ImageProcessingService {
       );
 
       return results;
-    } catch (error) {
-      logger.error('Error in batch processing:', error);
-      throw new Error(`Batch processing failed: ${error.message}`);
+    } catch (error: unknown) {
+      logger.error('Error in batch processing', { err: error });
+      throw new Error(`Batch processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 }

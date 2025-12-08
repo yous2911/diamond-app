@@ -1,6 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { eq, and } from 'drizzle-orm';
-import { mascots, students, studentWardrobe, wardrobeItems } from '../db/schema-mysql-cp2025';
+import { mascots } from '../db/schema-mysql-cp2025';
 import { getDatabase } from '../db/connection';
 
 interface AuthenticatedUser {
@@ -78,7 +78,7 @@ export default async function mascotsRoutes(fastify: FastifyInstance) {
             personalityTraits: ['enthusiastic', 'helpful']
           };
 
-          const newMascot = await db
+          const _newMascot = await db
             .insert(mascots)
             .values({
               studentId: parseInt(studentId),
@@ -111,7 +111,7 @@ export default async function mascotsRoutes(fastify: FastifyInstance) {
           }
         });
 
-      } catch (error) {
+      } catch (error: unknown) {
         (fastify.log as any).error('Get mascot error:', error);
         return reply.status(500).send({
           success: false,
@@ -156,7 +156,7 @@ export default async function mascotsRoutes(fastify: FastifyInstance) {
     }>, reply: FastifyReply) => {
       try {
         const { studentId } = request.params;
-        const updates = request.body;
+        const updates = request.body as any;
         const user = (request as any).user as AuthenticatedUser;
 
         // Verify student access
@@ -202,7 +202,7 @@ export default async function mascotsRoutes(fastify: FastifyInstance) {
           message: 'Mascot mis à jour avec succès'
         });
 
-      } catch (error) {
+      } catch (error: unknown) {
         (fastify.log as any).error('Update mascot error:', error);
         return reply.status(500).send({
           success: false,
@@ -289,7 +289,7 @@ export default async function mascotsRoutes(fastify: FastifyInstance) {
         }
 
         // Update AI state with performance context
-        const currentAiState: AIState = currentMascot[0].aiState ? JSON.parse(currentMascot[0].aiState as string) : {
+        const currentAiState: AIState = currentMascot[0]?.aiState ? JSON.parse(currentMascot[0]?.aiState as string) : {
           mood: 'happy',
           energy: 50,
           personalityTraits: ['enthusiastic', 'helpful']
@@ -326,7 +326,7 @@ export default async function mascotsRoutes(fastify: FastifyInstance) {
           }
         });
 
-      } catch (error) {
+      } catch (error: unknown) {
         (fastify.log as any).error('Update mascot emotion error:', error);
         return reply.status(500).send({
           success: false,
@@ -395,7 +395,7 @@ export default async function mascotsRoutes(fastify: FastifyInstance) {
         }
 
         const mascot = mascotData[0];
-        const aiState: AIState = mascot.aiState ? JSON.parse(mascot.aiState as string) : {
+        const aiState: AIState = mascot?.aiState ? JSON?.parse(mascot?.aiState as string) : {
           mood: 'happy',
           energy: 50,
           personalityTraits: ['enthusiastic', 'helpful']
@@ -440,21 +440,21 @@ export default async function mascotsRoutes(fastify: FastifyInstance) {
           }
         };
 
-        const mascotDialogues = dialogues[mascot.type] || dialogues.dragon;
+        const mascotDialogues = dialogues[mascot?.type] || dialogues?.dragon;
         const dialogue = mascotDialogues[context] || mascotDialogues.greeting;
 
         return reply.send({
           success: true,
           data: {
             dialogue,
-            mascotType: mascot.type,
-            emotion: mascot.currentEmotion,
+            mascotType: mascot?.type,
+            emotion: mascot?.currentEmotion,
             context,
             timestamp: new Date().toISOString()
           }
         });
 
-      } catch (error) {
+      } catch (error: unknown) {
         (fastify.log as any).error('Get mascot dialogue error:', error);
         return reply.status(500).send({
           success: false,

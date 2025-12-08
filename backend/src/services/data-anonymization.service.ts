@@ -24,7 +24,7 @@ const AnonymizationConfigSchema = z.object({
   notifyUser: z.boolean().default(true)
 });
 
-const AnonymizationRuleSchema = z.object({
+const _AnonymizationRuleSchema = z.object({
   fieldName: z.string(),
   strategy: z.enum(['hash', 'randomize', 'mask', 'remove', 'generalize', 'substitute']),
   preserveFormat: z.boolean().default(false),
@@ -150,8 +150,9 @@ export class DataAnonymizationService {
           priority
         },
         severity: 'high',
-        category: 'compliance'
-      });
+        category: 'compliance',
+        timestamp: new Date()
+      } as Parameters<typeof this.auditService.logAction>[0]);
 
       // Execute immediately or schedule for later
       if (validatedConfig.immediateExecution || !validatedConfig.scheduledFor) {
@@ -169,8 +170,8 @@ export class DataAnonymizationService {
 
       return jobId;
 
-    } catch (error) {
-      logger.error('Error scheduling anonymization:', error);
+    } catch (error: unknown) {
+      logger.error('Error scheduling anonymization', { err: error });
       throw new Error('Failed to schedule anonymization');
     }
   }
@@ -242,7 +243,7 @@ export class DataAnonymizationService {
       job.preservedFields = preservedFields;
 
       // Generate anonymization report
-      const report = await this.generateAnonymizationReport(job);
+      const _report = await this.generateAnonymizationReport(job);
       
       // Log completion
       await this.auditService.logAction({
@@ -258,8 +259,9 @@ export class DataAnonymizationService {
           reason: job.reason
         },
         severity: 'high',
-        category: 'compliance'
-      });
+        category: 'compliance',
+        timestamp: new Date()
+      } as Parameters<typeof this.auditService.logAction>[0]);
 
       logger.info('Anonymization job completed successfully', { 
         jobId, 
@@ -267,7 +269,7 @@ export class DataAnonymizationService {
         fieldsAnonymized: anonymizedFields.length 
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       job.status = 'failed';
       job.errors.push(error instanceof Error ? error.message : 'Unknown error');
       
@@ -287,8 +289,9 @@ export class DataAnonymizationService {
           reason: job.reason
         },
         severity: 'critical',
-        category: 'compliance'
-      });
+        category: 'compliance',
+        timestamp: new Date()
+      } as Parameters<typeof this.auditService.logAction>[0]);
     }
   }
 
@@ -353,8 +356,8 @@ export class DataAnonymizationService {
 
       return { recordsProcessed, anonymizedFields, preservedFields };
 
-    } catch (error) {
-      logger.error('Error anonymizing student data:', error);
+    } catch (error: unknown) {
+      logger.error('Error anonymizing student data', { err: error });
       throw error;
     }
   }
@@ -403,8 +406,8 @@ export class DataAnonymizationService {
 
       return { recordsProcessed, anonymizedFields, preservedFields };
 
-    } catch (error) {
-      logger.error('Error anonymizing parent data:', error);
+    } catch (error: unknown) {
+      logger.error('Error anonymizing parent data', { err: error });
       throw error;
     }
   }
@@ -457,7 +460,7 @@ export class DataAnonymizationService {
     
     if (preserveFormat) {
       // Preserve format (letters stay letters, numbers stay numbers)
-      return str.split('').map(char => {
+      return str.split('').map((char: string) => {
         if (/\d/.test(char)) {
           return Math.floor(Math.random() * 10).toString();
         } else if (/[a-zA-Z]/.test(char)) {
@@ -598,8 +601,8 @@ export class DataAnonymizationService {
         inactiveStudents: inactiveStudents.length 
       });
 
-    } catch (error) {
-      logger.error('Error checking inactive accounts:', error);
+    } catch (error: unknown) {
+      logger.error('Error checking inactive accounts', { err: error });
     }
   }
 
@@ -696,7 +699,7 @@ export class DataAnonymizationService {
     
     setInterval(() => {
       this.checkInactiveAccounts().catch(error => {
-        logger.error('Error in scheduled inactivity check:', error);
+        logger.error('Error in scheduled inactivity check', { err: error });
       });
     }, checkInterval);
 
@@ -726,17 +729,17 @@ export class DataAnonymizationService {
         birth_date: student.dateNaissance,
         grade_level: student.niveauActuel,
         total_points: student.totalPoints,
-        completion_rate: student.serieJours / 365.0, // Approximate completion rate
-        avg_score: student.totalPoints / 100.0, // Normalized score
+        completion_rate: (student.serieJours || 0) / 365.0, // Approximate completion rate
+        avg_score: (student.totalPoints || 0) / 100.0, // Normalized score
         last_access: student.dernierAcces,
         mascotte_type: student.mascotteType,
         created_at: student.createdAt,
         updated_at: student.updatedAt
       };
 
-    } catch (error) {
-      logger.error('Error getting student data:', error);
-      throw new Error(`Failed to get student data: ${error.message}`);
+    } catch (error: unknown) {
+      logger.error('Error getting student data', { err: error });
+      throw new Error(`Failed to get student data: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -762,9 +765,9 @@ export class DataAnonymizationService {
       });
 
       logger.debug('Student data updated with anonymized values', { studentId });
-    } catch (error) {
-      logger.error('Error updating student data:', error);
-      throw new Error(`Failed to update student data: ${error.message}`);
+    } catch (error: unknown) {
+      logger.error('Error updating student data', { err: error });
+      throw new Error(`Failed to update student data: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -794,9 +797,9 @@ export class DataAnonymizationService {
         updated_at: parent.createdAt
       };
 
-    } catch (error) {
-      logger.error('Error getting parent data:', error);
-      throw new Error(`Failed to get parent data: ${error.message}`);
+    } catch (error: unknown) {
+      logger.error('Error getting parent data', { err: error });
+      throw new Error(`Failed to get parent data: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -806,7 +809,7 @@ export class DataAnonymizationService {
   private async updateParentData(parentId: string, data: any): Promise<void> {
     try {
       await db.transaction(async (tx) => {
-        const fullName = `${data.first_name || 'Anonymous'} ${data.last_name || 'Parent'}`;
+        const _fullName = `${data.first_name || 'Anonymous'} ${data.last_name || 'Parent'}`;
         
         await tx
           .update(gdprConsentRequests)
@@ -818,9 +821,9 @@ export class DataAnonymizationService {
       });
 
       logger.debug('Parent data updated with anonymized values', { parentId });
-    } catch (error) {
-      logger.error('Error updating parent data:', error);
-      throw new Error(`Failed to update parent data: ${error.message}`);
+    } catch (error: unknown) {
+      logger.error('Error updating parent data', { err: error });
+      throw new Error(`Failed to update parent data: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -846,7 +849,7 @@ export class DataAnonymizationService {
               .set({
                 // Keep exercise completion and scoring data for analytics
                 // but remove timing and specific answer details
-                timeSpent: Math.floor(progress.timeSpent / 60) * 60, // Round to nearest minute
+                timeSpent: Math.floor((progress.timeSpent || 0) / 60) * 60, // Round to nearest minute
                 updatedAt: new Date()
               })
               .where(eq(studentProgress.id, progress.id));
@@ -871,15 +874,16 @@ export class DataAnonymizationService {
             preserveStatistics: this.inactivityConfig.preserveEducationalStatistics
           },
           severity: 'high',
-          category: 'compliance'
-        });
+          category: 'compliance',
+          timestamp: new Date()
+        } as Parameters<typeof this.auditService.logAction>[0]);
       });
 
       logger.info('Student progress anonymized', { studentId, recordsProcessed, reason });
       return recordsProcessed;
 
-    } catch (error) {
-      logger.error('Error anonymizing student progress:', error);
+    } catch (error: unknown) {
+      logger.error('Error anonymizing student progress:', { err: error });
       return 0;
     }
   }
@@ -939,15 +943,16 @@ export class DataAnonymizationService {
             preserveStatistics: this.inactivityConfig.preserveEducationalStatistics
           },
           severity: 'high',
-          category: 'compliance'
-        });
+          category: 'compliance',
+          timestamp: new Date()
+        } as Parameters<typeof this.auditService.logAction>[0]);
       });
 
       logger.info('Student sessions anonymized', { studentId, recordsProcessed, reason });
       return recordsProcessed;
 
-    } catch (error) {
-      logger.error('Error anonymizing student sessions:', error);
+    } catch (error: unknown) {
+      logger.error('Error anonymizing student sessions:', { err: error });
       return 0;
     }
   }
@@ -1006,15 +1011,16 @@ export class DataAnonymizationService {
             consentHistoryPreserved: true
           },
           severity: 'high',
-          category: 'compliance'
-        });
+          category: 'compliance',
+          timestamp: new Date()
+        } as Parameters<typeof this.auditService.logAction>[0]);
       });
 
       logger.info('Parent consent data anonymized', { parentId, recordsProcessed, reason });
       return recordsProcessed;
 
-    } catch (error) {
-      logger.error('Error anonymizing parent consent:', error);
+    } catch (error: unknown) {
+      logger.error('Error anonymizing parent consent:', { err: error });
       return 0;
     }
   }
@@ -1073,8 +1079,8 @@ export class DataAnonymizationService {
 
       return { recordsProcessed, anonymizedFields, preservedFields };
 
-    } catch (error) {
-      logger.error('Error anonymizing session data:', error);
+    } catch (error: unknown) {
+      logger.error('Error anonymizing session data:', { err: error });
       return { recordsProcessed: 0, anonymizedFields: [], preservedFields: [] };
     }
   }
@@ -1119,8 +1125,8 @@ export class DataAnonymizationService {
         warningsSent: false // This would be tracked in a separate table in production
       }));
 
-    } catch (error) {
-      logger.error('Error finding inactive students:', error);
+    } catch (error: unknown) {
+      logger.error('Error finding inactive students:', { err: error });
       return [];
     }
   }
@@ -1134,7 +1140,7 @@ export class DataAnonymizationService {
       // For now, we'll just log the warning and create an audit entry
       
       await this.auditService.logAction({
-        entityType: entityType as any,
+        entityType: 'anonymization_job',
         entityId: entityId,
         action: 'create',
         userId: null,
@@ -1145,16 +1151,17 @@ export class DataAnonymizationService {
           preserveStatistics: this.inactivityConfig.preserveEducationalStatistics
         },
         severity: 'medium',
-        category: 'compliance'
-      });
+        category: 'compliance',
+        timestamp: new Date()
+      } as Parameters<typeof this.auditService.logAction>[0]);
 
       logger.info('Inactivity warning sent', { entityId, entityType });
 
       // TODO: Implement actual email/notification sending
       // This could integrate with an email service like SendGrid, AWS SES, etc.
       
-    } catch (error) {
-      logger.error('Error sending inactivity warning:', error);
+    } catch (error: unknown) {
+      logger.error('Error sending inactivity warning:', { err: error });
     }
   }
 
@@ -1177,13 +1184,14 @@ export class DataAnonymizationService {
           timestamp: new Date().toISOString()
         },
         severity: 'low',
-        category: 'system'
-      });
+        category: 'system',
+        timestamp: new Date()
+      } as Parameters<typeof this.auditService.logAction>[0]);
 
       logger.debug('Inactivity warning marked as sent', { entityId });
 
-    } catch (error) {
-      logger.error('Error marking warning as sent:', error);
+    } catch (error: unknown) {
+      logger.error('Error marking warning as sent:', { err: error });
     }
   }
 
@@ -1236,8 +1244,9 @@ export class DataAnonymizationService {
             cancelledAt: new Date().toISOString()
           },
           severity: 'medium',
-          category: 'compliance'
-        });
+          category: 'compliance',
+          timestamp: new Date()
+        } as Parameters<typeof this.auditService.logAction>[0]);
 
         logger.info('Anonymization job cancelled', { jobId });
         return true;
@@ -1245,8 +1254,8 @@ export class DataAnonymizationService {
 
       return false;
 
-    } catch (error) {
-      logger.error('Error cancelling anonymization job:', error);
+    } catch (error: unknown) {
+      logger.error('Error cancelling anonymization job:', { err: error });
       return false;
     }
   }

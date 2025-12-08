@@ -21,7 +21,7 @@ describe('Students Routes - REAL Database', () => {
     try {
       const [testResult] = await db.select().from(students).limit(1);
       console.log('✅ Database connection verified - found students:', testResult ? 1 : 0);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Database connection test failed:', error);
     }
     
@@ -60,7 +60,7 @@ describe('Students Routes - REAL Database', () => {
         mascotteType: 'dragon'
       });
       
-      testStudentId = insertResult[0].insertId as number;
+      testStudentId = insertResult[0]?.insertId as number;
       console.log(`✅ Created test student with ID: ${testStudentId}`);
       
       // Verify the student was actually created
@@ -68,12 +68,12 @@ describe('Students Routes - REAL Database', () => {
       console.log('✅ Verification - student exists in database:', verifyResult.length > 0);
       if (verifyResult.length > 0) {
         console.log('✅ Student data:', { 
-          id: verifyResult[0].id, 
-          email: verifyResult[0].email, 
-          hasPassword: !!verifyResult[0].passwordHash 
+          id: verifyResult[0]?.id, 
+          email: verifyResult[0]?.email, 
+          hasPassword: !!verifyResult[0]?.passwordHash 
         });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('❌ Failed to create test student:', error);
       throw error;
     }

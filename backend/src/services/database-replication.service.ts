@@ -175,7 +175,7 @@ class DatabaseReplicationService extends EventEmitter {
 
       this.emit('initialized');
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to initialize database replication service', { error });
       throw error;
     }
@@ -210,7 +210,7 @@ class DatabaseReplicationService extends EventEmitter {
           role: serverConfig.role
         });
 
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('Failed to initialize server connection', {
           serverId: serverConfig.id,
           host: serverConfig.host,
@@ -239,10 +239,10 @@ class DatabaseReplicationService extends EventEmitter {
           });
           break;
         }
-      } catch (error) {
+      } catch (error: unknown) {
         logger.debug('Server is not a master', {
           serverId: server.id,
-          error: error.message
+          error: error instanceof Error ? error.message : 'Unknown error'
         });
       }
     }
@@ -255,7 +255,9 @@ class DatabaseReplicationService extends EventEmitter {
 
       if (candidates.length > 0) {
         logger.warn('No master detected, promoting highest priority server');
-        await this.promoteToMaster(candidates[0].id);
+        const candidateId = candidates[0]?.id;
+        if (!candidateId) throw new Error('No candidate ID available');
+        await this.promoteToMaster(candidateId);
       } else {
         throw new Error('No active servers available for master promotion');
       }
@@ -270,7 +272,7 @@ class DatabaseReplicationService extends EventEmitter {
     this.monitoringInterval = setInterval(async () => {
       try {
         await this.checkReplicationStatus();
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('Replication monitoring failed', { error });
       }
     }, this.config.monitoringInterval * 1000);
@@ -285,7 +287,7 @@ class DatabaseReplicationService extends EventEmitter {
     const healthCheckTask = cron.schedule(`*/${this.config.healthCheckInterval} * * * * *`, async () => {
       try {
         await this.performHealthChecks();
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('Health check failed', { error });
       }
     }, { name: 'replication-health-check' });
@@ -294,7 +296,7 @@ class DatabaseReplicationService extends EventEmitter {
     const metricsTask = cron.schedule('* * * * *', async () => { // Every minute
       try {
         await this.collectMetrics();
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('Metrics collection failed', { error });
       }
     }, { name: 'replication-metrics' });
@@ -330,7 +332,7 @@ class DatabaseReplicationService extends EventEmitter {
           });
         }
 
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('Failed to validate slave replication', {
           slaveId: slave.id,
           error
@@ -363,7 +365,7 @@ class DatabaseReplicationService extends EventEmitter {
       } else {
         await this.updateSlaveStatus(server);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to update server status', {
         serverId: server.id,
         error
@@ -374,7 +376,7 @@ class DatabaseReplicationService extends EventEmitter {
       if (status) {
         status.status = 'error';
         status.isHealthy = false;
-        status.lastError = error.message;
+        status.lastError = error instanceof Error ? error.message : 'Unknown error';
         status.lastCheck = new Date();
       }
     }
@@ -500,12 +502,12 @@ class DatabaseReplicationService extends EventEmitter {
         this.emit('serverRecovered', server);
       }
 
-    } catch (error) {
+    } catch (error: unknown) {
       if (server.isActive) {
         server.isActive = false;
         logger.error('Server health check failed', {
           serverId: server.id,
-          error: error.message
+          error: error instanceof Error ? error.message : 'Unknown error'
         });
         this.emit('serverFailed', server);
       }
@@ -572,8 +574,8 @@ class DatabaseReplicationService extends EventEmitter {
       }
 
       return 'consistent';
-    } catch (error) {
-      logger.debug('Could not check data consistency', { error: error.message });
+    } catch (error: unknown) {
+      logger.debug('Could not check data consistency', { error: error instanceof Error ? error.message : 'Unknown error' });
       return 'unknown';
     }
   }
@@ -601,14 +603,14 @@ class DatabaseReplicationService extends EventEmitter {
           `);
           
           checksums.set(table.TABLE_NAME, (rows as any[])[0].count.toString());
-        } catch (error) {
+        } catch (error: unknown) {
           // Skip tables that can't be accessed
         }
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.debug('Failed to get table checksums', {
         serverId: server.id,
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
 
@@ -666,7 +668,7 @@ class DatabaseReplicationService extends EventEmitter {
 
       return failoverEvent.id;
 
-    } catch (error) {
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       
       failoverEvent.error = errorMessage;
@@ -705,7 +707,7 @@ class DatabaseReplicationService extends EventEmitter {
       .filter(candidate => candidate.status?.isHealthy)
       .sort((a, b) => b.score - a.score);
 
-    return candidates.length > 0 ? candidates[0].server : null;
+    return candidates.length > 0 && candidates[0] ? candidates[0].server : null;
   }
 
   private async promoteToMaster(serverId: string): Promise<void> {
@@ -736,8 +738,8 @@ class DatabaseReplicationService extends EventEmitter {
         host: server.host
       });
 
-    } catch (error) {
-      throw new Error(`Failed to promote ${serverId} to master: ${error.message}`);
+    } catch (error: unknown) {
+      throw new Error(`Failed to promote ${serverId} to master: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -774,11 +776,11 @@ class DatabaseReplicationService extends EventEmitter {
         newMasterId: newMaster.id
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to reconfigure slave', {
         slaveId: slave.id,
         newMasterId: newMaster.id,
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       });
     }
   }
@@ -811,7 +813,7 @@ class DatabaseReplicationService extends EventEmitter {
   }
 
   async getReplicationMetrics(): Promise<ReplicationMetrics | null> {
-    return this.metrics.length > 0 ? this.metrics[this.metrics.length - 1] : null;
+    return this.metrics.length > 0 ? (this.metrics[this.metrics.length - 1] || null) : null;
   }
 
   getCurrentMaster(): ReplicationServer | null {

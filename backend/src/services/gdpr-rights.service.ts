@@ -31,7 +31,7 @@ const GDPRRequestSchema = z.object({
   legalBasis: z.string().optional()
 });
 
-const GDPRResponseSchema = z.object({
+const _GDPRResponseSchema = z.object({
   requestId: z.string().uuid(),
   responseType: z.enum(['approved', 'rejected', 'partially_approved', 'requires_clarification']),
   responseDetails: z.string().min(10),
@@ -216,7 +216,7 @@ export class GDPRRightsService {
         estimatedCompletionDate: dueDate
       };
 
-    } catch (error) {
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logger.error('Error submitting GDPR request:', { error: errorMessage });
       throw new Error('Failed to submit GDPR request');
@@ -277,7 +277,7 @@ export class GDPRRightsService {
         nextSteps: 'Your request has been verified and assigned to our Data Protection Officer for review.'
       };
 
-    } catch (error) {
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logger.error('Error verifying GDPR request:', { error: errorMessage });
       if (error instanceof Error) {
@@ -341,8 +341,8 @@ export class GDPRRightsService {
 
       return portfolio;
 
-    } catch (error) {
-      logger.error('Error processing data access request:', error);
+    } catch (error: unknown) {
+      logger.error('Error processing data access request', { err: error });
       throw new Error('Failed to process data access request');
     }
   }
@@ -430,8 +430,8 @@ export class GDPRRightsService {
         reason
       };
 
-    } catch (error) {
-      logger.error('Error processing data erasure request:', error);
+    } catch (error: unknown) {
+      logger.error('Error processing data erasure request', { err: error });
       throw new Error('Failed to process data erasure request');
     }
   }
@@ -507,8 +507,8 @@ export class GDPRRightsService {
         downloadUrl
       };
 
-    } catch (error) {
-      logger.error('Error processing data portability request:', error);
+    } catch (error: unknown) {
+      logger.error('Error processing data portability request', { err: error });
       throw new Error('Failed to process data portability request');
     }
   }
@@ -549,8 +549,8 @@ export class GDPRRightsService {
         timeRemaining
       };
 
-    } catch (error) {
-      logger.error('Error getting GDPR request status:', error);
+    } catch (error: unknown) {
+      logger.error('Error getting GDPR request status', { err: error });
       throw new Error('Failed to get request status');
     }
   }
@@ -589,8 +589,8 @@ export class GDPRRightsService {
         overdue
       };
 
-    } catch (error) {
-      logger.error('Error listing GDPR requests:', error);
+    } catch (error: unknown) {
+      logger.error('Error listing GDPR requests', { err: error });
       throw new Error('Failed to list GDPR requests');
     }
   }

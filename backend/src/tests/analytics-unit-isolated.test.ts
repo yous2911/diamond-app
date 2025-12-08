@@ -15,7 +15,7 @@ vi.mock('../db/connection', () => ({
             id: 1,
             prenom: 'John',
             nom: 'Doe',
-            totalPoints: 100,
+            totalPoints: _100,
             serieJours: 5,
             niveauActuel: 'CP'
           }])

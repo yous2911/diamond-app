@@ -106,7 +106,7 @@ export const testUtils = {
     for (const table of tables) {
       try {
         await db.execute(sql.raw(`DELETE FROM ${table} WHERE 1=1`));
-      } catch (error) {
+      } catch (error: unknown) {
         // Table might not exist, continue
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         console.log(`Warning: Could not clean table ${table}:`, errorMessage);
@@ -120,7 +120,7 @@ export const testUtils = {
       prenom: 'Alice',
       nom: 'Test',
       email: 'alice.test@example.com',
-      dateNaissance: '2015-03-15',
+      dateNaissance: new Date('2015-03-15'),
       niveauActuel: 'CP',
       niveauScolaire: 'CP',
       totalPoints: 150,
@@ -175,7 +175,7 @@ beforeAll(async () => {
 
     setupComplete = true;
     console.log('✅ Real database test environment setup complete');
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('❌ Real database test setup failed:', error);
     throw error;
   }
@@ -210,7 +210,7 @@ afterAll(async () => {
       await app.close();
       console.log('✅ Test app closed');
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('❌ Test cleanup failed:', error);
   }
 });

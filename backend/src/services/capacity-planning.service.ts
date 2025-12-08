@@ -6,8 +6,7 @@
 import { connection } from '../db/connection';
 import { logger } from '../utils/logger';
 import { databaseMonitorService } from './database-monitor.service';
-import { performanceBenchmarkService } from './performance-benchmark.service';
-import { promises as fs } from 'fs';
+import * as fs from 'fs/promises';
 import { join } from 'path';
 import cron from 'node-cron';
 
@@ -349,7 +348,7 @@ class CapacityPlanningService {
       this.isInitialized = true;
       logger.info('Capacity planning service initialized successfully');
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to initialize capacity planning service', { error });
       throw error;
     }
@@ -360,7 +359,7 @@ class CapacityPlanningService {
     const metricsTask = cron.schedule('0 6 * * *', async () => { // 6 AM daily
       try {
         await this.collectCurrentMetrics();
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('Daily metrics collection failed', { error });
       }
     }, { name: 'capacity-metrics' });
@@ -369,7 +368,7 @@ class CapacityPlanningService {
     const planningTask = cron.schedule('0 8 * * 1', async () => { // 8 AM Mondays
       try {
         await this.generateCapacityPlan('90d');
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('Weekly capacity planning failed', { error });
       }
     }, { name: 'capacity-planning' });
@@ -378,7 +377,7 @@ class CapacityPlanningService {
     const comprehensiveTask = cron.schedule('0 9 1 * *', async () => { // 9 AM 1st of month
       try {
         await this.generateCapacityPlan('365d');
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('Monthly capacity planning failed', { error });
       }
     }, { name: 'comprehensive-planning' });
@@ -447,7 +446,7 @@ class CapacityPlanningService {
 
       return metrics;
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to collect capacity metrics', { error });
       throw error;
     }
@@ -516,7 +515,7 @@ class CapacityPlanningService {
         avgResponseTime = monitorMetrics.queries.averageQueryTime;
         throughput = monitorMetrics.queries.queriesPerSecond;
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.debug('Could not get monitoring metrics', { error });
     }
 
@@ -552,11 +551,12 @@ class CapacityPlanningService {
 
     const oldest = recent[0];
     const newest = recent[recent.length - 1];
+    if (!oldest || !newest) return 0;
     const daysDiff = (newest.timestamp.getTime() - oldest.timestamp.getTime()) / (1000 * 60 * 60 * 24);
     
     if (daysDiff === 0) return 0;
 
-    return (newest.database.size - oldest.database.size) / daysDiff;
+    return (newest?.database.size - oldest?.database.size) / daysDiff;
   }
 
   private calculateUserGrowthRate(): number {
@@ -567,11 +567,12 @@ class CapacityPlanningService {
 
     const oldest = recent[0];
     const newest = recent[recent.length - 1];
+    if (!oldest || !newest) return 0;
     const daysDiff = (newest.timestamp.getTime() - oldest.timestamp.getTime()) / (1000 * 60 * 60 * 24);
     
     if (daysDiff === 0) return 0;
 
-    return (newest.users.totalUsers - oldest.users.totalUsers) / daysDiff;
+    return (newest?.users.totalUsers - oldest?.users.totalUsers) / daysDiff;
   }
 
   private getCpuUsage(): number {
@@ -645,7 +646,7 @@ class CapacityPlanningService {
           plannedActions: activeRecommendations.filter(r => r.priority === 'medium' || r.priority === 'low').length,
           estimatedCosts: this.calculateTotalEstimatedCosts(activeRecommendations)
         },
-        currentMetrics,
+        currentMetrics: currentMetrics || this.metrics[this.metrics.length - 1] || this.metrics[0]!,
         projections,
         thresholds: [...this.thresholds],
         recommendations: activeRecommendations,
@@ -663,7 +664,7 @@ class CapacityPlanningService {
 
       return plan;
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to generate capacity plan', { error });
       throw error;
     }
@@ -679,11 +680,11 @@ class CapacityPlanningService {
     const daysMap: Record<string, number> = {
       '30d': 30, '90d': 90, '180d': 180, '365d': 365
     };
-    const days = daysMap[timeHorizon];
+    const _days = daysMap[timeHorizon];
 
     // Database size projection
     const dbGrowthRate = this.calculateDatabaseGrowthRate();
-    const currentDbSize = this.metrics[this.metrics.length - 1].database.size;
+    const currentDbSize = this.metrics[this.metrics.length - 1]?.database.size || 0;
     
     projections.push({
       metric: 'Database Size',
@@ -701,7 +702,7 @@ class CapacityPlanningService {
 
     // User growth projection
     const userGrowthRate = this.calculateUserGrowthRate();
-    const currentUsers = this.metrics[this.metrics.length - 1].users.totalUsers;
+    const currentUsers = this.metrics[this.metrics.length - 1]?.users.totalUsers || 0;
     
     projections.push({
       metric: 'Total Users',
@@ -759,17 +760,18 @@ class CapacityPlanningService {
     const sumX = (n * (n - 1)) / 2;
     const sumY = values.reduce((sum, v) => sum + v, 0);
     const sumXY = values.reduce((sum, v, i) => sum + (i * v), 0);
-    const sumX2 = values.reduce((sum, v, i) => sum + (i * i), 0);
+    const _sumX2 = values.reduce((sum, v, i) => sum + (i * i), 0);
     
-    const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+    const slope = (n * sumXY - sumX * sumY) / (n * _sumX2 - sumX * sumX);
     return slope;
   }
 
   private async calculateThresholdEstimates(projections: GrowthProjection[]): Promise<void> {
     for (const threshold of this.thresholds) {
-      const projection = projections.find(p => 
-        p.metric.toLowerCase().includes(threshold.metric.split('_')[0])
-      );
+      const metricPart = threshold.metric?.split('_')[0];
+      const projection = metricPart ? projections.find(p => 
+        p.metric.toLowerCase().includes(metricPart.toLowerCase())
+      ) : undefined;
       
       if (projection && projection.growthRate > 0) {
         const daysToWarning = (threshold.warningThreshold - threshold.currentValue) / projection.growthRate;
@@ -808,23 +810,23 @@ class CapacityPlanningService {
     // Simple condition evaluation
     if (condition.includes('database_size > warning_threshold')) {
       const dbThreshold = this.thresholds.find(t => t.metric === 'database_size');
-      return dbThreshold ? latest.database.size > dbThreshold.warningThreshold : false;
+      return dbThreshold && latest?.database?.size ? latest.database.size > dbThreshold.warningThreshold : false;
     }
     
     if (condition.includes('connection_utilization > warning_threshold')) {
-      return latest.connections.utilizationRate > 70;
+      return (latest?.connections?.utilizationRate || 0) > 70;
     }
     
     if (condition.includes('response_time > warning_threshold')) {
-      return latest.performance.avgResponseTime > 1000;
+      return (latest?.performance?.avgResponseTime || 0) > 1000;
     }
     
     if (condition.includes('concurrent_users > 500')) {
-      return latest.users.concurrentUsers > 500;
+      return (latest?.users?.concurrentUsers || 0) > 500;
     }
     
     if (condition.includes('cpu_usage > 80%') || condition.includes('memory_usage > 80%')) {
-      return latest.performance.cpuUsage > 80 || latest.performance.memoryUsage > 80;
+      return (latest?.performance?.cpuUsage || 0) > 80 || (latest?.performance?.memoryUsage || 0) > 80;
     }
     
     return false;
@@ -856,7 +858,7 @@ class CapacityPlanningService {
         'Current optimization efforts succeed',
         'No major feature releases'
       ],
-      projectedMetrics: this.buildScenarioMetrics(current, conservativeProjections),
+      projectedMetrics: this.buildScenarioMetrics(current || this.metrics[this.metrics.length - 1] || this.metrics[0]!, conservativeProjections),
       requiredActions: ['Monitor performance', 'Maintain current capacity'],
       estimatedCost: '€100-500/month'
     });
@@ -870,7 +872,7 @@ class CapacityPlanningService {
         'Normal business operations',
         'Planned feature releases'
       ],
-      projectedMetrics: this.buildScenarioMetrics(current, projections.map(p => ({
+      projectedMetrics: this.buildScenarioMetrics(current || this.metrics[this.metrics.length - 1] || this.metrics[0]!, projections.map(p => ({
         ...p,
         projectedValue: p.projectedValues[timeframe]
       }))),
@@ -892,7 +894,7 @@ class CapacityPlanningService {
         'New product features drive adoption',
         'Competition drives user acquisition'
       ],
-      projectedMetrics: this.buildScenarioMetrics(current, aggressiveProjections),
+      projectedMetrics: this.buildScenarioMetrics(current || this.metrics[this.metrics.length - 1] || this.metrics[0]!, aggressiveProjections),
       requiredActions: [
         'Implement auto-scaling',
         'Deploy read replicas',
@@ -966,10 +968,10 @@ class CapacityPlanningService {
     let maxCost = 0;
     
     recommendations.forEach(rec => {
-      const matches = rec.estimatedCost.match(/€(\d+)-(\d+)/);
-      if (matches) {
-        minCost += parseInt(matches[1]);
-        maxCost += parseInt(matches[2]);
+      const matches = rec.estimatedCost?.match(/€(\d+)-(\d+)/);
+      if (matches && matches[1] && matches[2]) {
+        minCost += parseInt(matches[1], 10);
+        maxCost += parseInt(matches[2], 10);
       }
     });
     
@@ -996,7 +998,7 @@ class CapacityPlanningService {
     if (this.metrics.length === 0) {
       await this.collectCurrentMetrics();
     }
-    return this.metrics.length > 0 ? this.metrics[this.metrics.length - 1] : null;
+    return this.metrics.length > 0 ? (this.metrics[this.metrics.length - 1] || null) : null;
   }
 
   getMetricsHistory(days: number = 30): CapacityMetrics[] {

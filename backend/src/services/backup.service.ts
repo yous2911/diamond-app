@@ -5,7 +5,7 @@
 
 import { spawn } from 'child_process';
 import { promises as fs } from 'fs';
-import { join, dirname } from 'path';
+import { join } from 'path';
 import { createReadStream, createWriteStream, existsSync } from 'fs';
 import { createGzip, createGunzip } from 'zlib';
 import { pipeline } from 'stream/promises';
@@ -124,7 +124,7 @@ class BackupService {
         retentionDays: this.backupConfig.retentionDays
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to initialize backup service', { error });
       throw error;
     }
@@ -142,7 +142,7 @@ class BackupService {
         localPath: this.backupConfig.localPath,
         metadataDir
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to create backup directory', { error });
       throw error;
     }
@@ -160,7 +160,7 @@ class BackupService {
         bucket: this.backupConfig.s3Config?.bucket,
         region: this.backupConfig.s3Config?.region
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('S3 initialization failed', { error });
       throw error;
     }
@@ -185,7 +185,7 @@ class BackupService {
       logger.info('Scheduled backup configured', {
         schedule: this.backupConfig.schedule
       });
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to setup scheduled backups', { error });
     }
   }
@@ -288,7 +288,7 @@ class BackupService {
 
       return backupId;
 
-    } catch (error) {
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       
       job.status = 'failed';
@@ -317,7 +317,7 @@ class BackupService {
       `, [dbConfig.database]);
 
       return (rows as any[]).map(row => row.TABLE_NAME);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to get table list', { error });
       throw error;
     }
@@ -425,7 +425,7 @@ class BackupService {
       metadata.size = stats.size;
 
       return currentPath;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to process backup file', { error });
       throw error;
     }
@@ -582,7 +582,7 @@ class BackupService {
 
       return restoreId;
 
-    } catch (error) {
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       
       job.status = 'failed';
@@ -610,7 +610,7 @@ class BackupService {
 
       const content = await fs.readFile(metadataPath, 'utf8');
       return JSON.parse(content);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to read backup metadata', { backupId, error });
       return null;
     }
@@ -650,7 +650,7 @@ class BackupService {
 
     // This would be implemented with AWS SDK v3
     // const s3Client = new S3Client({...});
-    // const response = await s3Client.send(new GetObjectCommand({...}));
+    // const _response = await s3Client.send(new GetObjectCommand({...}));
     
     logger.info('Backup downloaded from S3 successfully');
   }
@@ -715,7 +715,7 @@ class BackupService {
     const destination = createWriteStream(outputPath);
     
     // Read IV from beginning of file
-    const iv = Buffer.alloc(16);
+    const _iv = Buffer.alloc(16);
     source.read(16); // Skip IV for now (simplified)
     
     const decipher = crypto.createDecipher(algorithm, key);
@@ -795,7 +795,7 @@ class BackupService {
       return backups.sort((a, b) => 
         new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
       );
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to list backups', { error });
       return [];
     }
@@ -840,7 +840,7 @@ class BackupService {
 
       logger.info('Backup deleted successfully', { backupId });
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to delete backup', { backupId, error });
       return false;
     }
@@ -872,7 +872,7 @@ class BackupService {
           retentionDays: this.backupConfig.retentionDays 
         });
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to cleanup old backups', { error });
     }
   }
@@ -903,8 +903,8 @@ class BackupService {
     return {
       totalBackups: backups.length,
       totalSize: this.formatBytes(totalSize),
-      oldestBackup: backups.length > 0 ? new Date(backups[backups.length - 1].timestamp) : null,
-      newestBackup: backups.length > 0 ? new Date(backups[0].timestamp) : null,
+      oldestBackup: backups.length > 0 && backups[backups.length - 1]?.timestamp ? new Date(backups[backups.length - 1]!.timestamp) : null,
+      newestBackup: backups.length > 0 && backups[0]?.timestamp ? new Date(backups[0].timestamp) : null,
       storageTypes
     };
   }

@@ -51,17 +51,41 @@ export class AuditMiddleware {
           // Log asynchrone pour ne pas impacter les performances
           setImmediate(async () => {
             try {
-              await this.auditService.logAction(auditData);
-            } catch (error) {
+              await this.auditService.logAction({
+                entityType: auditData.entityType as any,
+                entityId: auditData.entityId || '',
+                action: auditData.action as any,
+                userId: auditData.userId || null,
+                studentId: auditData.studentId || undefined,
+                details: auditData.details || {},
+                ipAddress: auditData.ipAddress || undefined,
+                userAgent: auditData.userAgent || undefined,
+                timestamp: auditData.timestamp ? new Date(auditData.timestamp) : new Date(),
+                severity: auditData.severity || 'medium',
+                category: auditData.category || undefined
+              });
+            } catch (error: unknown) {
               console.warn('Async audit logging failed:', error);
             }
           });
         } else {
           // Log synchrone pour assurer la trace avant la réponse
-          await this.auditService.logAction(auditData);
+          await this.auditService.logAction({
+            entityType: auditData.entityType as any,
+            entityId: auditData.entityId || '',
+            action: auditData.action as any,
+            userId: auditData.userId || null,
+            studentId: auditData.studentId || undefined,
+            details: auditData.details || {},
+            ipAddress: auditData.ipAddress || undefined,
+            userAgent: auditData.userAgent || undefined,
+            timestamp: auditData.timestamp ? new Date(auditData.timestamp) : new Date(),
+            severity: auditData.severity || 'medium',
+            category: auditData.category || undefined
+          });
         }
 
-      } catch (error) {
+      } catch (error: unknown) {
         // L'audit ne doit jamais faire échouer une requête
         console.warn('Audit middleware error:', error);
       }
@@ -77,13 +101,25 @@ export class AuditMiddleware {
         const auditData = this.prepareSensitiveAuditData(request);
         
         // Log synchrone pour les routes sensibles
-        await this.auditService.logAction(auditData);
+        await this.auditService.logAction({
+          entityType: auditData.entityType as any,
+          entityId: auditData.entityId || '',
+          action: auditData.action as any,
+          userId: auditData.userId || null,
+          studentId: auditData.studentId || undefined,
+          details: auditData.details || {},
+          ipAddress: auditData.ipAddress || undefined,
+          userAgent: auditData.userAgent || undefined,
+          timestamp: auditData.timestamp ? new Date(auditData.timestamp) : new Date(),
+          severity: auditData.severity || 'high',
+          category: auditData.category || undefined
+        });
 
         // Ajouter des headers de sécurité spécifiques
         reply.header('X-Audit-Logged', 'true');
         reply.header('X-Security-Level', 'high');
 
-      } catch (error) {
+      } catch (error: unknown) {
         console.warn('Sensitive route audit failed:', error);
         // Pour les routes sensibles, on peut choisir de rejeter la requête
         if (request.url.includes('/gdpr/') || request.url.includes('/auth/')) {
@@ -126,8 +162,20 @@ export class AuditMiddleware {
           timestamp: new Date().toISOString()
         };
 
-        await this.auditService.logAction(auditData);
-      } catch (auditError) {
+        await this.auditService.logAction({
+          entityType: auditData.entityType as any,
+          entityId: auditData.entityId || '',
+          action: auditData.action as any,
+          userId: auditData.userId || null,
+          studentId: auditData.studentId || undefined,
+          details: auditData.details || {},
+          ipAddress: auditData.ipAddress || undefined,
+          userAgent: auditData.userAgent || undefined,
+          timestamp: auditData.timestamp ? new Date(auditData.timestamp) : new Date(),
+          severity: auditData.severity || 'high',
+          category: auditData.category || undefined
+        });
+      } catch (auditError: unknown) {
         const errorMessage = auditError instanceof Error ? auditError.message : 'Unknown error';
         console.warn('Error audit logging failed:', errorMessage);
       }
@@ -155,7 +203,7 @@ export class AuditMiddleware {
       userAgent: request.headers['user-agent'] || '',
       severity,
       category,
-      timestamp: new Date()
+      timestamp: new Date().toISOString()
     };
   }
 
@@ -174,7 +222,7 @@ export class AuditMiddleware {
         timestamp: new Date().toISOString(),
         headers: this.options.logLevel === 'full' ? request.headers : undefined
       },
-      timestamp: new Date()
+      timestamp: new Date().toISOString()
     };
   }
 

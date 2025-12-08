@@ -3,8 +3,7 @@
  * No heavy mocking, just real business logic testing
  */
 
-import { describe, test, expect, beforeEach, vi } from 'vitest';
-
+import { describe, test, expect, vi } from 'vitest';
 // Mock ONLY external dependencies
 vi.mock('../db/connection', () => ({
   db: {
@@ -43,7 +42,7 @@ vi.mock('../config/config', () => ({
   },
   emailConfig: {
     host: 'localhost',
-    port: 587,
+    port: _587,
     from: 'test@example.com',
     supportEmail: 'support@example.com'
   },
@@ -395,7 +394,7 @@ describe('Comprehensive Unit Tests - All Functions', () => {
       
       expect(calculateProgress(0, 10)).toEqual({ percentage: 0, status: 'not_started' });
       expect(calculateProgress(2, 10)).toEqual({ percentage: 20, status: 'beginner' });
-      expect(calculateProgress(4, 10)).toEqual({ percentage: 40, status: 'in_progress' });
+      expect(calculateProgress(4, 10)).toEqual({ percentage: _40, status: 'in_progress' });
       expect(calculateProgress(7, 10)).toEqual({ percentage: 70, status: 'advanced' });
       expect(calculateProgress(9, 10)).toEqual({ percentage: 90, status: 'expert' });
       expect(calculateProgress(10, 10)).toEqual({ percentage: 100, status: 'mastered' });

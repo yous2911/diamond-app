@@ -154,7 +154,19 @@ const MascotSystem: React.FC<MascotSystemProps> = ({
     const { recentPerformance } = studentData;
     const lang = DIALOGUES[locale];
 
-    let dialogue = lang[mood] || lang.default;
+    // Map mood to available dialogue keys
+    const moodMap: Record<string, keyof typeof lang> = {
+      'happy': 'excited',
+      'focused': 'curious',
+      'tired': 'encouraging',
+      'excited': 'excited',
+      'curious': 'curious',
+      'proud': 'proud',
+      'encouraging': 'encouraging'
+    };
+    
+    const dialogueKey = moodMap[mood] || 'default';
+    let dialogue = lang[dialogueKey] || lang.default;
 
     if (recentPerformance === 'struggling' && relationship > 70) {
       dialogue = lang.struggling_support;

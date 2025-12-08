@@ -33,7 +33,7 @@ describe('Exercise Routes', () => {
         const loginData = JSON.parse(loginResponse.body);
         authToken = loginData.data?.token || null;
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Exercise test setup failed:', error);
       throw error;
     }
@@ -222,7 +222,7 @@ async function setupExerciseTestData() {
   try {
     console.log('Setting up exercise test data...');
     // Add your test data setup here
-  } catch (error) {
+  } catch (error: unknown) {
     console.warn('Exercise test data setup failed:', error);
   }
 } 

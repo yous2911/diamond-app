@@ -4,27 +4,8 @@
  */
 
 import { getDatabase } from '../db/connection';
-import { 
-  students, 
-  exercises, 
-  studentProgress,
-  dailyLearningAnalytics,
-  weeklyProgressSummary,
-  studentCompetenceProgress,
-  learningSessionTracking,
-  exercisePerformanceAnalytics,
-  studentAchievements,
-  type Student,
-  type Exercise,
-  type StudentProgress,
-  type DailyLearningAnalytics,
-  type WeeklyProgressSummary,
-  type StudentCompetenceProgress,
-  type LearningSessionTracking,
-  type ExercisePerformanceAnalytics,
-  MasteryLevels
-} from '../db/schema';
-import { eq, and, desc, asc, sql, count, sum, avg, between, gte, lte, inArray } from 'drizzle-orm';
+import { students, exercises, studentProgress, dailyLearningAnalytics, studentCompetenceProgress, studentAchievements, type Student } from '../db/schema';
+import { eq, and, desc, sql, count, sum, avg, gte } from 'drizzle-orm';
 import { logger } from '../utils/logger';
 
 export interface LearningInsights {
@@ -130,12 +111,12 @@ class AnalyticsService {
         ));
 
       // Calculate completion rate
-      const totalStudents = totalStudentsResult.count;
-      const totalExercises = totalExercisesResult.count;
-      const activeStudents = activeStudentsResult.count;
-      const completedExercises = completedExercisesResult.count;
+      const totalStudents = totalStudentsResult?.count || 0;
+      const totalExercises = totalExercisesResult?.count || 0;
+      const activeStudents = activeStudentsResult?.count || 0;
+      const completedExercises = completedExercisesResult?.count || 0;
       
-      const averageCompletionRate = totalExercises > 0 
+      const averageCompletionRate = totalExercises > 0 && activeStudents 
         ? (completedExercises / (totalExercises * Math.max(activeStudents, 1))) * 100 
         : 0;
 
@@ -144,7 +125,7 @@ class AnalyticsService {
         .select({
           studentId: studentProgress.studentId,
           completionRate: sql<number>`(COUNT(CASE WHEN ${studentProgress.completed} THEN 1 END) * 100.0 / COUNT(*))`,
-          averageScore: avg(sql<number>`CAST(${studentProgress.score} AS DECIMAL(5,2))`),
+          averageScore: avg(sql<number>`CAST(${studentProgress.averageScore} AS DECIMAL(5,2))`),
           totalXP: sum(sql<number>`COALESCE(SUM(10), 0)`)
         })
         .from(studentProgress)
@@ -155,12 +136,16 @@ class AnalyticsService {
         .limit(10);
 
       // Get student details for top performers
-      const topPerformingStudents = await Promise.all(
+      const topPerformingStudents = (await Promise.all(
         topStudents.map(async (student) => {
           const [studentDetails] = await this.db
             .select()
             .from(students)
             .where(eq(students.id, student.studentId));
+
+          if (!studentDetails) {
+            return null;
+          }
 
           return {
             student: studentDetails,
@@ -169,14 +154,14 @@ class AnalyticsService {
             totalXP: Number(student.totalXP) || 0
           };
         })
-      );
+      )).filter((item): item is NonNullable<typeof item> => item !== null);
 
       // Subject analysis
       const subjectAnalysis = await this.db
         .select({
           subject: exercises.matiere,
           exerciseCount: count(),
-          averageScore: avg(sql<number>`CAST(${studentProgress.score} AS DECIMAL(5,2))`),
+          averageScore: avg(sql<number>`CAST(${studentProgress.averageScore} AS DECIMAL(5,2))`),
           completionRate: sql<number>`(COUNT(CASE WHEN ${studentProgress.completed} THEN 1 END) * 100.0 / COUNT(*))`
         })
         .from(exercises)
@@ -189,7 +174,7 @@ class AnalyticsService {
         .select({
           difficulty: exercises.difficulte,
           exerciseCount: count(),
-          averageScore: avg(sql<number>`CAST(${studentProgress.score} AS DECIMAL(5,2))`),
+          averageScore: avg(sql<number>`CAST(${studentProgress.averageScore} AS DECIMAL(5,2))`),
           averageTime: avg(studentProgress.timeSpent)
         })
         .from(exercises)
@@ -198,10 +183,10 @@ class AnalyticsService {
         .groupBy(exercises.difficulte);
 
       return {
-        totalStudents,
-        activeStudents,
-        totalExercises,
-        completedExercises,
+        totalStudents: totalStudents || 0,
+        activeStudents: activeStudents || 0,
+        totalExercises: totalExercises || 0,
+        completedExercises: completedExercises || 0,
         averageCompletionRate,
         topPerformingStudents,
         subjectAnalysis: subjectAnalysis.map(s => ({
@@ -218,8 +203,8 @@ class AnalyticsService {
         }))
       };
 
-    } catch (error) {
-      logger.error('Error getting learning insights:', error);
+    } catch (error: unknown) {
+      logger.error('Error getting learning insights', { err: error });
       throw new Error('Failed to generate learning insights');
     }
   }
@@ -244,19 +229,19 @@ class AnalyticsService {
         .select({
           totalExercises: count(),
           completedExercises: sql<number>`COUNT(CASE WHEN ${studentProgress.completed} THEN 1 END)`,
-          averageScore: avg(sql<number>`CAST(${studentProgress.score} AS DECIMAL(5,2))`),
+          averageScore: avg(sql<number>`CAST(${studentProgress.averageScore} AS DECIMAL(5,2))`),
           totalTimeSpent: sum(studentProgress.timeSpent),
           xpEarned: sum(sql<number>`COALESCE(SUM(10), 0)`)
         })
         .from(studentProgress)
         .where(eq(studentProgress.studentId, studentId));
 
-      const totalExercises = progressMetrics.totalExercises || 0;
-      const completedExercises = Number(progressMetrics.completedExercises) || 0;
+      const totalExercises = progressMetrics?.totalExercises || 0;
+      const completedExercises = Number(progressMetrics?.completedExercises) || 0;
       const completionRate = totalExercises > 0 ? (completedExercises / totalExercises) * 100 : 0;
-      const averageScore = Number(progressMetrics.averageScore) || 0;
-      const totalTimeSpent = Number(progressMetrics.totalTimeSpent) || 0;
-      const xpEarned = Number(progressMetrics.xpEarned) || 0;
+      const averageScore = Number(progressMetrics?.averageScore) || 0;
+      const totalTimeSpent = Number(progressMetrics?.totalTimeSpent) || 0;
+      const xpEarned = Number(progressMetrics?.xpEarned) || 0;
 
       // Get competence progress
       const competenceProgress = await this.db
@@ -293,24 +278,24 @@ class AnalyticsService {
         currentStreak,
         competenceProgress: competenceProgress.map(cp => ({
           competenceCode: cp.competenceCode,
-          masteryLevel: cp.masteryLevel,
-          progress: (cp.successfulAttempts / Math.max(cp.totalAttempts, 1)) * 100
+          masteryLevel: cp.masteryLevel || 'decouverte',
+          progress: ((cp.successfulAttempts || 0) / Math.max(cp.totalAttempts || 1, 1)) * 100
         })),
         recentActivity: recentActivity.map(activity => ({
           date: activity.date,
-          exercisesCompleted: activity.completedExercises,
-          timeSpent: activity.totalTimeMinutes,
+          exercisesCompleted: activity.completedExercises || 0,
+          timeSpent: activity.totalTimeMinutes || 0,
           averageScore: Number(activity.averageScore) || 0
         })),
         achievements: achievements.map(achievement => ({
-          title: achievement.title,
+          title: achievement.title || '',
           description: achievement.description || '',
-          earnedAt: achievement.unlockedAt,
-          xpReward: achievement.xpReward
-        }))
+          earnedAt: achievement.unlockedAt || new Date(),
+          xpReward: achievement.xpReward || 0
+        })).filter(achievement => achievement.title !== '')
       };
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error getting student analytics:', { studentId, error });
       throw new Error('Failed to generate student analytics');
     }
@@ -329,7 +314,7 @@ class AnalyticsService {
           totalExercises: count(),
           completedExercises: sql<number>`COUNT(CASE WHEN ${studentProgress.completed} THEN 1 END)`,
           totalTimeMinutes: sql<number>`ROUND(SUM(${studentProgress.timeSpent}) / 60)`,
-          averageScore: avg(sql<number>`CAST(${studentProgress.score} AS DECIMAL(5,2))`),
+          averageScore: avg(sql<number>`CAST(${studentProgress.averageScore} AS DECIMAL(5,2))`),
           competencesWorked: sql<number>`COUNT(DISTINCT ${studentProgress.competenceCode})`
         })
         .from(studentProgress)
@@ -343,18 +328,18 @@ class AnalyticsService {
         .insert(dailyLearningAnalytics)
         .values({
           studentId,
-          date: new Date(dateStr),
-          totalExercises: dailyMetrics.totalExercises || 0,
-          completedExercises: Number(dailyMetrics.completedExercises) || 0,
-          totalTimeMinutes: Number(dailyMetrics.totalTimeMinutes) || 0,
-          averageScore: Number(dailyMetrics.averageScore)?.toFixed(2) || '0.00',
-          competencesWorked: Number(dailyMetrics.competencesWorked) || 0
+          date: dateStr ? new Date(dateStr) : new Date(),
+          totalExercises: dailyMetrics?.totalExercises || 0,
+          completedExercises: Number(dailyMetrics?.completedExercises) || 0,
+          totalTimeMinutes: Number(dailyMetrics?.totalTimeMinutes) || 0,
+          averageScore: dailyMetrics ? (Number(dailyMetrics.averageScore)?.toFixed(2) || '0.00') : '0.00',
+          competencesWorked: Number(dailyMetrics?.competencesWorked) || 0
         })
 ;
 
       logger.debug('Daily analytics updated', { studentId, date: dateStr });
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error updating daily analytics:', { studentId, date, error });
     }
   }
@@ -387,7 +372,7 @@ class AnalyticsService {
       }
 
       return streak;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Error calculating streak:', { studentId, error });
       return 0;
     }

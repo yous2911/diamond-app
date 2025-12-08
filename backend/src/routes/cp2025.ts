@@ -11,7 +11,7 @@ export default async function cp2025Routes(fastify: FastifyInstance): Promise<vo
         success: true,
         data: { exercises },
       });
-    } catch (error) {
+    } catch (error: unknown) {
       return reply.status(500).send({
         success: false,
         error: { message: 'Failed to fetch exercises' },
@@ -26,7 +26,7 @@ export default async function cp2025Routes(fastify: FastifyInstance): Promise<vo
         success: true,
         data: { statistics: stats },
       });
-    } catch (error) {
+    } catch (error: unknown) {
       return reply.status(500).send({
         success: false,
         error: { message: 'Failed to fetch statistics' },

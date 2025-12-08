@@ -6,9 +6,9 @@
 import * as bcrypt from 'bcrypt';
 import { db } from '../db/connection';
 import { students } from '../db/schema';
-import { eq, and, lt, gt } from 'drizzle-orm';
+import { eq, and, gt } from 'drizzle-orm';
 import * as crypto from 'crypto';
-import { AuthenticationError, ConflictError, NotFoundError } from '../utils/AppError';
+import { AuthenticationError, ConflictError } from '../utils/AppError';
 import { FastifyBaseLogger } from 'fastify';
 
 interface LoginCredentials {
@@ -73,7 +73,7 @@ export class AuthService {
 
     if (student.length === 0) return false;
 
-    const lockedUntil = student[0].lockedUntil;
+    const lockedUntil = student[0]?.lockedUntil;
     if (!lockedUntil) return false;
 
     return new Date() < new Date(lockedUntil);
@@ -104,7 +104,7 @@ export class AuthService {
 
     if (student.length === 0) return 0;
 
-    const newAttempts = (student[0].failedLoginAttempts || 0) + 1;
+    const newAttempts = (student[0]?.failedLoginAttempts || 0) + 1;
 
     await db.update(students)
       .set({ failedLoginAttempts: newAttempts })
@@ -160,9 +160,16 @@ export class AuthService {
       totalPoints: 0,
       serieJours: 0,
       mascotteType: 'dragon'
-    }).returning({ id: students.id });
+    });
+    
+    // Fetch the created student manually since MySQL doesn't support .returning()
+    const createdStudent = await db
+      .select()
+      .from(students)
+      .where(eq(students.email, data.email))
+      .limit(1);
 
-    const studentId = newStudentResult[0].id;
+    const studentId = createdStudent[0]?.id;
 
     // The service now returns the student data, not tokens.
     return {
@@ -231,7 +238,7 @@ export class AuthService {
       prenom: student.prenom,
       nom: student.nom,
       email: student.email,
-      role: student.role,
+      role: 'student', // Students don't have a role field in schema
       niveauActuel: student.niveauActuel,
       totalPoints: student.totalPoints,
       serieJours: student.serieJours,
@@ -269,7 +276,7 @@ export class AuthService {
         passwordResetToken: resetToken,
         passwordResetExpires: resetExpires
       })
-      .where(eq(students.id, student[0].id));
+      .where(eq(students.id, student[0]?.id || 0));
 
     return resetToken;
   }
@@ -302,7 +309,7 @@ export class AuthService {
         failedLoginAttempts: 0,
         lockedUntil: null
       })
-      .where(eq(students.id, student[0].id));
+      .where(eq(students.id, student[0]?.id || 0));
 
     return true;
   }

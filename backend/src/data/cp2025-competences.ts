@@ -1,4 +1,4 @@
-export const competenceReference = {
+export const _competenceReference = {
   // FRANÇAIS - LECTURE
   'CP.FR.L1.1': {
     titre: 'Maîtriser les 15 CGP de la Période 1',

@@ -1,7 +1,8 @@
-import { describe, it, expect, beforeAll } from 'vitest';
-import { exerciseGeneratorService } from '../services/exercise-generator.service.js';
+import { describe, it, expect } from 'vitest';
+// Exercise generator service removed - exercises will be seeded directly to database
+// import { exerciseGeneratorService } from '../services/exercise-generator.service.js';
 
-describe('🚀 Quick Integration Tests', () => {
+describe.skip('🚀 Quick Integration Tests - Exercise Generator Removed', () => {
   
   describe('Exercise Generator Service', () => {
     it('should generate CP mathematics exercises', async () => {
@@ -16,9 +17,9 @@ describe('🚀 Quick Integration Tests', () => {
       expect(exercises.length).toBe(3);
       expect(exercises[0]).toHaveProperty('titre');
       expect(exercises[0]).toHaveProperty('configuration');
-      expect(exercises[0].niveau).toBe('cp');
-      expect(exercises[0].matiere).toBe('mathematiques');
-      expect(exercises[0].difficulte).toBe('decouverte');
+      expect(exercises[0]?.niveau).toBe('cp');
+      expect(exercises[0]?.matiere).toBe('mathematiques');
+      expect(exercises[0]?.difficulte).toBe('decouverte');
     });
 
     it('should generate CE1 French exercises', async () => {
@@ -31,9 +32,9 @@ describe('🚀 Quick Integration Tests', () => {
 
       expect(exercises).toBeDefined();
       expect(exercises.length).toBe(2);
-      expect(exercises[0].niveau).toBe('ce1');
-      expect(exercises[0].matiere).toBe('francais');
-      expect(exercises[0].difficulte).toBe('entrainement');
+      expect(exercises[0]?.niveau).toBe('ce1');
+      expect(exercises[0]?.matiere).toBe('francais');
+      expect(exercises[0]?.difficulte).toBe('entrainement');
     });
 
     it('should generate personalized exercises', async () => {
@@ -47,8 +48,8 @@ describe('🚀 Quick Integration Tests', () => {
 
       expect(exercises).toBeDefined();
       expect(exercises.length).toBe(2);
-      expect(exercises[0].niveau).toBe('ce2');
-      expect(exercises[0].matiere).toBe('mathematiques');
+      expect(exercises[0]?.niveau).toBe('ce2');
+      expect(exercises[0]?.matiere).toBe('mathematiques');
     });
 
     it('should have valid exercise configurations', async () => {
@@ -122,9 +123,9 @@ describe('🚀 Quick Integration Tests', () => {
       const maitrise = exerciseGeneratorService.generateExercisesBatchForTests('cp', 'mathematiques', 'maitrise', 1);
       const expert = exerciseGeneratorService.generateExercisesBatchForTests('cp', 'mathematiques', 'expert', 1);
 
-      expect(decouverte[0].pointsMax || 0).toBeLessThanOrEqual(entrainement[0].pointsMax || 0);
-      expect(entrainement[0].pointsMax || 0).toBeLessThanOrEqual(maitrise[0].pointsMax || 0);
-      expect(maitrise[0].pointsMax || 0).toBeLessThanOrEqual(expert[0].pointsMax || 0);
+      expect(decouverte[0]?.pointsMax || 0).toBeLessThanOrEqual(entrainement[0]?.pointsMax || 0);
+      expect(entrainement[0]?.pointsMax || 0).toBeLessThanOrEqual(maitrise[0]?.pointsMax || 0);
+      expect(maitrise[0]?.pointsMax || 0).toBeLessThanOrEqual(expert[0]?.pointsMax || 0);
     });
 
     it('should have appropriate time estimates', () => {
@@ -142,7 +143,7 @@ describe('🚀 Quick Integration Tests', () => {
       for (const subject of subjects) {
         const exercises = await exerciseGeneratorService.generateExercisesBatchForTests('cp', subject as any, 'decouverte', 1);
         expect(exercises.length).toBeGreaterThan(0);
-        expect(exercises[0].matiere).toBe(subject);
+        expect(exercises[0]?.matiere).toBe(subject);
       }
     });
 
@@ -152,7 +153,7 @@ describe('🚀 Quick Integration Tests', () => {
       for (const level of levels) {
         const exercises = await exerciseGeneratorService.generateExercisesBatchForTests(level as any, 'mathematiques', 'decouverte', 1);
         expect(exercises.length).toBeGreaterThan(0);
-        expect(exercises[0].niveau).toBe(level);
+        expect(exercises[0]?.niveau).toBe(level);
       }
     });
   });

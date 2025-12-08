@@ -214,7 +214,7 @@ describe('Recommendation Service - Isolated Unit Tests', () => {
       expect(Array.isArray(result)).toBe(true);
       
       if (result.length > 0) {
-        expect(result[0].difficulte).toBe('FACILE');
+        expect(result[0]?.difficulte).toBe('FACILE');
       }
     });
 
@@ -245,7 +245,7 @@ describe('Recommendation Service - Isolated Unit Tests', () => {
       expect(Array.isArray(result)).toBe(true);
       
       if (result.length > 0) {
-        expect(result[0].type).toBe('Mathématiques');
+        expect(result[0]?.type).toBe('Mathématiques');
       }
     });
 

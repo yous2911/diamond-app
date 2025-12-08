@@ -6,8 +6,8 @@
 
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { db } from '../db/setup.js';
-import { parents, parentStudentRelations, students, type Parent, type NewParent } from '../db/schema.js';
+import { db } from '../db/connection';
+import { parents, parentStudentRelations, students, type Parent } from '../db/schema.js';
 import { eq, and } from 'drizzle-orm';
 import { config } from '../config/config.js';
 
@@ -60,7 +60,8 @@ export class ParentAuthService {
     const passwordHash = await bcrypt.hash(data.password, 12);
 
     // Create parent
-    const [newParent] = await db
+    // Insert parent (MySQL doesn't support .returning())
+    await db
       .insert(parents)
       .values({
         nom: data.nom,
@@ -73,8 +74,18 @@ export class ParentAuthService {
         weeklyReportEnabled: true,
         achievementNotificationsEnabled: true,
         progressAlertsEnabled: true
-      })
-      .returning();
+      });
+    
+    // MySQL doesn't support .returning(), so fetch the created parent
+    const [createdParent] = await db
+      .select()
+      .from(parents)
+      .where(eq(parents.email, data.email))
+      .limit(1);
+    
+    if (!createdParent) {
+      throw new Error('Failed to create parent account');
+    }
 
     // Link to existing children if provided
     const children = [];
@@ -92,7 +103,7 @@ export class ParentAuthService {
           await db
             .insert(parentStudentRelations)
             .values({
-              parentId: newParent.id,
+              parentId: createdParent.id,
               studentId: childId,
               relationshipType: 'parent',
               isPrimaryContact: true,
@@ -113,15 +124,15 @@ export class ParentAuthService {
 
     // Generate JWT token
     const token = this.generateToken({
-      id: newParent.id,
-      email: newParent.email,
-      nom: newParent.nom,
-      prenom: newParent.prenom,
+      id: createdParent.id,
+      email: createdParent.email,
+      nom: createdParent.nom,
+      prenom: createdParent.prenom,
       type: 'parent',
       children
     });
 
-    return { parent: newParent, token, children };
+    return { parent: createdParent, token, children };
   }
 
   /**
@@ -271,7 +282,7 @@ export class ParentAuthService {
         type: 'parent',
         children
       };
-    } catch (error) {
+    } catch (error: unknown) {
       throw new Error('Token invalide');
     }
   }

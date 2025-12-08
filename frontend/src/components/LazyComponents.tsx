@@ -151,6 +151,16 @@ export const useLazyLoadingPerformance = () => {
   };
 };
 
+// Placeholder components for commented-out lazy loads
+const LazyAdvancedMascotSystem = React.lazy(() => Promise.resolve({ default: () => null }));
+const LazyMascotWardrobe3D = React.lazy(() => Promise.resolve({ default: () => null }));
+const LazyAdvancedParticleEngine = React.lazy(() => Promise.resolve({ default: () => null }));
+
+// Placeholder smart components
+const SmartMascotSystem = () => null;
+const SmartWardrobe3D = () => null;
+const SmartParticleEngine = () => null;
+
 export default {
   LazyAdvancedMascotSystem,
   LazyMascotWardrobe3D,

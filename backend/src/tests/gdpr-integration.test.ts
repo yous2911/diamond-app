@@ -6,9 +6,8 @@ import {
   SubmitGDPRRequest, 
   ConsentPreferencesRequest 
 } from '../types/gdpr.types';
-import { EmailService } from '../services/email.service';
-import { EncryptionService } from '../services/encryption.service';
-import { v4 as uuidv4 } from 'uuid';
+
+
 
 // Mock email service
 const mockEmailService = {
@@ -181,7 +180,7 @@ describe('GDPR Integration Tests - Critical User Flows', () => {
         parentEmail,
         parentName: 'Multi Parent',
         childName: 'Second Child',
-        childAge: 9,
+        childAge: _9,
         consentTypes: ['data_processing', 'progress_sharing'],
         ipAddress: '192.168.1.1',
         userAgent: 'Mozilla/5.0'
@@ -611,7 +610,7 @@ describe('GDPR Integration Tests - Critical User Flows', () => {
         parentEmail: 'parent@example.com',
         parentName: 'Test Parent',
         childName: 'Test Child',
-        childAge: 150, // Invalid age
+        childAge: _150, // Invalid age
         consentTypes: ['data_processing'],
         ipAddress: '192.168.1.1',
         userAgent: 'Mozilla/5.0'

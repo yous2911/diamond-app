@@ -1,12 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { eq, and, desc, sql } from 'drizzle-orm';
-import { 
-  learningSessions, 
-  exerciseResults, 
-  students, 
-  competencesCp,
-  studentProgress
-} from '../db/schema-mysql-cp2025';
+import { learningSessions, exerciseResults, students, competencesCp } from '../db/schema-mysql-cp2025';
 import { getDatabase } from '../db/connection';
 
 interface AuthenticatedUser {
@@ -73,15 +67,15 @@ export default async function sessionsRoutes(fastify: FastifyInstance) {
               message: 'Une session est déjà active',
               code: 'SESSION_ALREADY_ACTIVE',
               data: {
-                sessionId: activeSessions[0].id,
-                startedAt: activeSessions[0].startedAt
+                sessionId: activeSessions[0]?.id || '',
+                startedAt: activeSessions[0]?.startedAt || new Date()
               }
             }
           });
         }
 
         // Create new learning session
-        const sessionResult = await db
+        const _sessionResult = await db
           .insert(learningSessions)
           .values({
             studentId,
@@ -187,7 +181,7 @@ export default async function sessionsRoutes(fastify: FastifyInstance) {
           });
         }
 
-        if (session[0].studentId !== user.studentId) {
+        if (!session[0] || session[0]?.studentId !== user.studentId) {
           return reply.status(403).send({
             success: false,
             error: {
@@ -197,7 +191,7 @@ export default async function sessionsRoutes(fastify: FastifyInstance) {
           });
         }
 
-        if (session[0].endedAt) {
+        if (session[0]?.endedAt) {
           return reply.status(400).send({
             success: false,
             error: {
@@ -227,7 +221,7 @@ export default async function sessionsRoutes(fastify: FastifyInstance) {
         };
 
         // Calculate session duration
-        const startTime = new Date(session[0].startedAt).getTime();
+        const startTime = new Date(session[0]?.startedAt || new Date()).getTime();
         const endTime = Date.now();
         const sessionDuration = Math.floor((endTime - startTime) / 1000); // in seconds
 
@@ -242,7 +236,7 @@ export default async function sessionsRoutes(fastify: FastifyInstance) {
             sessionDuration,
             competencesWorked: summary.competencesWorked 
               ? JSON.stringify(summary.competencesWorked)
-              : session[0].competencesWorked
+              : session[0]?.competencesWorked || null
           })
           .where(eq(learningSessions.id, parseInt(sessionId)));
 
@@ -483,12 +477,12 @@ export default async function sessionsRoutes(fastify: FastifyInstance) {
             pagination: {
               limit,
               offset,
-              total: totalSessions[0].count
+              total: totalSessions[0]?.count
             },
             summary: {
-              totalSessions: totalSessions[0].count,
-              activeSessions: activeSessions[0].count,
-              completedSessions: totalSessions[0].count - activeSessions[0].count
+              totalSessions: totalSessions[0]?.count || 0,
+              activeSessions: activeSessions[0]?.count || 0,
+              completedSessions: (totalSessions[0]?.count || 0) - (activeSessions[0]?.count || 0)
             }
           }
         });
@@ -535,6 +529,13 @@ export default async function sessionsRoutes(fastify: FastifyInstance) {
         }
 
         const session = activeSession[0];
+
+        if (!session) {
+          return reply.status(404).send({
+            success: false,
+            error: { message: 'Session not found', code: 'SESSION_NOT_FOUND' }
+          });
+        }
 
         // Calculate current session duration
         const startTime = new Date(session.startedAt).getTime();

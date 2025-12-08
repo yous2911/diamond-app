@@ -6,13 +6,14 @@ const sora = Sora({ subsets: ['latin'], variable: '--font-sora', display: 'swap'
 const lexend = Lexend({ subsets: ['latin'], variable: '--font-lexend', display: 'swap' });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://votre-domaine.com'),
   title: "RevEd — 30 minutes par jour pour construire leur avenir",
   description: "Répétition espacée (SM-2), prérequis, maîtrise garantie. L'alternative aux 4h d'écrans passifs.",
   openGraph: {
     title: "RevEd — Le vrai concurrent, c'est l'algorithme.",
     description: "Remplacez 30 minutes de scroll par 30 minutes qui restent. Maîtrise garantie.",
     type: 'website',
-    url: 'https://votre-domaine.com', // PENSEZ À CHANGER CECI
+    url: process.env.NEXT_PUBLIC_SITE_URL || 'https://votre-domaine.com',
   },
   icons: { icon: '/favicon.ico' },
 };

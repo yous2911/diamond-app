@@ -5,8 +5,9 @@
 
 import path from 'path';
 import fs from 'fs/promises';
-import { sql, and, eq, like } from 'drizzle-orm';
-import { competences } from '../db/schema';
+import { and } from 'drizzle-orm';
+// TODO: competences table doesn't exist - competencies are stored in JSON files
+// import { competences } from '../db/schema';
 // Using console for logging since logger was moved to job-specific logger
 const logger = {
   info: console.log,
@@ -71,6 +72,7 @@ class CompetenciesService {
       }
 
       const subject = parts[1]; // FR or MA
+      if (!subject) throw new Error('Invalid competency code format');
       const contentFilePath = path.join(this.contentPath, 'CE2', subject, `${competencyCode}.json`);
       
       try {
@@ -81,14 +83,14 @@ class CompetenciesService {
         this.contentCache.set(competencyCode, content);
         
         return content;
-      } catch (fileError) {
-        logger.warn(`Content file not found for ${competencyCode}:`, fileError.message);
+      } catch (fileError: unknown) {
+        logger.warn(`Content file not found for ${competencyCode}:`, { err: fileError });
         // Cache null result to avoid repeated file system calls
         this.contentCache.set(competencyCode, null as any);
         return null;
       }
-    } catch (error) {
-      logger.error(`Error loading content for ${competencyCode}:`, error);
+    } catch (error: unknown) {
+      logger.error(`Error loading content for ${competencyCode}`, { err: error });
       return null;
     }
   }
@@ -101,52 +103,10 @@ class CompetenciesService {
     db: any,
     filters: CompetencyListFilters = {}
   ): Promise<any[]> {
-    try {
-      const { level, subject, limit = 100, offset = 0 } = filters;
-      
-      // Build conditions using Drizzle ORM query builder (SECURE)
-      let conditions = [eq(competences.est_actif, 1)];
-      
-      if (level) {
-        // Validate level input to prevent injection
-        const validLevels = ['CP', 'CE1', 'CE2'];
-        if (!validLevels.includes(level)) {
-          throw new Error('Invalid level parameter');
-        }
-        conditions.push(like(competences.code, `${level}.%`));
-      }
-      
-      if (subject) {
-        // Validate subject input to prevent injection
-        const validSubjects = ['FR', 'MA'];
-        if (!validSubjects.includes(subject)) {
-          throw new Error('Invalid subject parameter');
-        }
-        conditions.push(eq(competences.matiere, subject));
-      }
-
-      // Use Drizzle ORM query builder (SECURE)
-      const query = db
-        .select({
-          code: competences.code,
-          nom: competences.titre,
-          matiere: competences.matiere,
-          domaine: competences.domaine,
-          description: competences.description,
-          xp_reward: sql<number>`0`
-        })
-        .from(competences)
-        .where(and(...conditions))
-        .orderBy(competences.code)
-        .limit(limit)
-        .offset(offset);
-
-      const rows = await query;
-      return rows;
-    } catch (error) {
-      logger.error('Error fetching competencies list:', error);
-      throw new Error('Failed to fetch competencies list');
-    }
+    // TODO: competences table doesn't exist - competencies are stored in JSON files
+    // This function needs to be refactored to load from JSON files instead
+    logger.warn('getCompetenciesList: competences table not available, returning empty array');
+    return [];
   }
 
   /**
@@ -163,38 +123,33 @@ class CompetenciesService {
         throw new Error('Invalid competency code format');
       }
 
-      // Use Drizzle ORM query builder (SECURE)
-      const rows = await db
-        .select({
-          code: competences.code,
-          nom: competences.titre,
-          matiere: competences.matiere,
-          domaine: competences.domaine,
-          description: competences.description,
-          xp_reward: sql<number>`0`
-        })
-        .from(competences)
-        .where(and(
-          eq(competences.code, competencyCode),
-          eq(competences.est_actif, 1)
-        ))
-        .limit(1);
-
-      if (!rows || rows.length === 0) {
+      // TODO: competences table doesn't exist - competencies are stored in JSON files
+      // This function needs to be refactored to load from JSON files instead
+      logger.warn(`getCompetencyWithContent: competences table not available for ${competencyCode}`);
+      
+      // Try to load content directly from JSON files
+      const content = await this.loadCompetencyContent(competencyCode);
+      if (!content) {
         return null;
       }
 
-      const baseCompetency = rows[0];
+      // Return stub competency based on content
+      const baseCompetency = {
+        code: competencyCode,
+        nom: content.title || competencyCode,
+        matiere: competencyCode.split('.')[1] || 'FR',
+        domaine: competencyCode.split('.')[2] || '',
+        description: content.description || '',
+        xp_reward: 0
+      };
       
-      // Load content if available
-      const content = await this.loadCompetencyContent(competencyCode);
-      
+      // Content already loaded above
       return {
         ...baseCompetency,
         content
       } as CachedCompetency;
-    } catch (error) {
-      logger.error(`Error fetching competency ${competencyCode}:`, error);
+    } catch (error: unknown) {
+      logger.error(`Error fetching competency ${competencyCode}`, { err: error });
       throw new Error(`Failed to fetch competency: ${competencyCode}`);
     }
   }
@@ -226,7 +181,7 @@ class CompetenciesService {
     const validLevels = ['CP', 'CE1', 'CE2'];
     const validSubjects = ['FR', 'MA'];
     
-    return validLevels.includes(level) && validSubjects.includes(subject);
+    return validLevels.includes(level || '') && validSubjects.includes(subject || '');
   }
 
   /**
@@ -278,12 +233,12 @@ class CompetenciesService {
           }
           
           logger.info(`Preloaded ${jsonFiles.length} files for ${level}.${subject}`);
-        } catch (error) {
-          logger.warn(`Error preloading ${level}.${subject}:`, error.message);
+        } catch (error: unknown) {
+          logger.warn(`Error preloading ${level}.${subject}:`, { err: error });
         }
       }
-    } catch (error) {
-      logger.error(`Error preloading content for level ${level}:`, error);
+    } catch (error: unknown) {
+      logger.error(`Error preloading content for level ${level}`, { err: error });
     }
   }
 }

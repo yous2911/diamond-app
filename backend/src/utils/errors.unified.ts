@@ -8,7 +8,7 @@
  * - Environment-aware error details
  */
 
-import { FastifyRequest, FastifyReply } from 'fastify';
+import { FastifyRequest } from 'fastify';
 import { logger } from './logger';
 
 // =============================================================================
@@ -387,8 +387,8 @@ export class ErrorContextBuilder {
       .withUserAgent(request.headers['user-agent'])
       .withIp(request.ip)
       .withCorrelationId(Array.isArray(request.headers['x-correlation-id']) 
-        ? request.headers['x-correlation-id'][0] 
-        : request.headers['x-correlation-id'] || '')
+        ? (request.headers['x-correlation-id'][0] || '')
+        : (request.headers['x-correlation-id'] || ''))
       .withTimestamp();
   }
 
@@ -449,7 +449,7 @@ export class ErrorContextBuilder {
 /**
  * @deprecated Use new error classes instead
  */
-export const AppError = BaseError;
+export const _AppError = BaseError;
 
 /**
  * @deprecated Use ErrorFactory.* methods instead

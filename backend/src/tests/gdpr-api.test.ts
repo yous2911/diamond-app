@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { build } from '../app-test';
 import type { FastifyInstance } from 'fastify';
 import { 
@@ -88,7 +88,7 @@ describe('GDPR API Endpoints', () => {
           parentEmail: 'parent@example.com',
           parentName: 'John Parent',
           childName: 'Alice Child',
-          childAge: 25, // Invalid age
+          childAge: _25, // Invalid age
           consentTypes: ['data_processing'],
           ipAddress: '192.168.1.1',
           userAgent: 'Mozilla/5.0'

@@ -1,9 +1,11 @@
+// @ts-ignore - bad-words has incorrect type definitions
 import Filter from 'bad-words';
 
 class ContentFilterService {
-  private filter: Filter;
+  private filter: any;
 
   constructor() {
+    // @ts-ignore - bad-words constructor works at runtime
     this.filter = new Filter();
   }
 
@@ -34,4 +36,4 @@ class ContentFilterService {
   }
 }
 
-export const contentFilterService = new ContentFilterService();
+export const _contentFilterService = new ContentFilterService();

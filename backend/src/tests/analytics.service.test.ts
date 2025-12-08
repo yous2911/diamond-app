@@ -6,10 +6,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { analyticsService } from '../services/analytics.service';
 import { db } from '../db/connection';
-import { 
-  students, exercises, studentProgress, dailyLearningAnalytics,
-  studentCompetenceProgress, studentAchievements
-} from '../db/schema';
+import { students, exercises } from '../db/schema';
 import { eq, and, desc, asc, sql, count, sum, avg, between, gte, lte, inArray } from 'drizzle-orm';
 
 // Mock dependencies
@@ -356,7 +353,7 @@ describe('Analytics Service', () => {
         student: mockStudent,
         totalExercises: 20,
         completedExercises: 15,
-        completionRate: 75, // 15/20 * 100
+        completionRate: _75, // 15/20 * 100
         averageScore: 85.5,
         totalTimeSpent: 1200,
         xpEarned: 150,

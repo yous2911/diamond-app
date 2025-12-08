@@ -16,6 +16,11 @@ let mockStudents: any[] = [
   }
 ];
 
+let mockExercises: any[] = [];
+let mockSessions: any[] = [];
+let mockRevisions: any[] = [];
+let mockProgress: any[] = [];
+
 // Mock Drizzle DB implementation
 const mockDb = {
   select: vi.fn(() => ({
@@ -55,7 +60,7 @@ const mockDb = {
 };
 
 // Mock connection functions
-export const mockDatabaseFunctions = {
+export const _mockDatabaseFunctions = {
   connectDatabase: vi.fn(() => Promise.resolve()),
   getDatabase: vi.fn(() => mockDb),
   testConnection: vi.fn(() => Promise.resolve(true)),

@@ -475,7 +475,7 @@ class SchemaValidationService {
         type: row.DATA_TYPE,
         direction: row.PARAMETER_MODE || 'IN'
       }));
-    } catch (error) {
+    } catch (error: unknown) {
       return [];
     }
   }
@@ -686,7 +686,7 @@ class SchemaValidationService {
 
       // Validate index columns
       if (JSON.stringify(expectedIndex.columns) !== JSON.stringify(currentIndex.columns)) {
-        warnings.push({
+        _warnings.push({
           type: 'PERFORMANCE_CONCERN',
           message: `Index '${expectedIndex.name}' has different columns`,
           table: expectedIndex.tableName,
@@ -822,7 +822,7 @@ class SchemaValidationService {
             warnings: result.warnings.length
           });
         }
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('Scheduled schema validation failed', { error });
       }
     }, { name: 'schema-validation' });
@@ -842,7 +842,7 @@ class SchemaValidationService {
             tables: [...new Set(drifts.map(d => d.tableName))]
           });
         }
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('Schema drift detection failed', { error });
       }
     }, { name: 'drift-monitoring' });
@@ -858,7 +858,7 @@ class SchemaValidationService {
 
   getLatestValidationResult(): ValidationResult | null {
     return this.validationHistory.length > 0 
-      ? this.validationHistory[this.validationHistory.length - 1] 
+      ? (this.validationHistory[this.validationHistory.length - 1] ?? null)
       : null;
   }
 

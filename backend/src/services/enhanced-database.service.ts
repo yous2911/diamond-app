@@ -4,33 +4,11 @@
  */
 
 import { getDatabase } from '../db/connection';
-import {
-  students,
-  exercises,
-  studentProgress,
-  studentCompetenceProgress,
-  competencePrerequisites,
-  dailyLearningAnalytics,
-  weeklyProgressSummary,
-  learningSessionTracking,
-  exercisePerformanceAnalytics,
-  studentAchievements,
-  gdprConsentRequests,
-  type Student,
-  type Exercise,
-  type StudentProgress as Progress,
-  type StudentCompetenceProgress,
-  competencePrerequisites as CompetencePrerequisite,
-  type DailyLearningAnalytics,
-  type WeeklyProgressSummary,
-  type LearningSessionTracking,
-  type ExercisePerformanceAnalytics,
-  type StudentAchievements as StudentAchievement,
-  MasteryLevels
-} from '../db/schema';
-import { eq, and, or, desc, asc, sql, count, sum, avg, between, inArray, gte, lte } from 'drizzle-orm';
+import { students, exercises, studentProgress, studentCompetenceProgress, competencePrerequisites, dailyLearningAnalytics, weeklyProgressSummary, learningSessionTracking, studentAchievements, spacedRepetition, competencePrerequisites as CompetencePrerequisite, type Exercise, type Student, type StudentCompetenceProgress, type StudentProgress, type DailyLearningAnalytics, type LearningSessionTracking, type WeeklyProgressSummary } from '../db/schema';
+import { eq, and, desc, asc, sql, count, sum, avg, between, inArray, or, isNull, lte } from 'drizzle-orm';
 import { logger } from '../utils/logger';
 import { StudentCache } from './enhanced-cache.service';
+import { SuperMemoService, type ExerciseResponse } from './supermemo.service';
 
 export interface CompetenceProgressFilters {
   matiere?: string;
@@ -49,6 +27,8 @@ export interface ProgressRecordingData {
   attempts?: number;
   exerciseId?: number;
   difficultyLevel?: number;
+  hintsUsed?: number;
+  confidence?: number;
   sessionData?: {
     sessionId?: string;
     deviceType?: string;
@@ -130,14 +110,14 @@ class EnhancedDatabaseService {
         .offset(filters.offset || 0);
 
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Get student competence progress error:', { studentId, filters, error });
       throw new Error('Failed to get student competence progress');
     }
   }
 
   /**
-   * Record progress with intelligent mastery level calculation
+   * Record progress with intelligent mastery level calculation and SuperMemo-2 integration
    */
   async recordStudentProgress(studentId: number, data: ProgressRecordingData): Promise<{
     id: number;
@@ -146,6 +126,7 @@ class EnhancedDatabaseService {
     consecutiveSuccesses: number;
     masteryLevelChanged: boolean;
     averageScore: number;
+    superMemoUpdated?: boolean;
   }> {
     try {
       // Get existing progress record
@@ -161,26 +142,157 @@ class EnhancedDatabaseService {
       const now = new Date();
       let masteryLevelChanged = false;
       let newMasteryLevel = 'decouverte';
+      let superMemoUpdated = false;
+
+      // ===================================================================
+      // SUPERMEMO-2 INTEGRATION: Calculate quality and update spaced repetition
+      // ===================================================================
+      if (data.exerciseId && data.difficultyLevel !== undefined) {
+        try {
+          // Prepare exercise response for SuperMemo quality calculation
+          const exerciseResponse: ExerciseResponse = {
+            studentId,
+            competenceId: 0, // Not used in quality calculation
+            isCorrect: data.completed && data.score >= 70,
+            timeSpent: data.timeSpent,
+            hintsUsed: data.hintsUsed || 0,
+            difficulty: data.difficultyLevel,
+            confidence: data.confidence
+          };
+
+          // Calculate quality score (0-5)
+          const quality = SuperMemoService.calculateQuality(exerciseResponse);
+
+          // Get or create SuperMemo card
+          const [existingCard] = await this.db
+            .select()
+            .from(spacedRepetition)
+            .where(and(
+              eq(spacedRepetition.studentId, studentId),
+              eq(spacedRepetition.exerciseId, data.exerciseId),
+              eq(spacedRepetition.competenceCode, data.competenceCode)
+            ))
+            .limit(1);
+
+          let superMemoCard: Partial<{
+            easinessFactor: number;
+            repetitionNumber: number;
+            interval: number;
+            nextReview: Date;
+            lastReview: Date;
+            quality: number;
+          }>;
+
+          if (existingCard) {
+            superMemoCard = {
+              easinessFactor: Number(existingCard.easinessFactor) || 2.5,
+              repetitionNumber: existingCard.repetitionNumber || 0,
+              interval: existingCard.intervalDays || 1,
+              nextReview: existingCard.nextReviewDate ? new Date(existingCard.nextReviewDate) : new Date(),
+              lastReview: existingCard.lastReviewDate ? new Date(existingCard.lastReviewDate) : new Date(),
+              quality: quality
+            };
+          } else {
+            // New card - initialize with defaults
+            superMemoCard = {
+              easinessFactor: 2.5,
+              repetitionNumber: 0,
+              interval: 1,
+              nextReview: new Date(),
+              lastReview: new Date(),
+              quality: quality
+            };
+          }
+
+          // Calculate next review using SuperMemo-2 algorithm
+          const superMemoResult = SuperMemoService.calculateNextReview(superMemoCard, quality);
+
+          // Update or create spaced repetition record
+          if (existingCard) {
+            await this.db
+              .update(spacedRepetition)
+              .set({
+                easinessFactor: superMemoResult.easinessFactor.toString(),
+                repetitionNumber: superMemoResult.repetitionNumber,
+                intervalDays: superMemoResult.interval,
+                nextReviewDate: superMemoResult.nextReviewDate,
+                lastReviewDate: now,
+                correctAnswers: sql`${spacedRepetition.correctAnswers} + ${exerciseResponse.isCorrect ? 1 : 0}`,
+                totalReviews: sql`${spacedRepetition.totalReviews} + 1`,
+                averageResponseTime: sql`ROUND((${spacedRepetition.averageResponseTime} * ${spacedRepetition.totalReviews} + ${data.timeSpent}) / (${spacedRepetition.totalReviews} + 1))`,
+                priority: superMemoResult.difficulty === 'very_hard' ? 'high' : 
+                         superMemoResult.difficulty === 'hard' ? 'medium' : 'normal',
+                updatedAt: now
+              })
+              .where(eq(spacedRepetition.id, existingCard.id));
+          } else {
+            // Create new spaced repetition card
+            await this.db
+              .insert(spacedRepetition)
+              .values({
+                studentId,
+                exerciseId: data.exerciseId,
+                competenceCode: data.competenceCode,
+                easinessFactor: superMemoResult.easinessFactor.toString(),
+                repetitionNumber: superMemoResult.repetitionNumber,
+                intervalDays: superMemoResult.interval,
+                nextReviewDate: superMemoResult.nextReviewDate,
+                lastReviewDate: now,
+                correctAnswers: exerciseResponse.isCorrect ? 1 : 0,
+                totalReviews: 1,
+                averageResponseTime: data.timeSpent,
+                priority: superMemoResult.difficulty === 'very_hard' ? 'high' : 
+                         superMemoResult.difficulty === 'hard' ? 'medium' : 'normal',
+                isActive: true
+              });
+          }
+
+          superMemoUpdated = true;
+          logger.debug('SuperMemo card updated', { 
+            studentId, 
+            exerciseId: data.exerciseId, 
+            quality, 
+            nextReview: superMemoResult.nextReviewDate,
+            easinessFactor: superMemoResult.easinessFactor
+          });
+        } catch (superMemoError: unknown) {
+          // Log but don't fail the entire progress recording
+          logger.warn('SuperMemo update failed, continuing with progress recording', { 
+            err: superMemoError, 
+            studentId, 
+            exerciseId: data.exerciseId 
+          });
+        }
+      }
 
       if (existingProgress.length > 0) {
         // Update existing progress
         const current = existingProgress[0];
-        const newTotalAttempts = current.totalAttempts + (data.attempts || 1);
-        const newSuccessfulAttempts = current.successfulAttempts + (data.completed ? 1 : 0);
-        const newAverageScore = Number((((Number(current.currentScore) || 0) * current.totalAttempts) + data.score) / newTotalAttempts);
+        const newTotalAttempts = current?.totalAttempts + (data?.attempts || 1);
+        const newSuccessfulAttempts = current?.successfulAttempts + (data?.completed ? 1 : 0);
+        const newAverageScore = Number((((Number(current?.currentScore) || 0) * current?.totalAttempts) + data?.score) / newTotalAttempts);
         
         // Calculate new mastery level
-        const oldMasteryLevel = current.masteryLevel;
+        const oldMasteryLevel = current?.masteryLevel;
         newMasteryLevel = this.calculateMasteryLevel(newSuccessfulAttempts, newTotalAttempts, newAverageScore);
         masteryLevelChanged = oldMasteryLevel !== newMasteryLevel;
 
-        // Update consecutive counts
-        let newConsecutiveSuccesses = current.totalAttempts || 0;
+        // Calculate consecutive successes from recent attempts
+        let newConsecutiveSuccesses = 0;
         
         if (data.completed && data.score >= 70) {
-          newConsecutiveSuccesses = (current.totalAttempts || 0) + 1;
+          const recentSuccessRate = newSuccessfulAttempts / newTotalAttempts;
+          if (recentSuccessRate >= 0.8) {
+            newConsecutiveSuccesses = Math.min(newSuccessfulAttempts, 10);
+          } else {
+            newConsecutiveSuccesses = 1;
+          }
         } else {
           newConsecutiveSuccesses = 0;
+        }
+
+        if (!current || !current.id) {
+          throw new Error('Current competence progress not found');
         }
 
         await this.db
@@ -201,7 +313,8 @@ class EnhancedDatabaseService {
           progressPercent: Math.round((newSuccessfulAttempts / newTotalAttempts) * 100),
           consecutiveSuccesses: newConsecutiveSuccesses,
           masteryLevelChanged,
-          averageScore: newAverageScore
+          averageScore: newAverageScore,
+          superMemoUpdated
         };
 
       } else {
@@ -209,7 +322,7 @@ class EnhancedDatabaseService {
         newMasteryLevel = this.calculateMasteryLevel(data.completed ? 1 : 0, 1, data.score);
         masteryLevelChanged = true;
 
-        const newRecord = await this.db
+        const _newRecord = await this.db
           .insert(studentCompetenceProgress)
           .values({
             studentId,
@@ -224,15 +337,16 @@ class EnhancedDatabaseService {
           });
 
         return {
-          id: 0, // Will be assigned by database
+          id: 0,
           masteryLevel: newMasteryLevel,
           progressPercent: data.completed ? Math.round(data.score) : 0,
           consecutiveSuccesses: (data.completed && data.score >= 70) ? 1 : 0,
           masteryLevelChanged,
-          averageScore: data.score
+          averageScore: data.score,
+          superMemoUpdated
         };
       }
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Record student progress error:', { studentId, data, error });
       throw new Error('Failed to record student progress');
     }
@@ -253,7 +367,7 @@ class EnhancedDatabaseService {
         .orderBy(asc(competencePrerequisites.minimumLevel));
 
       return prerequisites;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Get competence prerequisites error:', { competenceCode, error });
       throw new Error('Failed to get competence prerequisites');
     }
@@ -262,7 +376,7 @@ class EnhancedDatabaseService {
   /**
    * Get student achievements with comprehensive filtering
    */
-  async getStudentAchievements(studentId: number, filters: AchievementFilters = {}): Promise<StudentAchievement[]> {
+  async getStudentAchievements(studentId: number, filters: AchievementFilters = {}): Promise<typeof studentAchievements.$inferSelect[]> {
     try {
       const conditions = [eq(studentAchievements.studentId, studentId)];
       
@@ -288,7 +402,7 @@ class EnhancedDatabaseService {
         .offset(filters.offset || 0);
 
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Get student achievements error:', { studentId, filters, error });
       throw new Error('Failed to get student achievements');
     }
@@ -326,7 +440,7 @@ class EnhancedDatabaseService {
         .offset(filters.offset || 0);
 
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Get daily learning analytics error:', { filters, error });
       throw new Error('Failed to get daily learning analytics');
     }
@@ -364,7 +478,7 @@ class EnhancedDatabaseService {
         .offset(filters.offset || 0);
 
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Get learning session tracking error:', { filters, error });
       throw new Error('Failed to get learning session tracking');
     }
@@ -380,7 +494,7 @@ class EnhancedDatabaseService {
         .select({
           totalExercises: count(),
           completedExercises: sql<number>`COUNT(CASE WHEN ${studentProgress.completed} THEN 1 END)`,
-          averageScore: avg(sql<number>`CAST(${studentProgress.score} AS DECIMAL(5,2))`),
+          averageScore: avg(sql<number>`CAST(${studentProgress.averageScore} AS DECIMAL(5,2))`),
           totalTimeSpent: sum(studentProgress.timeSpent),
           xpEarned: sql<number>`COALESCE(SUM(10), 0)` // Default XP value
         })
@@ -405,37 +519,81 @@ class EnhancedDatabaseService {
       };
 
       competenceBreakdown.forEach(item => {
-        if (item.masteryLevel in breakdown) {
+        if (item.masteryLevel && item.masteryLevel in breakdown) {
           breakdown[item.masteryLevel as keyof typeof breakdown] = item.count;
         }
       });
 
-      const totalExercises = progressMetrics.totalExercises || 0;
-      const completedExercises = Number(progressMetrics.completedExercises) || 0;
+      const totalExercises = progressMetrics?.totalExercises || 0;
+      const completedExercises = Number(progressMetrics?.completedExercises) || 0;
 
       return {
         totalExercises,
         completedExercises,
         completionRate: totalExercises > 0 ? (completedExercises / totalExercises) * 100 : 0,
-        averageScore: Number(progressMetrics.averageScore) || 0,
-        totalTimeSpent: Number(progressMetrics.totalTimeSpent) || 0,
-        xpEarned: Number(progressMetrics.xpEarned) || 0,
+        averageScore: Number(progressMetrics?.averageScore) || 0,
+        totalTimeSpent: Number(progressMetrics?.totalTimeSpent) || 0,
+        xpEarned: Number(progressMetrics?.xpEarned) || 0,
         streakDays: await this.calculateCurrentStreak(studentId),
         masteredCompetences: breakdown.expertise + breakdown.maitrise,
         competenceBreakdown: breakdown
       };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Get student stats error:', { studentId, error });
       throw new Error('Failed to get student statistics');
     }
   }
 
   /**
-   * Get recommended exercises based on competence progress and spaced repetition
+   * Get recommended exercises based on competence progress, spaced repetition, and prerequisites
    */
   async getRecommendedExercises(studentId: number, limit: number = 10): Promise<Exercise[]> {
     try {
-      // Get student's competence progress
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+
+      // ===================================================================
+      // PRIORITY 1: SuperMemo cards due for review (nextReviewDate <= today)
+      // ===================================================================
+      const dueCards = await this.db
+        .select({
+          exerciseId: spacedRepetition.exerciseId,
+          priority: spacedRepetition.priority,
+          easinessFactor: spacedRepetition.easinessFactor,
+          nextReviewDate: spacedRepetition.nextReviewDate
+        })
+        .from(spacedRepetition)
+        .where(and(
+          eq(spacedRepetition.studentId, studentId),
+          eq(spacedRepetition.isActive, true),
+          or(
+            isNull(spacedRepetition.nextReviewDate),
+            lte(spacedRepetition.nextReviewDate, now)
+          )
+        ))
+        .orderBy(
+          desc(spacedRepetition.priority === 'high' ? sql`1` : spacedRepetition.priority === 'medium' ? sql`2` : sql`3`),
+          asc(spacedRepetition.nextReviewDate)
+        )
+        .limit(limit);
+
+      if (dueCards.length > 0) {
+        const dueExerciseIds = dueCards.map(card => card.exerciseId);
+        const dueExercises = await this.db
+          .select()
+          .from(exercises)
+          .where(inArray(exercises.id, dueExerciseIds))
+          .limit(limit);
+
+        if (dueExercises.length > 0) {
+          logger.debug('Returning SuperMemo due exercises', { count: dueExercises.length, studentId });
+          return dueExercises;
+        }
+      }
+
+      // ===================================================================
+      // PRIORITY 2: Competences that need reinforcement (apprentissage/decouverte)
+      // ===================================================================
       const competenceProgress = await this.db
         .select()
         .from(studentCompetenceProgress)
@@ -446,24 +604,63 @@ class EnhancedDatabaseService {
         .filter(cp => cp.masteryLevel === 'apprentissage' || cp.masteryLevel === 'decouverte')
         .map(cp => cp.competenceCode);
 
-      if (needReinforcementCodes.length === 0) {
-        // If all competences are mastered, suggest new ones
-        const allExercises = await this.db
-          .select()
-          .from(exercises)
-          .limit(limit);
-        return allExercises;
+      if (needReinforcementCodes.length > 0) {
+        // Check prerequisites before recommending
+        const availableCompetences: string[] = [];
+        
+        for (const code of needReinforcementCodes) {
+          const prerequisites = await this.getCompetencePrerequisites(code);
+          
+          if (prerequisites.length === 0) {
+            // No prerequisites, available immediately
+            availableCompetences.push(code);
+          } else {
+            // Check if all prerequisites are met
+            const prerequisiteCodes = prerequisites.map(p => p.prerequisiteCode).filter(Boolean) as string[];
+            const studentPrereqProgress = competenceProgress.filter(cp => 
+              prerequisiteCodes.includes(cp.competenceCode) && 
+              (cp.masteryLevel === 'maitrise' || cp.masteryLevel === 'expertise')
+            );
+            
+            if (studentPrereqProgress.length === prerequisiteCodes.length) {
+              // All prerequisites met
+              availableCompetences.push(code);
+            }
+          }
+        }
+
+        if (availableCompetences.length > 0) {
+          // Get exercises for available competences
+          const recommendedExercises = await this.db
+            .select()
+            .from(exercises)
+            .where(inArray(exercises.competenceCode, availableCompetences))
+            .orderBy(sql`RAND()`)
+            .limit(limit);
+
+          if (recommendedExercises.length > 0) {
+            logger.debug('Returning exercises for competences needing reinforcement', { 
+              count: recommendedExercises.length, 
+              competences: availableCompetences,
+              studentId 
+            });
+            return recommendedExercises;
+          }
+        }
       }
 
-      // Get exercises for competences that need work
-      const recommendedExercises = await this.db
+      // ===================================================================
+      // PRIORITY 3: New competences (if all current ones are mastered)
+      // ===================================================================
+      const allExercises = await this.db
         .select()
         .from(exercises)
-        .where(inArray(exercises.competenceCode, needReinforcementCodes))
+        .orderBy(sql`RAND()`)
         .limit(limit);
 
-      return recommendedExercises;
-    } catch (error) {
+      logger.debug('Returning new exercises (all competences mastered)', { count: allExercises.length, studentId });
+      return allExercises;
+    } catch (error: unknown) {
       logger.error('Get recommended exercises error:', { studentId, error });
       throw new Error('Failed to get recommended exercises');
     }
@@ -497,7 +694,7 @@ class EnhancedDatabaseService {
       }
 
       return student;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Get student by ID error:', { id, error });
       throw new Error('Failed to get student');
     }
@@ -506,7 +703,7 @@ class EnhancedDatabaseService {
   /**
    * Get student progress with optional filtering
    */
-  async getStudentProgress(studentId: number, matiere?: string, limit?: number): Promise<Progress[]> {
+  async getStudentProgress(studentId: number, matiere?: string, limit?: number): Promise<StudentProgress[]> {
     try {
       const result = await this.db
         .select()
@@ -516,7 +713,7 @@ class EnhancedDatabaseService {
         .limit(limit || 50);
 
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Get student progress error:', { studentId, matiere, error });
       return [];
     }
@@ -569,7 +766,7 @@ class EnhancedDatabaseService {
       }
 
       return streak;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Calculate streak error:', { studentId, error });
       return 0;
     }
@@ -598,8 +795,8 @@ class EnhancedDatabaseService {
           timestamp: new Date().toISOString()
         }
       };
-    } catch (error) {
-      logger.error('Database health check failed:', error);
+    } catch (error: unknown) {
+      logger.error('Database health check failed', { err: error });
       return {
         status: 'unhealthy',
         details: {
@@ -622,7 +819,7 @@ class EnhancedDatabaseService {
       const updated = await this.getStudentById(id);
       if (!updated) throw new Error('Student not found after update');
       return updated;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Update student error:', { id, updates, error });
       throw new Error('Failed to update student');
     }
@@ -643,7 +840,7 @@ class EnhancedDatabaseService {
         });
       
       return { id: (result as any).insertId, ...sessionData };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Create session error:', { sessionData, error });
       throw new Error('Failed to create session');
     }
@@ -657,7 +854,7 @@ class EnhancedDatabaseService {
         .where(eq(learningSessionTracking.id, parseInt(id)));
       
       return { id, ...updates };
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Update session error:', { id, updates, error });
       throw new Error('Failed to update session');
     }
@@ -670,7 +867,7 @@ class EnhancedDatabaseService {
         .from(weeklyProgressSummary)
         .where(eq(weeklyProgressSummary.studentId, studentId))
         .orderBy(desc(weeklyProgressSummary.weekStart));
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Get weekly progress error:', { studentId, error });
       return [];
     }
@@ -683,7 +880,7 @@ class EnhancedDatabaseService {
           matiere: exercises.matiere,
           totalExercises: count(),
           completedExercises: sql<number>`COUNT(CASE WHEN ${studentProgress.completed} THEN 1 END)`,
-          averageScore: avg(sql<number>`CAST(${studentProgress.score} AS DECIMAL(5,2))`)
+          averageScore: avg(sql<number>`CAST(${studentProgress.averageScore} AS DECIMAL(5,2))`)
         })
         .from(studentProgress)
         .innerJoin(exercises, eq(studentProgress.exerciseId, exercises.id))
@@ -698,7 +895,7 @@ class EnhancedDatabaseService {
         };
         return acc;
       }, {} as Record<string, any>);
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Get subject progress error:', { studentId, error });
       return {};
     }
@@ -706,3 +903,4 @@ class EnhancedDatabaseService {
 }
 
 export const enhancedDatabaseService = new EnhancedDatabaseService();
+export const databaseService = enhancedDatabaseService; // Alias for backward compatibility

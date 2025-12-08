@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 
 interface SkeletonLoaderProps {
-  type: 'mascot' | 'xp-bar' | 'wardrobe' | 'exercise' | 'card';
+  type: 'mascot' | 'xp-bar' | 'wardrobe' | 'exercise' | 'card' | 'dashboard';
   className?: string;
 }
 
@@ -101,6 +101,28 @@ const SkeletonLoader: React.FC<SkeletonLoaderProps> = ({ type, className = '' })
           >
             <div className="w-full h-4 bg-diamond-200 rounded mb-3" />
             <div className="w-3/4 h-3 bg-diamond-200 rounded mb-2" />
+            <div className="w-1/2 h-3 bg-diamond-200 rounded" />
+          </motion.div>
+        );
+
+      case 'dashboard':
+        return (
+          <motion.div 
+            data-testid={`skeleton-${type}`}
+            className={`p-6 bg-white/80 rounded-2xl backdrop-blur-sm ${className}`}
+            animate={{ 
+              opacity: [0.7, 1, 0.7],
+              y: [0, -2, 0]
+            }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+          >
+            <div className="grid grid-cols-3 gap-4 mb-4">
+              <div className="w-full h-24 bg-diamond-200 rounded-lg" />
+              <div className="w-full h-24 bg-diamond-200 rounded-lg" />
+              <div className="w-full h-24 bg-diamond-200 rounded-lg" />
+            </div>
+            <div className="w-full h-32 bg-diamond-200 rounded-lg mb-4" />
+            <div className="w-3/4 h-4 bg-diamond-200 rounded mb-2" />
             <div className="w-1/2 h-3 bg-diamond-200 rounded" />
           </motion.div>
         );

@@ -266,7 +266,7 @@ describe('GDPR Service', () => {
 
       expect(mockDb.update).toHaveBeenCalledWith(students);
       expect(mockUpdate().set).toHaveBeenCalledWith({
-        estConnecte: false,
+        estConnecte: _false,
         dernierAcces: null,
         updatedAt: expect.any(Date)
       });

@@ -144,7 +144,7 @@ class APIService {
   private currentStudent: Student | null = null;
 
   constructor() {
-    this.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+    this.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:3003/api';
   }
 
   // =============================================================================
@@ -839,6 +839,62 @@ class APIService {
 
   async healthCheck(): Promise<ApiResponse<any>> {
     return this.makeRequest<any>('/health');
+  }
+
+  // =============================================================================
+  // STREAK & GAMIFICATION 2.0
+  // =============================================================================
+
+  async getTodayActivity(userId: number): Promise<ApiResponse<{
+    exercisesCompletedToday: number;
+    timeSpentToday: number;
+    currentStreak: number;
+    streakFreezes: number;
+    isFrozen: boolean;
+  }>> {
+    return this.makeRequest<{
+      exercisesCompletedToday: number;
+      timeSpentToday: number;
+      currentStreak: number;
+      streakFreezes: number;
+      isFrozen: boolean;
+    }>(`/streak/today-activity?userId=${userId}`);
+  }
+
+  async useStreakFreeze(userId: number, reason?: string): Promise<ApiResponse<{
+    message: string;
+    streakFreezesRemaining: number;
+    protectedUntil: string;
+  }>> {
+    return this.makeRequest<{
+      message: string;
+      streakFreezesRemaining: number;
+      protectedUntil: string;
+    }>('/streak/freeze', {
+      method: 'POST',
+      body: JSON.stringify({ userId, reason })
+    });
+  }
+
+  async pingStreak(userId: number): Promise<ApiResponse<{
+    current: number;
+    best: number;
+    bonusAwarded: number;
+    milestone: boolean;
+    rewardUnlocked: string | null;
+    exercisesCompletedToday: number;
+  }>> {
+    return this.makeRequest<{
+      current: number;
+      best: number;
+      bonusAwarded: number;
+      milestone: boolean;
+      rewardUnlocked: string | null;
+      exercisesCompletedToday: number;
+    }>('/streak/ping', {
+      method: 'POST',
+      body: JSON.stringify({ userId })
+    });
   }
 }
 

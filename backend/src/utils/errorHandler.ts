@@ -5,7 +5,7 @@ let Sentry: any;
 try {
   Sentry = require('@sentry/node');
   console.log('Sentry initialized for error tracking');
-} catch (error) {
+} catch (error: unknown) {
   console.warn('Sentry not installed, using console logging for errors');
   Sentry = {
     captureException: (err: any) => console.error('Error captured:', err),

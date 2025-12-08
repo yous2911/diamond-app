@@ -41,7 +41,7 @@ vi.mock('node-cron', () => ({
 vi.mock('../config/config', () => ({
   dbConfig: {
     host: 'localhost',
-    port: 3306,
+    port: _3306,
     user: 'testuser',
     password: 'testpass',
     database: 'testdb'

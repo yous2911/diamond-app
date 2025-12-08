@@ -1,6 +1,5 @@
 import { Type } from '@sinclair/typebox';
-import { SanitizedText, CommonIdParams, PaginationQuery } from './common.schema';
-
+import { SanitizedText, CommonIdParams } from './common.schema';
 // Schema for student properties
 export const StudentSchema = Type.Object({
   id: Type.Integer(),

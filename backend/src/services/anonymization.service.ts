@@ -1,7 +1,7 @@
 // src/services/anonymization.service.ts
 import { eq } from 'drizzle-orm';
 import { getDatabase } from '../db/connection';
-import { students, studentProgress, sessions, gdprFiles } from '../db/schema';
+import { students, sessions, gdprFiles } from '../db/schema';
 import { encryptionService } from './encryption.service';
 import { auditTrailService } from './audit-trail.service';
 
@@ -46,7 +46,7 @@ class AnonymizationService {
       affectedRecords += 1;
 
       // 2. Anonymiser les métadonnées des sessions
-      const sessionResult = await this.db
+      const _sessionResult = await this.db
         .update(sessions)
         .set({
           studentId: null
@@ -70,17 +70,18 @@ class AnonymizationService {
       // mais ne contiennent pas d'informations personnelles identifiables
 
       await auditTrailService.logAction({
-        entityType: 'student',
+        entityType: 'anonymization_job',
         entityId: studentId.toString(),
         action: 'anonymize',
         userId: 'system',
         details: { reason: 'Student data anonymized' },
         severity: 'high',
-      });
+        category: 'compliance',
+      } as any);
 
       return { success: true, affectedRecords };
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Erreur lors de l\'anonymisation:', error);
       throw new Error('Échec de l\'anonymisation des données');
     }
@@ -134,6 +135,7 @@ class AnonymizationService {
 
     if (student.length > 0) {
       const studentData = student[0];
+      if (!studentData) return { isAnonymized: false, issues };
       
       if (studentData.prenom !== 'Anonyme') {
         issues.push('Prénom non anonymisé');

@@ -17,8 +17,8 @@ const worker = new Worker('email-queue', async job => {
     try {
       await emailService.sendUserRegistrationWelcome(email, name, email); // Using email as username for now
       logger.info(`Welcome email sent to ${email}`);
-    } catch (error) {
-      logger.error(`Failed to send welcome email to ${email}`, error);
+    } catch (error: unknown) {
+      logger.error(`Failed to send welcome email to ${email}`, { err: error });
       throw error; // Throw error to trigger retry mechanism
     }
   }

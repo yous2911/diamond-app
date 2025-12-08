@@ -63,7 +63,7 @@ describe('EncryptionService - Real Unit Tests', () => {
       const originalData = JSON.stringify({
         name: 'John Doe',
         email: 'john@example.com',
-        age: 30,
+        age: _30,
         preferences: { theme: 'dark', language: 'en' }
       });
       
@@ -310,9 +310,9 @@ describe('EncryptionService - Real Unit Tests', () => {
       
       expect(keys).toBeDefined();
       expect(keys.length).toBe(1);
-      expect(keys[0].id).toBe('default-key');
-      expect(keys[0].algorithm).toBe('aes-256-cbc');
-      expect(keys[0].status).toBe('active');
+      expect(keys[0]?.id).toBe('default-key');
+      expect(keys[0]?.algorithm).toBe('aes-256-cbc');
+      expect(keys[0]?.status).toBe('active');
     });
 
     test('getKeyInfo returns valid key info', () => {

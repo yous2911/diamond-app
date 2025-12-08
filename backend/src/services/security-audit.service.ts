@@ -525,8 +525,8 @@ export class SecurityAuditService {
     if (this.options.logToFile && this.options.logDirectory) {
       try {
         await fs.mkdir(this.options.logDirectory, { recursive: true });
-      } catch (error) {
-        logger.error('Failed to create security log directory:', error);
+      } catch (error: unknown) {
+        logger.error('Failed to create security log directory', { err: error });
       }
     }
   }
@@ -542,8 +542,8 @@ export class SecurityAuditService {
 
       const logEntry = JSON.stringify(incident) + '\n';
       await fs.appendFile(logFile, logEntry, 'utf8');
-    } catch (error) {
-      logger.error('Failed to write security log:', error);
+    } catch (error: unknown) {
+      logger.error('Failed to write security log', { err: error });
     }
   }
 
@@ -617,20 +617,22 @@ export class SecurityAuditService {
       .filter(incident => incident.timestamp >= oneDayAgo)
       .forEach(incident => {
         const key = incident.timestamp.toISOString().substring(0, 13);
-        if (buckets[key]) {
-          buckets[key][incident.severity]++;
+        const bucket = buckets[key];
+        if (bucket && incident.severity) {
+          bucket[incident.severity] = (bucket[incident.severity] || 0) + 1;
         }
       });
 
     // Convert to timeline format
     return Object.entries(buckets).map(([timeKey, severityCounts]) => {
       const totalCount = Object.values(severityCounts).reduce((sum, count) => sum + count, 0);
-      const highestSeverity = (Object.entries(severityCounts)
+      const sortedEntries = Object.entries(severityCounts)
         .filter(([, count]) => count > 0)
         .sort(([a], [b]) => {
           const severityOrder: Record<string, number> = { CRITICAL: 4, HIGH: 3, MEDIUM: 2, LOW: 1 };
-          return severityOrder[b] - severityOrder[a];
-        })[0]?.[0] as SecuritySeverity) || SecuritySeverity.LOW;
+          return (severityOrder[b] || 0) - (severityOrder[a] || 0);
+        });
+      const highestSeverity = (sortedEntries[0]?.[0] as SecuritySeverity) || SecuritySeverity.LOW;
 
       return {
         timestamp: new Date(timeKey + ':00:00.000Z'),
@@ -662,8 +664,9 @@ export class SecurityAuditService {
     }
 
     // Check for top attacker IPs
-    if (metrics.topAttackerIPs.length > 0 && metrics.topAttackerIPs[0].count > 20) {
-      recommendations.push(`Consider blocking IP ${metrics.topAttackerIPs[0].ip} - high incident count`);
+    const topAttacker = metrics.topAttackerIPs[0];
+    if (topAttacker && topAttacker.count > 20) {
+      recommendations.push(`Consider blocking IP ${topAttacker.ip} - high incident count`);
     }
 
     // Check for authentication issues

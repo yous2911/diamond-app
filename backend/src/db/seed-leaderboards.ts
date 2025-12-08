@@ -11,13 +11,13 @@ async function seedLeaderboards() {
     // Get existing students
     const students = await db.execute(sql`SELECT id, prenom, nom FROM students LIMIT 10`);
     
-    if (!students || !Array.isArray(students[0]) || students[0].length === 0) {
+    if (!students || !Array.isArray(students[0]) || students[0]?.length === 0) {
       console.log('⚠️ No students found in database');
       return;
     }
 
-    const studentsArray = Array.isArray(students[0]) ? students[0] : [];
-    console.log(`👥 Found ${studentsArray.length} students`);
+    const studentsArray2 = Array.isArray(students[0]) ? students[0] : [];
+    console.log(`👥 Found ${studentsArray2.length} students`);
 
     // Clear existing data
     await db.execute(sql`DELETE FROM leaderboards`);
@@ -25,8 +25,7 @@ async function seedLeaderboards() {
     await db.execute(sql`DELETE FROM competitions`);
 
     // Create sample leaderboard entries
-    const studentsArray = Array.isArray(students[0]) ? students[0] : [];
-    const leaderboardData = studentsArray.map((student: any, index: number) => {
+    const leaderboardData = studentsArray2.map((student: any, index: number) => {
       if (!student || !student.id) return null;
       
       const score = Math.floor(Math.random() * 1000) + 500; // 500-1500 points
@@ -38,13 +37,13 @@ async function seedLeaderboards() {
         score,
         rank
       };
-    }).filter((entry): entry is NonNullable<typeof entry> => entry !== null);
+    }).filter((entry: any): entry is NonNullable<typeof entry> => entry !== null);
 
     // Sort by score descending
-    leaderboardData.sort((a, b) => b.score - a.score);
+    leaderboardData.sort((a: any, b: any) => b.score - a.score);
     
     // Update ranks after sorting
-    leaderboardData.forEach((entry, index) => {
+    leaderboardData.forEach((entry: any, index: number) => {
       entry.rank = index + 1;
     });
 
@@ -68,11 +67,11 @@ async function seedLeaderboards() {
       VALUES 
       (1, '🚀 Défi de la Semaine', 'Complétez 20 exercices cette semaine !', 
        'weekly_challenge', NOW() - INTERVAL 2 DAY, NOW() + INTERVAL 5 DAY, 
-       ${Math.floor(studentsArray.length * 0.6)}, JSON_ARRAY('🏆 Badge Spécial', '💎 100 Points Bonus'), true),
+       ${Math.floor(studentsArray2.length * 0.6)}, JSON_ARRAY('🏆 Badge Spécial', '💎 100 Points Bonus'), true),
        
       (2, '⚡ Marathon Mathématique', 'Résolvez un maximum d\\'exercices de maths !', 
        'monthly_competition', NOW() - INTERVAL 10 DAY, NOW() + INTERVAL 20 DAY,
-       ${Math.floor(studentsArray.length * 0.8)}, JSON_ARRAY('👑 Couronne Dorée', '🎁 Surprise Spéciale'), true)
+       ${Math.floor(studentsArray2.length * 0.8)}, JSON_ARRAY('👑 Couronne Dorée', '🎁 Surprise Spéciale'), true)
     `);
 
     // Award badges to top 3
@@ -89,6 +88,8 @@ async function seedLeaderboards() {
       
       const badge = badgeTypes[Math.min(i, badgeTypes.length - 1)];
       
+      if (!badge || !student?.student_id) continue;
+      
       await db.execute(sql`
         INSERT INTO student_badges 
         (student_id, badge_type, title, description, rarity, metadata, earned_at) 
@@ -103,7 +104,7 @@ async function seedLeaderboards() {
     console.log(`🎮 Created 2 competitions`);
     console.log('🎉 Leaderboard seeding completed!');
 
-  } catch (error) {
+  } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('❌ Seeding failed:', errorMessage);
     if (error instanceof Error) {

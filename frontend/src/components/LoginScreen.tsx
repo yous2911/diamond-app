@@ -15,12 +15,11 @@ const TestAccounts: React.FC<{
   onSelectAccount: (prenom: string, nom: string) => void;
 }> = ({ onSelectAccount }) => {
   const testAccounts = [
-    { prenom: 'Alice', nom: 'Dupont', level: 'CP', age: '6-8', emoji: '👧', color: 'from-slate-500 to-gray-600' },
-    { prenom: 'Bob', nom: 'Martin', level: 'CP', age: '6-8', emoji: '👦', color: 'from-blue-500 to-indigo-600' },
-    { prenom: 'Charlie', nom: 'Durand', level: 'CP', age: '6-8', emoji: '👦', color: 'from-emerald-500 to-teal-600' },
-    { prenom: 'Lucas', nom: 'Martin', level: 'CE1', age: '9-11', emoji: '👦', color: 'from-amber-500 to-orange-600' },
-    { prenom: 'Emma', nom: 'Dubois', level: 'CE1', age: '9-11', emoji: '👧', color: 'from-violet-500 to-purple-600' },
-    { prenom: 'Noah', nom: 'Lefevre', level: 'CE1', age: '9-11', emoji: '👦', color: 'from-cyan-500 to-blue-600' },
+    { prenom: 'Emma', nom: 'Martin', level: 'CP', age: '6-8', emoji: '👧', color: 'from-violet-500 to-purple-600' },
+    { prenom: 'Lucas', nom: 'Dubois', level: 'CP', age: '6-8', emoji: '👦', color: 'from-blue-500 to-indigo-600' },
+    { prenom: 'Léa', nom: 'Bernard', level: 'CP', age: '6-8', emoji: '👧', color: 'from-emerald-500 to-teal-600' },
+    { prenom: 'Noah', nom: 'Garcia', level: 'CE1', age: '9-11', emoji: '👦', color: 'from-amber-500 to-orange-600' },
+    { prenom: 'Alice', nom: 'Rodriguez', level: 'CE1', age: '9-11', emoji: '👧', color: 'from-slate-500 to-gray-600' },
   ];
 
   return (
@@ -102,7 +101,7 @@ const LoginScreen: React.FC = React.memo(() => {
     setFormData({
       prenom,
       nom,
-      password: 'password123456'
+      password: 'password123456' // 15 characters - exceeds minimum requirement
     });
     setShowTestAccounts(false);
     setMagicalParticles(true);
@@ -325,8 +324,9 @@ const LoginScreen: React.FC = React.memo(() => {
                   value={formData.password}
                   onChange={handleInputChange}
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors"
-                  placeholder="Ton mot de passe"
+                  placeholder="Ton mot de passe (min. 12 caractères)"
                   required
+                  minLength={12}
                 />
               </div>
             </div>

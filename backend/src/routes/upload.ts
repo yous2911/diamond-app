@@ -3,7 +3,7 @@ import { MultipartFile } from '@fastify/multipart';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import { z } from 'zod';
-import { config } from '../config/config';
+import { config, uploadConfig } from '../config/config';
 import { FileUploadService } from '../services/file-upload.service';
 import { ImageProcessingService } from '../services/image-processing.service';
 import { StorageService } from '../services/storage.service';
@@ -101,8 +101,8 @@ const uploadRoutes: FastifyPluginAsync = async (fastify) => {
       return null;
     }
 
-    const safeFilePath = path.join(config.upload.path, filename);
-    const resolvedBase = path.resolve(config.upload.path);
+    const safeFilePath = path.join(uploadConfig.uploadPath, filename);
+    const resolvedBase = path.resolve(uploadConfig.uploadPath);
     const resolvedPath = path.resolve(safeFilePath);
 
     if (!resolvedPath.startsWith(resolvedBase)) {
@@ -113,7 +113,7 @@ const uploadRoutes: FastifyPluginAsync = async (fastify) => {
     try {
       await fs.access(resolvedPath);
       return resolvedPath;
-    } catch (error) {
+    } catch (error: unknown) {
       logger.warn('File not found at validated path', { userId, fileId, path: resolvedPath });
       return null;
     }
@@ -137,7 +137,8 @@ const uploadRoutes: FastifyPluginAsync = async (fastify) => {
    * Upload files endpoint
    */
   fastify.post('/upload', {
-    preValidation: fastify.csrfProtection,
+    preValidation: [fastify.csrfProtection],
+    preHandler: [fastify.authenticate], // Require authentication
     schema: {
       description: 'Upload files with metadata and processing options',
       tags: ['Upload'],
@@ -176,63 +177,61 @@ const uploadRoutes: FastifyPluginAsync = async (fastify) => {
           }
         }
       }
-    },
-    preHandler: [fastify.authenticate], // Require authentication
-    handler: async (request: FastifyRequest<{ Body: Record<string, { value?: string; data?: Buffer; filename?: string; mimetype?: string; encoding?: string }> }>, reply) => {
-        const studentId = (request as AuthenticatedRequest).user?.studentId || 'anonymous';
-        const data = request.body;
+    }
+  }, async (request, reply) => {
+    const studentId = (request as AuthenticatedRequest).user?.studentId || 'anonymous';
+    const data = request.body as any;
 
-        const params: UploadParams = uploadParamsSchema.parse({
-            category: data.category?.value,
-            generateThumbnails: data.generateThumbnails?.value === 'true',
-            isPublic: data.isPublic?.value === 'true',
-            compressionLevel: data.compressionLevel?.value ? parseInt(data.compressionLevel.value, 10) : undefined,
-        });
+    const params: UploadParams = uploadParamsSchema.parse({
+      category: data.category?.value,
+      generateThumbnails: data.generateThumbnails?.value === 'true',
+      isPublic: data.isPublic?.value === 'true',
+      compressionLevel: data.compressionLevel?.value ? parseInt(data.compressionLevel.value, 10) : undefined,
+    });
 
-        let educationalMetadata: EducationalMetadata | undefined;
-        if (data.educationalMetadata?.value) {
-            educationalMetadata = educationalMetadataSchema.parse(JSON.parse(data.educationalMetadata.value));
-        }
+    let educationalMetadata: EducationalMetadata | undefined;
+    if (data.educationalMetadata?.value) {
+      educationalMetadata = educationalMetadataSchema.parse(JSON.parse(data.educationalMetadata.value));
+    }
 
-        const files: MultipartFile[] = [];
-        const validationErrors: string[] = [];
+    const files: MultipartFile[] = [];
+    const validationErrors: string[] = [];
 
-        for await (const part of request.parts()) {
-            if (part.type === 'file') {
-                const buffer = await part.toBuffer();
-                const validationResult = FileValidationService.validateFile(
-                    buffer,
-                    part.filename,
-                    part.mimetype,
-                    DEFAULT_UPLOAD_CONFIG.maxFileSize
-                );
+    for await (const part of request.parts()) {
+      if (part.type === 'file') {
+        const buffer = await part.toBuffer();
+        const validationResult = FileValidationService.validateFile(
+          buffer,
+          part.filename,
+          part.mimetype,
+          DEFAULT_UPLOAD_CONFIG.maxFileSize
+        );
 
-                if (!validationResult.isValid) {
-                    validationErrors.push(`${part.filename}: ${validationResult.errors.join(', ')}`);
-                    continue;
-                }
-                
-                // Reconstruct a multipart file object after validation
-                files.push({ ...part, data: buffer, toBuffer: async () => buffer } as MultipartFile);
-            }
+        if (!validationResult.isValid) {
+          validationErrors.push(`${part.filename}: ${validationResult.errors.join(', ')}`);
+          continue;
         }
         
-        if (validationErrors.length > 0) {
-            return reply.status(400).send({ success: false, errors: validationErrors });
-        }
-
-        const uploadRequest: UploadRequest = {
-            files,
-            category: params.category || 'resource',
-            isPublic: params.isPublic,
-            educationalMetadata,
-            generateThumbnails: params.generateThumbnails,
-            compressionLevel: params.compressionLevel,
-        };
-
-        const result = await uploadService.processUpload(uploadRequest, studentId);
-        return reply.send(result);
+        // Reconstruct a multipart file object after validation
+        files.push({ ...part, data: buffer, toBuffer: async () => buffer } as MultipartFile);
+      }
     }
+    
+    if (validationErrors.length > 0) {
+      return reply.status(400).send({ success: false, errors: validationErrors });
+    }
+
+    const uploadRequest: UploadRequest = {
+      files,
+      category: params.category || 'resource',
+      isPublic: params.isPublic,
+      educationalMetadata,
+      generateThumbnails: params.generateThumbnails,
+      compressionLevel: params.compressionLevel,
+    };
+
+    const result = await uploadService.processUpload(uploadRequest, String(studentId));
+    return reply.send(result);
   });
 
   /**
@@ -275,22 +274,21 @@ const uploadRoutes: FastifyPluginAsync = async (fastify) => {
         }
       }
     },
-    preHandler: [fastify.authenticate],
-    handler: async (request: FastifyRequest<{ Params: FileIdParams }>, reply) => {
-      const { fileId } = request.params;
-      const file = await uploadService.getFile(fileId);
+    preHandler: [fastify.authenticate]
+  }, async (request, reply) => {
+    const { fileId } = request.params as { fileId: string };
+    const file = await uploadService.getFile(fileId);
 
-      if (!file) {
-        return reply.status(404).send({ success: false, error: 'File not found' });
-      }
+    if (!file) {
+      return reply.status(404).send({ success: false, error: 'File not found' });
+    }
 
-      const studentId = (request as AuthenticatedRequest).user?.studentId;
-      if (!file.isPublic && file.uploadedBy !== studentId) {
-        return reply.status(403).send({ success: false, error: 'Access denied' });
-      }
+    const studentId = (request as AuthenticatedRequest).user?.studentId;
+    if (!file.isPublic && file.uploadedBy !== String(studentId)) {
+      return reply.status(403).send({ success: false, error: 'Access denied' });
+    }
 
-      return reply.send({ success: true, file });
-    },
+    return reply.send({ success: true, file });
   });
 
   /**
@@ -308,49 +306,48 @@ const uploadRoutes: FastifyPluginAsync = async (fastify) => {
         }
       }
     },
-    preHandler: [fastify.authenticate],
-    handler: async (request: FastifyRequest<{ Params: FileIdParams, Querystring: DownloadQuery }>, reply) => {
-        const { fileId } = request.params;
-        const { variant } = request.query;
-        const studentId = (request as AuthenticatedRequest).user?.studentId;
+    preHandler: [fastify.authenticate]
+  }, async (request, reply) => {
+    const { fileId } = request.params as { fileId: string };
+    const { variant } = request.query as { variant?: string };
+    const studentId = (request as AuthenticatedRequest).user?.studentId;
 
-        const file = await uploadService.getFile(fileId);
-        if (!file) {
-            return reply.status(404).send({ success: false, error: 'File not found' });
-        }
+    const file = await uploadService.getFile(fileId);
+    if (!file) {
+      return reply.status(404).send({ success: false, error: 'File not found' });
+    }
 
-        if (!file.isPublic && file.uploadedBy !== studentId) {
-            return reply.status(403).send({ success: false, error: 'Access denied' });
-        }
+    if (!file.isPublic && file.uploadedBy !== String(studentId)) {
+      return reply.status(403).send({ success: false, error: 'Access denied' });
+    }
 
-        let filename = file.filename;
-        let mimetype = file.mimetype;
+    let filename = file.filename;
+    let mimetype = file.mimetype;
 
-        if (variant !== 'original' && file.processedVariants) {
-            const requestedVariant = file.processedVariants.find(v => v.type === variant);
-            if (requestedVariant) {
-                filename = requestedVariant.filename;
-                mimetype = requestedVariant.mimetype;
-            }
-        }
+    if (variant !== 'original' && file.processedVariants) {
+      const requestedVariant = file.processedVariants.find(v => v.type === variant);
+      if (requestedVariant) {
+        filename = requestedVariant.filename;
+        mimetype = requestedVariant.mimetype;
+      }
+    }
 
-        const resolvedPath = await getValidatedFilePath(fileId, filename, studentId);
-        if (!resolvedPath) {
-            return reply.status(400).send({ success: false, error: 'Invalid or non-existent file path' });
-        }
-        
-        reply.header('Content-Type', mimetype);
-        reply.header('Content-Disposition', `attachment; filename="${filename}"`);
-        const stream = fastify.fs.createReadStream(resolvedPath);
-        return reply.send(stream);
-    },
+    const resolvedPath = await getValidatedFilePath(fileId, filename, String(studentId));
+    if (!resolvedPath) {
+      return reply.status(400).send({ success: false, error: 'Invalid or non-existent file path' });
+    }
+    
+    reply.header('Content-Type', mimetype);
+    reply.header('Content-Disposition', `attachment; filename="${filename}"`);
+    const stream = fastify.fs.createReadStream(resolvedPath);
+    return reply.send(stream);
   });
 
   /**
    * Delete file
    */
   fastify.delete('/files/:fileId', {
-    preValidation: fastify.csrfProtection,
+    preValidation: [fastify.csrfProtection],
     schema: {
       description: 'Delete file by ID',
       tags: ['Upload'],
@@ -365,22 +362,21 @@ const uploadRoutes: FastifyPluginAsync = async (fastify) => {
         }
       }
     },
-    preHandler: [fastify.authenticate],
-    handler: async (request: FastifyRequest<{ Params: FileIdParams }>, reply) => {
-      const { fileId } = request.params;
-      const studentId = (request as AuthenticatedRequest).user?.studentId;
+    preHandler: [fastify.authenticate]
+  }, async (request, reply) => {
+    const { fileId } = request.params as { fileId: string };
+    const studentId = (request as AuthenticatedRequest).user?.studentId;
 
-      if (!studentId) {
-        return reply.status(401).send({ success: false, error: 'Authentication required' });
-      }
+    if (!studentId) {
+      return reply.status(401).send({ success: false, error: 'Authentication required' });
+    }
 
-      const success = await uploadService.deleteFile(fileId, studentId);
-      if (success) {
-        return reply.send({ success: true, message: 'File deleted successfully' });
-      } else {
-        return reply.status(404).send({ success: false, error: 'File not found or access denied' });
-      }
-    },
+    const success = await uploadService.deleteFile(fileId, String(studentId));
+    if (success) {
+      return reply.send({ success: true, message: 'File deleted successfully' });
+    } else {
+      return reply.status(404).send({ success: false, error: 'File not found or access denied' });
+    }
   });
 
   /**
@@ -426,16 +422,20 @@ const uploadRoutes: FastifyPluginAsync = async (fastify) => {
         }
       }
     },
-    preHandler: [fastify.authenticate],
-    handler: async (request: FastifyRequest<{ Querystring: ListFilesQuery }>, reply) => {
+    preHandler: [fastify.authenticate]
+  }, async (request, reply) => {
         const studentId = (request as AuthenticatedRequest).user?.studentId;
+        const query = request.query as { category?: string; limit?: number; offset?: number; includePublic?: boolean };
+        const typedQuery: { category?: FileCategory; limit?: number; offset?: number; includePublic?: boolean } = {
+          ...query,
+          category: query.category as FileCategory | undefined
+        };
         if (!studentId) {
             return reply.status(401).send({ success: false, error: 'Authentication required' });
         }
         
-        const result = await storageService.getFilesByUser(studentId, request.query);
+        const result = await storageService.getFilesByUser(String(studentId), typedQuery);
         return reply.send({ success: true, ...result });
-    },
   });
 
   /**
@@ -469,23 +469,22 @@ const uploadRoutes: FastifyPluginAsync = async (fastify) => {
         }
       }
     },
-    preHandler: [fastify.authenticate],
-    handler: async (request, reply) => {
-      try {
-        const stats = await uploadService.getStorageStats();
+    preHandler: [fastify.authenticate]
+  }, async (request, reply) => {
+    try {
+      const stats = await uploadService.getStorageStats();
 
-        return reply.send({
-          success: true,
-          stats
-        });
+      return reply.send({
+        success: true,
+        stats
+      });
 
-      } catch (error) {
-        logger.error('Error getting storage stats:', error);
-        return reply.status(500).send({
-          success: false,
-          error: 'Internal server error'
-        });
-      }
+    } catch (error: unknown) {
+      logger.error('Error getting storage stats:', { err: error });
+      return reply.status(500).send({
+        success: false,
+        error: 'Internal server error'
+      });
     }
   });
 
@@ -493,7 +492,7 @@ const uploadRoutes: FastifyPluginAsync = async (fastify) => {
    * Process image (resize, compress, convert)
    */
   fastify.post('/images/:fileId/process', {
-    preValidation: fastify.csrfProtection,
+    preValidation: [fastify.csrfProtection],
     schema: {
       description: 'Process image file with various operations',
       tags: ['Upload'],
@@ -517,54 +516,65 @@ const uploadRoutes: FastifyPluginAsync = async (fastify) => {
         required: ['operation']
       }
     },
-    preHandler: [fastify.authenticate],
-    handler: async (request: FastifyRequest<{ Params: FileIdParams, Body: ProcessImageBody }>, reply) => {
-        const { fileId } = request.params;
-        const { operation, options = {} } = request.body;
-        const studentId = (request as AuthenticatedRequest).user?.studentId;
+    preHandler: [fastify.authenticate]
+  }, async (request, reply) => {
+    const { fileId } = request.params as { fileId: string };
+    const { operation, options = {} } = request.body as { operation?: string; options?: Record<string, any> };
+    const studentId = (request as AuthenticatedRequest).user?.studentId;
 
-        const file = await uploadService.getFile(fileId);
-        if (!file) {
-            return reply.status(404).send({ success: false, error: 'File not found' });
-        }
+    const file = await uploadService.getFile(fileId);
+    if (!file) {
+      return reply.status(404).send({ success: false, error: 'File not found' });
+    }
 
-        if (file.uploadedBy !== studentId) {
-            return reply.status(403).send({ success: false, error: 'Access denied' });
-        }
+    if (file.uploadedBy !== String(studentId)) {
+      return reply.status(403).send({ success: false, error: 'Access denied' });
+    }
 
-        if (!file.mimetype.startsWith('image/')) {
-            return reply.status(400).send({ success: false, error: 'File is not an image' });
-        }
-        
-        const resolvedPath = await getValidatedFilePath(fileId, file.filename, studentId);
-        if (!resolvedPath) {
-            return reply.status(400).send({ success: false, error: 'Invalid or non-existent file path for processing' });
-        }
+    if (!file.mimetype.startsWith('image/')) {
+      return reply.status(400).send({ success: false, error: 'File is not an image' });
+    }
+    
+    const resolvedPath = await getValidatedFilePath(fileId, file.filename, String(studentId));
+    if (!resolvedPath) {
+      return reply.status(400).send({ success: false, error: 'Invalid or non-existent file path for processing' });
+    }
 
-        let result: Buffer;
-        switch (operation) {
-            case 'resize':
-                result = await imageProcessor.resizeImage(resolvedPath, { width: options.width, height: options.height, fit: 'cover' }, { quality: options.quality });
-                break;
-            case 'compress':
-                result = await imageProcessor.compressImage(resolvedPath, { quality: options.quality });
-                break;
-            case 'convert':
-                result = await imageProcessor.convertFormat(resolvedPath, options.format || 'webp', options.quality);
-                break;
-            case 'watermark':
-                 if (!options.watermarkText) {
-                    return reply.status(400).send({ success: false, error: 'Watermark text is required' });
-                }
-                result = await imageProcessor.addWatermark(resolvedPath, { text: options.watermarkText, position: options.watermarkPosition });
-                break;
-            default:
-                return reply.status(400).send({ success: false, error: 'Invalid operation' });
+    let result: Buffer;
+    switch (operation) {
+      case 'resize':
+        if (!options.width || !options.height) {
+          return reply.status(400).send({ success: false, error: 'Width and height are required for resize operation' });
         }
+        result = await imageProcessor.resizeImage(resolvedPath, { width: options.width, height: options.height, fit: 'cover' }, { quality: options.quality || 80 });
+        break;
+      case 'compress':
+        result = await imageProcessor.compressImage(resolvedPath, { quality: options.quality || 80 });
+        break;
+      case 'convert':
+        result = await imageProcessor.convertFormat(resolvedPath, options.format || 'webp', options.quality || 80);
+        break;
+      case 'watermark':
+        if (!options.watermarkText) {
+          return reply.status(400).send({ success: false, error: 'Watermark text is required' });
+        }
+        if (!options.watermarkPosition) {
+          return reply.status(400).send({ success: false, error: 'Watermark position is required' });
+        }
+        result = await imageProcessor.addWatermark(resolvedPath, { 
+          text: options.watermarkText || '', 
+          position: options.watermarkPosition || 'bottom-right',
+          opacity: 0.5,
+          fontSize: 24,
+          color: '#FFFFFF'
+        });
+        break;
+      default:
+        return reply.status(400).send({ success: false, error: 'Invalid operation' });
+    }
 
-        reply.header('Content-Type', `image/${options.format || 'jpeg'}`);
-        return reply.send(result);
-    },
+    reply.header('Content-Type', `image/${options.format || 'jpeg'}`);
+    return reply.send(result);
   });
 
   /**
@@ -598,22 +608,21 @@ const uploadRoutes: FastifyPluginAsync = async (fastify) => {
           }
         }
       }
-    },
-    handler: async (request, reply) => {
-      return reply.send({
-        success: true,
-        supportedTypes: {
-          images: [...ALLOWED_IMAGE_TYPES],
-          videos: [...ALLOWED_VIDEO_TYPES],
-          audio: [...ALLOWED_AUDIO_TYPES],
-          documents: [...ALLOWED_DOCUMENT_TYPES]
-        },
-        limits: {
-          maxFileSize: DEFAULT_UPLOAD_CONFIG.maxFileSize,
-          maxFilesPerUpload: DEFAULT_UPLOAD_CONFIG.maxFilesPerUpload
-        }
-      });
     }
+  }, async (request, reply) => {
+    return reply.send({
+      success: true,
+      supportedTypes: {
+        images: [...ALLOWED_IMAGE_TYPES],
+        videos: [...ALLOWED_VIDEO_TYPES],
+        audio: [...ALLOWED_AUDIO_TYPES],
+        documents: [...ALLOWED_DOCUMENT_TYPES]
+      },
+      limits: {
+        maxFileSize: DEFAULT_UPLOAD_CONFIG.maxFileSize,
+        maxFilesPerUpload: DEFAULT_UPLOAD_CONFIG.maxFilesPerUpload
+      }
+    });
   });
 };
 

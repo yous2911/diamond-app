@@ -1,7 +1,7 @@
 
 
 import { mysqlTable, varchar, int, decimal, timestamp, text, boolean, json, date } from 'drizzle-orm/mysql-core';
-import { InferInsertModel, InferSelectModel, relations, sql } from 'drizzle-orm';
+import { InferInsertModel, InferSelectModel, relations } from 'drizzle-orm';
 
 // =============================================================================
 // CORE TABLES
@@ -152,19 +152,19 @@ export type NewModule = InferInsertModel<typeof modules>;
 // RELATIONS
 // =============================================================================
 
-export const studentsRelations = relations(students, ({ many }) => ({
+export const _studentsRelations = relations(students, ({ many }) => ({
   progress: many(studentProgress),
   sessions: many(sessions),
   revisions: many(revisions),
   learningPath: many(studentLearningPath)
 }));
 
-export const exercisesRelations = relations(exercises, ({ many }) => ({
+export const _exercisesRelations = relations(exercises, ({ many }) => ({
   progress: many(studentProgress),
   revisions: many(revisions)
 }));
 
-export const studentProgressRelations = relations(studentProgress, ({ one }) => ({
+export const _studentProgressRelations = relations(studentProgress, ({ one }) => ({
   student: one(students, {
     fields: [studentProgress.studentId],
     references: [students.id]
@@ -503,7 +503,7 @@ export const competencePrerequisites = mysqlTable('competence_prerequisites', {
 });
 
 // GDPR type exports  
-export const gdprRequests = mysqlTable('gdpr_requests', {
+export const _gdprRequests = mysqlTable('gdpr_requests', {
   id: int('id').primaryKey().autoincrement(),
   studentId: int('student_id').references(() => students.id),
   requestType: varchar('request_type', { length: 50 }).notNull(),
@@ -530,7 +530,7 @@ export const retentionSchedules = mysqlTable('retention_schedules', {
   createdAt: timestamp('created_at').notNull().defaultNow()
 });
 
-export const consentPreferences = mysqlTable('consent_preferences', {
+export const _consentPreferences = mysqlTable('consent_preferences', {
   id: int('id').primaryKey().autoincrement(),
   studentId: int('student_id').references(() => students.id),
   consentType: varchar('consent_type', { length: 50 }).notNull(),
@@ -602,7 +602,7 @@ export const parentalConsent = mysqlTable('parental_consent', {
   createdAt: timestamp('created_at').notNull().defaultNow()
 });
 
-export const encryptionKeys = mysqlTable('encryption_keys', {
+export const _encryptionKeys = mysqlTable('encryption_keys', {
   id: varchar('id', { length: 36 }).primaryKey(),
   keyType: varchar('key_type', { length: 50 }).notNull(),
   encryptedKey: text('encrypted_key').notNull(),

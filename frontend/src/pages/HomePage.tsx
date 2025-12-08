@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { LogOut } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { usePremiumFeatures } from '../contexts/PremiumFeaturesContext';
+import { apiService } from '../services/api';
 import {
   useCompetences,
   useExercisesByLevel,
@@ -19,6 +20,7 @@ import MicroInteraction from '../components/MicroInteractions';
 import { useGPUPerformance } from '../hooks/useGPUPerformance';
 import SkeletonLoader from '../components/ui/SkeletonLoader';
 import WardrobeModal from '../components/WardrobeModal';
+import { StreakFlame, SevenDayChest } from '../components/ui';
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -57,9 +59,46 @@ const HomePage = () => {
     // Only show entrance for first visit
     return !localStorage.getItem('diamond-app-visited');
   });
+  const [hasClaimedReward, setHasClaimedReward] = useState(() => {
+    // Check if reward was already claimed today
+    const lastClaimDate = localStorage.getItem('streak-reward-claimed-date');
+    const today = new Date().toDateString();
+    return lastClaimDate === today;
+  });
   
   // GPU performance integration
   const { } = useGPUPerformance();
+
+  // ✅ GAMIFICATION 2.0: Check exercises completed today (not just login)
+  const [todayActivity, setTodayActivity] = useState<{
+    exercisesCompletedToday: number;
+    currentStreak: number;
+    streakFreezes: number;
+    isFrozen: boolean;
+  } | null>(null);
+  const [isLoadingActivity, setIsLoadingActivity] = useState(true);
+
+  React.useEffect(() => {
+    if (student?.id) {
+      setIsLoadingActivity(true);
+      apiService.getTodayActivity(student.id).then(response => {
+        setIsLoadingActivity(false);
+        if (response.success && response.data) {
+          setTodayActivity({
+            exercisesCompletedToday: response.data.exercisesCompletedToday,
+            currentStreak: response.data.currentStreak,
+            streakFreezes: response.data.streakFreezes,
+            isFrozen: response.data.isFrozen
+          });
+        }
+      }).catch(() => setIsLoadingActivity(false));
+    }
+  }, [student?.id]);
+
+  const hasPlayedToday = useMemo(() => {
+    // ✅ Only active if they completed at least 1 exercise today
+    return (todayActivity?.exercisesCompletedToday || 0) >= 1;
+  }, [todayActivity?.exercisesCompletedToday]);
 
   const studentData = useMemo(() => ({
     prenom: student?.prenom || 'Élève',
@@ -71,6 +110,22 @@ const HomePage = () => {
     maxXP: 100 + (currentLevel * 20),
     level: currentLevel
   }), [student, statsData, currentXp, currentLevel]);
+
+  // Check if we should show milestone chests (3, 7, 14, 30 days)
+  const shouldShowChest = useMemo(() => {
+    const streak = todayActivity?.currentStreak || studentData.streak;
+    const milestones = [3, 7, 14, 30];
+    return streak > 0 && milestones.includes(streak) && !hasClaimedReward;
+  }, [todayActivity?.currentStreak, studentData.streak, hasClaimedReward]);
+
+  const getChestTitle = useMemo(() => {
+    const streak = todayActivity?.currentStreak || studentData.streak;
+    if (streak === 3) return '🎁 Récompense de 3 Jours ! (Boost XP)';
+    if (streak === 7) return '🎁 Récompense de 7 Jours !';
+    if (streak === 14) return '🎁 Récompense de 14 Jours ! (Mode Rapide)';
+    if (streak === 30) return '🎁 Récompense de 30 Jours ! (Objet Premium)';
+    return '🎁 Récompense Spéciale !';
+  }, [todayActivity?.currentStreak, studentData.streak]);
 
   const subjects = useMemo(() => {
     if (!exercisesData) {
@@ -132,8 +187,43 @@ const HomePage = () => {
     setShowEntrance(false);
   };
 
+  const handleChestOpen = async () => {
+    // Mark reward as claimed
+    const today = new Date().toDateString();
+    localStorage.setItem('streak-reward-claimed-date', today);
+    setHasClaimedReward(true);
+    
+    // Trigger celebration
+    setMascotEmotion('excited');
+    setMascotMessage('Félicitations ! Tu as gagné une récompense spéciale ! 🎁');
+    triggerParticles('levelup', 3000);
+    
+    // Ping streak to get reward (backend handles milestone rewards)
+    if (student?.id) {
+      await apiService.pingStreak(student.id).then(response => {
+        if (response.success && response.data?.rewardUnlocked) {
+          const reward = response.data.rewardUnlocked;
+          if (reward === 'chest_reward') {
+            setMascotMessage('🎁 Nouvel objet débloqué !');
+          } else if (reward === 'mode_rapide_unlock') {
+            setMascotMessage('⚡ Mode Rapide débloqué !');
+          }
+        }
+      });
+    }
+  };
+
+  // Show loading state while fetching data
+  if (isLoadingExercises && !exercisesData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <SkeletonLoader type="dashboard" />
+      </div>
+    );
+  }
+
   return (
-    <div className="relative">
+    <div className="relative min-h-screen px-4 pb-20">
       {/* Memorable Entrance - World-Class First Experience */}
       {showEntrance && (
         <MemorableEntrance
@@ -143,8 +233,18 @@ const HomePage = () => {
         />
       )}
 
-      {/* Show XP System on HomePage */}
-      <div className="fixed top-6 left-6 z-40">
+      {/* Show Milestone Chest Reward if applicable */}
+      {shouldShowChest && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <SevenDayChest 
+            onOpen={handleChestOpen}
+            title={getChestTitle}
+          />
+        </div>
+      )}
+
+      {/* Show XP System on HomePage - Mobile responsive positioning */}
+      <div className="fixed top-4 left-4 right-4 sm:top-6 sm:left-6 sm:right-auto z-40 max-w-xs sm:max-w-none">
         <XPCrystalsPremium
           currentXP={studentData.currentXP}
           maxXP={studentData.maxXP}
@@ -157,6 +257,34 @@ const HomePage = () => {
             'Niveau supérieur atteint !'
           ]}
         />
+      </div>
+
+      {/* Streak Flame Component - Mobile responsive positioning */}
+      <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40">
+        {isLoadingActivity ? (
+          <div className="w-24 h-32 bg-gray-200 rounded-xl animate-pulse" />
+        ) : (
+          <StreakFlame 
+            days={todayActivity?.currentStreak || studentData.streak} 
+            isActive={hasPlayedToday}
+            isFrozen={todayActivity?.isFrozen || false}
+            streakFreezes={todayActivity?.streakFreezes || 0}
+            onUseFreeze={async () => {
+              if (student?.id && todayActivity && todayActivity.streakFreezes > 0) {
+                const response = await apiService.useStreakFreeze(student.id);
+                if (response.success && response.data) {
+                  setTodayActivity(prev => prev ? {
+                    ...prev,
+                    streakFreezes: response.data!.streakFreezesRemaining,
+                    isFrozen: true
+                  } : null);
+                  setMascotEmotion('excited');
+                  setMascotMessage('Ton streak est protégé ! ❄️');
+                }
+              }
+            }}
+          />
+        )}
       </div>
 
       {/* Premium Diamond Interface */}
@@ -186,8 +314,8 @@ const HomePage = () => {
         onItemUnequip={(itemId) => setEquippedItems(prev => prev.filter(id => id !== itemId))}
       />
 
-      {/* Logout Button with Premium Micro-Interactions */}
-      <div className="fixed top-6 right-6 z-40">
+      {/* Logout Button with Premium Micro-Interactions - Mobile responsive */}
+      <div className="fixed top-4 right-4 sm:top-6 sm:right-6 z-40">
         <div title="Se déconnecter">
           <MicroInteraction
             type="button"

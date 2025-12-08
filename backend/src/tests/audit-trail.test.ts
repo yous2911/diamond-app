@@ -59,7 +59,7 @@ describe('AuditTrailService', () => {
       testAuditIds.length = 0;
       testAlertIds.length = 0;
       testReportIds.length = 0;
-    } catch (error) {
+    } catch (error: unknown) {
       console.warn('Cleanup error:', error);
     }
   }
@@ -299,7 +299,7 @@ describe('AuditTrailService', () => {
     it('should query logs by date range', async () => {
       const now = new Date();
       const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-      const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
+      const _twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
 
       const result = await auditService.queryAuditLogs({
         startDate: oneHourAgo,
@@ -695,9 +695,9 @@ describe('AuditTrailService', () => {
         .where(eq(securityAlerts.entityId, testStudentId));
 
       if (alerts.length > 0) {
-        expect(alerts[0].type).toBe('suspicious_access');
-        expect(alerts[0].severity).toBe('medium');
-        testAlertIds.push(alerts[0].id);
+        expect(alerts[0]?.type).toBe('suspicious_access');
+        expect(alerts[0]?.severity).toBe('medium');
+        testAlertIds.push(alerts[0]?.id);
       }
     });
 
@@ -732,9 +732,9 @@ describe('AuditTrailService', () => {
         .where(eq(securityAlerts.entityId, testIpAddress));
 
       if (alerts.length > 0) {
-        expect(alerts[0].type).toBe('multiple_failed_logins');
-        expect(alerts[0].severity).toBe('high');
-        testAlertIds.push(alerts[0].id);
+        expect(alerts[0]?.type).toBe('multiple_failed_logins');
+        expect(alerts[0]?.severity).toBe('high');
+        testAlertIds.push(alerts[0]?.id);
       }
     });
   });

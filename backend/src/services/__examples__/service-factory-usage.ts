@@ -17,8 +17,8 @@ import {
 export class SomeController {
   async handleRequest() {
     // Old way still works (backwards compatible)
-    const encryptionService = ServiceFactory.getEncryptionService();
-    const emailService = ServiceFactory.getEmailService();
+    const _encryptionService = ServiceFactory.getEncryptionService();
+    const _emailService = ServiceFactory.getEmailService();
     
     // Use services...
     return { success: true };
@@ -32,8 +32,8 @@ export class ModernController {
 
   async handleRequest() {
     // New way - more explicit and testable
-    const encryptionService = this.container.resolve(SERVICE_TOKENS.ENCRYPTION);
-    const auditService = this.container.resolve(SERVICE_TOKENS.AUDIT_TRAIL);
+    const _encryptionService = this.container.resolve(SERVICE_TOKENS.ENCRYPTION);
+    const _auditService = this.container.resolve(SERVICE_TOKENS.AUDIT_TRAIL);
     
     // Use services...
     return { success: true };
@@ -54,7 +54,7 @@ export class UserService {
 
   async createUser(userData: any) {
     // Use injected services
-    const encryptedData = await this.encryptionService.encrypt(userData.sensitive);
+    const _encryptedData = await this.encryptionService.encrypt(userData.sensitive);
     await this.emailService.sendWelcomeEmail(userData.email);
     
     return { success: true };

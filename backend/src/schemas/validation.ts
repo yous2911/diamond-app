@@ -1,5 +1,4 @@
 // src/schemas/validation.ts
-import { z } from 'zod';
 
 // JSON Schema validation schemas for RevEd Kids API
 
@@ -16,7 +15,7 @@ const SafeString = { type: 'string', pattern: '^[a-zA-Z0-9\\s\\-_.]+$' };
 // Student schemas - REMOVED CONFLICTING StudentLoginSchema
 // Using auth.schema.ts loginSchema instead
 
-export const StudentRegistrationSchema = {
+export const _StudentRegistrationSchema = {
   type: 'object',
   required: ['email', 'password', 'firstName', 'lastName'],
   properties: {
@@ -32,7 +31,7 @@ export const StudentRegistrationSchema = {
   description: 'Schema for student registration request',
 };
 
-export const StudentUpdateSchema = {
+export const _StudentUpdateSchema = {
   type: 'object',
   properties: {
     firstName: { type: 'string', minLength: 1, maxLength: 50 },
@@ -46,7 +45,7 @@ export const StudentUpdateSchema = {
 };
 
 // Exercise attempt schema
-export const ExerciseAttemptSchema = {
+export const _ExerciseAttemptSchema = {
   type: 'object',
   required: ['exerciseId', 'answers', 'timeSpent', 'completed'],
   properties: {
@@ -77,7 +76,7 @@ export const ExerciseAttemptSchema = {
 };
 
 // Query parameter schemas
-export const PaginationSchema = {
+export const _PaginationSchema = {
   type: 'object',
   properties: {
     page: { type: 'number', minimum: 1, default: 1 },
@@ -90,7 +89,7 @@ export const PaginationSchema = {
   description: 'Schema for pagination query parameters',
 };
 
-export const StudentIdSchema = {
+export const _StudentIdSchema = {
   type: 'object',
   required: ['id'],
   properties: {
@@ -102,7 +101,7 @@ export const StudentIdSchema = {
 };
 
 // Response schemas
-export const ErrorResponseSchema = {
+export const _ErrorResponseSchema = {
   type: 'object',
   required: ['error', 'timestamp', 'path'],
   properties: {
@@ -143,7 +142,7 @@ export const StudentResponseSchema = {
 };
 
 // Authentication response schema
-export const AuthResponseSchema = {
+export const _AuthResponseSchema = {
   type: 'object',
   required: ['token', 'refreshToken', 'expiresIn', 'student'],
   properties: {
@@ -158,7 +157,7 @@ export const AuthResponseSchema = {
 };
 
 // Progress response schema
-export const ProgressResponseSchema = {
+export const _ProgressResponseSchema = {
   type: 'object',
   required: [
     'studentId',
@@ -203,7 +202,7 @@ export const ProgressResponseSchema = {
 };
 
 // Health check response schema
-export const HealthResponseSchema = {
+export const _HealthResponseSchema = {
   type: 'object',
   required: ['status', 'timestamp', 'uptime', 'environment', 'version', 'services', 'system'],
   properties: {

@@ -22,7 +22,7 @@ export const addSendWelcomeEmailJob = async (data: WelcomeEmailJobData) => {
       },
     });
     logger.info(`Added welcome email job for ${data.email} to the queue.`);
-  } catch (error) {
-    logger.error('Failed to add welcome email job to queue:', error);
+  } catch (error: unknown) {
+    logger.error('Failed to add welcome email job to queue', { err: error });
   }
 };

@@ -67,7 +67,7 @@ export const config = {
   isTest: env.NODE_ENV === 'test',
 };
 
-export const dbConfig: DatabaseConfig = {
+export const _dbConfig: DatabaseConfig = {
   host: env.DB_HOST,
   port: env.DB_PORT,
   user: env.DB_USER,
@@ -76,7 +76,7 @@ export const dbConfig: DatabaseConfig = {
   ssl: env.DB_SSL === 'true',
 };
 
-export const redisConfig: RedisConfig = {
+export const _redisConfig: RedisConfig = {
   ...(env.REDIS_HOST && { host: env.REDIS_HOST }),
   ...(env.REDIS_PORT && { port: env.REDIS_PORT }),
   ...(env.REDIS_PASSWORD && { password: env.REDIS_PASSWORD }),
@@ -85,13 +85,13 @@ export const redisConfig: RedisConfig = {
   db: 0,
 };
 
-export const jwtConfig = {
+export const _jwtConfig = {
   secret: env.JWT_SECRET,
   expiresIn: env.JWT_EXPIRES_IN,
 };
 
 // Health check configuration
-export const healthConfig = {
+export const _healthConfig = {
   database: {
     timeout: 5000,
     retries: 3,

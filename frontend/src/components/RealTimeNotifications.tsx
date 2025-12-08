@@ -39,7 +39,7 @@ const RealTimeNotifications: React.FC<RealTimeNotificationsProps> = ({
   const [showCelebration, setShowCelebration] = useState<Notification | null>(null);
   const [ws, setWs] = useState<WebSocket | null>(null);
 
-  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3004';
+  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3003/api';
   // Ensure WS_URL is properly constructed - remove any existing path and add /ws
   const baseUrl = API_URL.replace(/\/api.*$/, '').replace('http', 'ws');
   const WS_URL = baseUrl + '/ws';

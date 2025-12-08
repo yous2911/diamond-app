@@ -70,20 +70,20 @@ export class FileUploadService {
             const jobId = await this.queueBackgroundProcessing(uploadedFile);
             response.processingJobs?.push(jobId);
           }
-        } catch (error) {
+        } catch (error: unknown) {
           logger.error('Error processing file:', { 
             filename: file.originalname, 
-            error: error.message 
+            error: error instanceof Error ? error.message : 'Unknown error'
           });
-          response.errors?.push(`Failed to process ${file.originalname}: ${error.message}`);
+          response.errors?.push(`Failed to process ${file.originalname}: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
       }
 
       response.success = response.files.length > 0;
       return response;
 
-    } catch (error) {
-      logger.error('Error in file upload process:', error);
+    } catch (error: unknown) {
+      logger.error('Error in file upload process', { err: error });
       throw new Error('File upload processing failed');
     }
   }
@@ -104,10 +104,17 @@ export class FileUploadService {
     
     // Determine file category
     const category = request.category || this.detectFileCategory(file.mimetype);
+    if (!category) {
+      throw new Error('Unable to determine file category');
+    }
     
-    // Create file directory structure
+    // Create file directory structure - category is guaranteed to be string after null check
     const categoryPath = path.join(this.uploadPath, category);
-    const datePath = path.join(categoryPath, new Date().toISOString().split('T')[0]);
+    const dateStr = new Date().toISOString().split('T')[0];
+    if (!dateStr) {
+      throw new Error('Unable to generate date string');
+    }
+    const datePath = path.join(categoryPath, dateStr);
     await fs.ensureDir(datePath);
     
     const filePath = path.join(datePath, secureFilename);
@@ -165,8 +172,8 @@ export class FileUploadService {
         );
         uploadedFile.processedVariants = thumbnails;
         uploadedFile.thumbnailUrl = thumbnails.find(t => t.type === 'small')?.url;
-      } catch (error) {
-        logger.warn('Failed to generate thumbnails:', { fileId, error: error.message });
+      } catch (error: unknown) {
+        logger.warn('Failed to generate thumbnails:', { fileId, error: error instanceof Error ? error.message : 'Unknown error' });
       }
     }
 
@@ -181,8 +188,8 @@ export class FileUploadService {
             threats: scanResult.threats 
           });
         }
-      } catch (error) {
-        logger.error('Security scan failed:', { fileId, error: error.message });
+      } catch (error: unknown) {
+        logger.error('Security scan failed:', { fileId, error: error instanceof Error ? error.message : 'Unknown error' });
       }
     }
 
@@ -286,8 +293,8 @@ export class FileUploadService {
         metadata.format = imageInfo.format;
         metadata.colorSpace = imageInfo.space;
         metadata.hasAlpha = imageInfo.hasAlpha;
-      } catch (error) {
-        logger.warn('Failed to extract image metadata:', error.message);
+      } catch (error: unknown) {
+        logger.warn('Failed to extract image metadata:', { error: error instanceof Error ? error.message : 'Unknown error' });
       }
     }
 
@@ -327,8 +334,8 @@ export class FileUploadService {
     if (mimetype.startsWith('image/')) {
       try {
         await this.imageProcessor.validateImageStructure(buffer);
-      } catch (error) {
-        throw new Error(`Invalid image structure: ${error.message}`);
+      } catch (error: unknown) {
+        throw new Error(`Invalid image structure: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
     }
   }
@@ -429,8 +436,8 @@ export class FileUploadService {
       }
 
       logger.info('File upload storage initialized', { uploadPath: this.uploadPath });
-    } catch (error) {
-      logger.error('Failed to initialize upload storage:', error);
+    } catch (error: unknown) {
+      logger.error('Failed to initialize upload storage', { err: error });
       throw new Error('Storage initialization failed');
     }
   }
@@ -474,8 +481,8 @@ export class FileUploadService {
 
       logger.info('File deleted successfully', { fileId, userId });
       return true;
-    } catch (error) {
-      logger.error('Error deleting file:', { fileId, error: error.message });
+    } catch (error: unknown) {
+      logger.error('Error deleting file:', { fileId, error: error instanceof Error ? error.message : 'Unknown error' });
       throw error;
     }
   }

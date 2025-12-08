@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
-import { enhancedDatabaseService as databaseService } from '../services/enhanced-database.service.js';
-import { competenciesService } from '../services/competencies.service.js';
+
+import { competenciesService, CompetencyListFilters } from '../services/competencies.service.js';
+import { databaseService } from '../services/enhanced-database.service.js';
 import {
   GetCompetenciesSchema,
   GetCompetenceSchema,
@@ -12,7 +13,7 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
   // GET /api/competences - List all competencies with optional filtering
   fastify.get('/', { schema: GetCompetenciesSchema }, async (request, reply) => {
     try {
-      const filters = request.query;
+      const filters = request.query as CompetencyListFilters;
       const cacheKey = competenciesService.generateListCacheKey(filters);
 
       let competencies;
@@ -22,21 +23,21 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
           competencies = JSON.parse(cached);
           return reply.send({ success: true, data: competencies, cached: true });
         }
-      } catch (redisError) {
+      } catch (redisError: unknown) {
         fastify.log.warn('Redis cache miss or error');
       }
 
-      competencies = await competenciesService.getCompetenciesList(fastify.db, filters);
+      competencies = await competenciesService.getCompetenciesList(fastify.db, filters || {});
 
       try {
         await fastify.redis.setex(cacheKey, 300, JSON.stringify(competencies));
-      } catch (redisError) {
+      } catch (redisError: unknown) {
         fastify.log.warn('Redis cache set error');
       }
 
       reply.send({ success: true, data: competencies, cached: false });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    } catch (error: unknown) {
+      const _errorMessage = error instanceof Error ? error.message : 'Unknown error';
       fastify.log.error({ err: error }, 'Error listing competencies');
       reply.status(500).send({
         success: false,
@@ -58,7 +59,7 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
           competency = JSON.parse(cached);
           return reply.send({ success: true, data: competency, cached: true });
         }
-      } catch (redisError) {
+      } catch (redisError: unknown) {
         fastify.log.warn('Redis cache miss or error');
       }
 
@@ -73,13 +74,13 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
 
       try {
         await fastify.redis.setex(cacheKey, 300, JSON.stringify(competency));
-      } catch (redisError) {
+      } catch (redisError: unknown) {
         fastify.log.warn('Redis cache set error');
       }
 
       reply.send({ success: true, data: competency, cached: false });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    } catch (error: unknown) {
+      const _errorMessage = error instanceof Error ? error.message : 'Unknown error';
       fastify.log.error({ err: error }, 'Error getting competency');
       reply.status(500).send({
         success: false,
@@ -102,7 +103,7 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
         depth
       });
 
-      let studentProgressData = null;
+      let studentProgressData: Awaited<ReturnType<typeof databaseService.getStudentCompetenceProgress>> | null = null;
       if (studentId) {
         const prerequisiteCodes = prerequisites.map(p => p.prerequisiteCode);
         studentProgressData = await databaseService.getStudentCompetenceProgress(studentId, {
@@ -137,13 +138,13 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
         requiredPrerequisites: prerequisites.length,
         studentReadiness: studentProgressData ? {
           requiredMet: prerequisites.every(p => {
-              const progress = studentProgressData.find(sp => sp.competenceCode === p.prerequisiteCode);
+              const progress = studentProgressData?.find(sp => sp.competenceCode === p.prerequisiteCode);
               return progress && progress.masteryLevel !== 'decouverte';
             }),
-          readinessScore: calculateReadinessScore(prerequisites, studentProgressData),
+          readinessScore: calculateReadinessScore(prerequisites, studentProgressData || []),
           blockers: prerequisites
             .filter(p => {
-              const progress = studentProgressData.find(sp => sp.competenceCode === p.prerequisiteCode);
+              const progress = studentProgressData?.find(sp => sp.competenceCode === p.prerequisiteCode);
               return !progress || progress.masteryLevel === 'decouverte';
             })
             .map(p => p.prerequisiteCode)
@@ -164,8 +165,8 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
         }
       });
 
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    } catch (error: unknown) {
+      const _errorMessage = error instanceof Error ? error.message : 'Unknown error';
       fastify.log.error({ err: error }, 'Error getting competence prerequisites:');
       reply.status(500).send({
         success: false,
@@ -229,8 +230,8 @@ export default async function competencesRoutes(fastify: FastifyInstance) {
         });
       }
 
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    } catch (error: unknown) {
+      const _errorMessage = error instanceof Error ? error.message : 'Unknown error';
       fastify.log.error({ err: error }, 'Error getting competence progress:');
       reply.status(500).send({
         success: false,

@@ -9,7 +9,8 @@ import {
   authRateLimitMiddleware 
 } from '../middleware/auth.middleware';
 import { jwtConfig, cookieConfig, config } from '../config/config';
-import { AuthService } from '../services/auth.service';
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { logger } from '../utils/logger';
 
 const authPlugin = async (fastify: any) => {

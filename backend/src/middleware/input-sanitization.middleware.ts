@@ -126,8 +126,8 @@ export class InputSanitizationService {
         });
       }
 
-    } catch (error) {
-      logger.error('Input sanitization error:', error);
+    } catch (error: unknown) {
+      logger.error('Input sanitization error', { err: error });
       
       // Log security incident
       logger.warn('Potential security threat detected', {
@@ -135,7 +135,7 @@ export class InputSanitizationService {
         method: request.method,
         userAgent: request.headers['user-agent'],
         ip: request.ip,
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       });
 
       return reply.status(400).send({
@@ -305,8 +305,8 @@ export class InputSanitizationService {
       // 9. Final validation
       sanitized = this.finalValidation(sanitized, context, warnings);
 
-    } catch (error) {
-      logger.error('String sanitization error:', { error, context, value: originalValue });
+    } catch (error: unknown) {
+      logger.error('String sanitization error:', { err: error, context, value: originalValue });
       warnings.push(`${context}: Sanitization error occurred`);
       // Return empty string as fallback for security
       return '';
@@ -540,7 +540,7 @@ export class InputSanitizationService {
         warnings.push('Invalid email format');
         // Return sanitized version if possible
         const emailParts = value.split('@');
-        if (emailParts.length === 2) {
+        if (emailParts.length === 2 && emailParts[0] && emailParts[1]) {
           return `${validator.escape(emailParts[0])}@${validator.escape(emailParts[1])}`;
         }
         return '';

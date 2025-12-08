@@ -6,7 +6,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { backupService } from '../services/backup.service';
 import { promises as fs } from 'fs';
-import { join } from 'path';
+
 import { spawn } from 'child_process';
 import { createReadStream, createWriteStream, existsSync } from 'fs';
 import { createGzip, createGunzip } from 'zlib';
@@ -492,8 +492,8 @@ describe('Backup Service', () => {
       const backups = await backupService.listBackups();
 
       expect(backups).toHaveLength(2);
-      expect(backups[0].id).toBe('backup-2'); // Newest first
-      expect(backups[1].id).toBe('backup-1');
+      expect(backups[0]?.id).toBe('backup-2'); // Newest first
+      expect(backups[1]?.id).toBe('backup-1');
     });
 
     it('should limit number of backups returned', async () => {

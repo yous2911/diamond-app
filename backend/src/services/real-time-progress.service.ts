@@ -5,10 +5,9 @@
  */
 
 import { WebSocket } from 'ws';
-import { db } from '../db/setup.js';
+import { db } from '../db/connection';
 import { students, studentProgress, studentAchievements, parentStudentRelations, parents } from '../db/schema.js';
-import { eq, and, desc, gte } from 'drizzle-orm';
-
+import { eq, and, gte } from 'drizzle-orm';
 export interface ProgressUpdate {
   type: 'exercise_completed' | 'level_up' | 'streak_milestone' | 'competency_mastered' | 'achievement_unlocked';
   studentId: number;
@@ -76,7 +75,7 @@ class RealTimeProgressService {
         timeSpent: exerciseData.timeSpent,
         isCorrect: exerciseData.isCorrect,
         competencyCode: exerciseData.competencyCode,
-        studentName: `${student[0].prenom} ${student[0].nom}`
+        studentName: `${student[0]?.prenom} ${student[0]?.nom}`
       },
       timestamp: new Date()
     };
@@ -107,7 +106,7 @@ class RealTimeProgressService {
       data: {
         newLevel,
         xpGained,
-        studentName: `${student[0].prenom} ${student[0].nom}`
+        studentName: `${student[0]?.prenom} ${student[0]?.nom}`
       },
       timestamp: new Date()
     };
@@ -143,7 +142,7 @@ class RealTimeProgressService {
       studentId,
       data: {
         streak,
-        studentName: `${student[0].prenom} ${student[0].nom}`,
+        studentName: `${student[0]?.prenom} ${student[0]?.nom}`,
         milestone: this.getStreakMilestone(streak)
       },
       timestamp: new Date()
@@ -206,7 +205,10 @@ class RealTimeProgressService {
       ));
 
     const totalAttempts = competencyProgress.length;
-    const correctAttempts = competencyProgress.filter(p => p.score && parseFloat(p.score.toString()) >= 80).length;
+    const correctAttempts = competencyProgress.filter(p => {
+      const score = p.averageScore ? parseFloat(p.averageScore.toString()) : 0;
+      return score >= 80;
+    }).length;
     const masteryRatio = correctAttempts / totalAttempts;
 
     if (totalAttempts >= 3 && masteryRatio >= 0.8) {
@@ -238,7 +240,7 @@ class RealTimeProgressService {
       data: {
         competencyCode,
         masteryLevel,
-        studentName: `${student[0].prenom} ${student[0].nom}`,
+        studentName: `${student[0]?.prenom} ${student[0]?.nom}`,
         xpReward: 100
       },
       timestamp: new Date()

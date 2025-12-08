@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { FastifyInstance } from 'fastify';
+
 import { app } from './setup';
 import { competenciesService } from '../services/competencies.service';
 
@@ -95,7 +95,7 @@ describe('CE2 Competencies Implementation', () => {
         const result = await competenciesService.getCompetenciesList(mockDb, {
           level: 'CE2',
           subject: 'FR',
-          limit: 10,
+          limit: _10,
           offset: 0
         });
 
@@ -306,7 +306,7 @@ describe('CE2 Competencies Implementation', () => {
         "SELECT COUNT(*) as count FROM competences_cp WHERE code LIKE 'CE2.%'"
       );
 
-      expect(result[0].count).toBe(32);
+      expect(result[0]?.count).toBe(32);
     });
 
     it('should have 17 French CE2 competencies', async () => {
@@ -316,7 +316,7 @@ describe('CE2 Competencies Implementation', () => {
         "SELECT COUNT(*) as count FROM competences_cp WHERE code LIKE 'CE2.FR.%'"
       );
 
-      expect(result[0].count).toBe(17);
+      expect(result[0]?.count).toBe(17);
     });
 
     it('should have 15 Math CE2 competencies', async () => {
@@ -326,7 +326,7 @@ describe('CE2 Competencies Implementation', () => {
         "SELECT COUNT(*) as count FROM competences_cp WHERE code LIKE 'CE2.MA.%'"
       );
 
-      expect(result[0].count).toBe(15);
+      expect(result[0]?.count).toBe(15);
     });
   });
 

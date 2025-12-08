@@ -60,7 +60,7 @@ describe('Database Connection', () => {
     // Reset connection state by disconnecting first
     try {
       await db.disconnectDatabase();
-    } catch (e) {
+    } catch (e: unknown) {
       // Ignore errors if not connected
     }
     // Reset stats
@@ -179,7 +179,7 @@ describe('Database Connection', () => {
       // Disconnect first to reset state
       try {
         await db.disconnectDatabase();
-      } catch (e) {
+      } catch (e: unknown) {
         // Ignore errors if not connected
       }
       vi.useFakeTimers();
@@ -306,7 +306,7 @@ describe('Database Connection', () => {
 
     it('should return a degraded status for slow queries', async () => {
       // Mock both queries - first one is slow
-      mockPool.execute.mockImplementation((query: string) => {
+      mockPool.execute.mockImplementation((query: _string) => {
         if (query.includes('connection_test')) {
           return new Promise(resolve => setTimeout(() => resolve([[{ connection_test: 1 }]]), 5500));
         }

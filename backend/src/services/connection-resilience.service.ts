@@ -142,7 +142,7 @@ class ConnectionResilienceService extends EventEmitter {
       logger.info('Connection resilience service initialized successfully');
       this.emit('initialized');
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to initialize connection resilience service', { error });
       throw error;
     }
@@ -152,7 +152,7 @@ class ConnectionResilienceService extends EventEmitter {
     this.healthCheckInterval = setInterval(async () => {
       try {
         await this.performHealthCheck();
-      } catch (error) {
+      } catch (error: unknown) {
         logger.debug('Health check interval error', { error });
       }
     }, this.config.healthCheck.interval);
@@ -189,7 +189,7 @@ class ConnectionResilienceService extends EventEmitter {
         this.recordFailedHealthCheck(new Error('Health check returned false'));
       }
 
-    } catch (error) {
+    } catch (error: unknown) {
       this.recordFailedHealthCheck(error);
     }
   }
@@ -226,7 +226,7 @@ class ConnectionResilienceService extends EventEmitter {
       logger.error('Database marked as unhealthy', {
         consecutiveFailures: this.consecutiveHealthFailures,
         threshold: this.config.healthCheck.failureThreshold,
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       });
       this.emit('healthDegraded', error);
     }
@@ -306,7 +306,7 @@ class ConnectionResilienceService extends EventEmitter {
       
       return result;
 
-    } catch (error) {
+    } catch (error: unknown) {
       // Record failure
       this.recordOperationFailure(error);
       throw error;
@@ -348,11 +348,11 @@ class ConnectionResilienceService extends EventEmitter {
 
         return result;
 
-      } catch (error) {
-        retryOperation.lastError = error;
+      } catch (error: unknown) {
+        retryOperation.lastError = error instanceof Error ? error : undefined;
 
         // Check if error is timeout
-        if (error.message.includes('timeout')) {
+        if (error instanceof Error && error.message.includes('timeout')) {
           this.timeoutErrors++;
         } else {
           this.connectionErrors++;
@@ -372,7 +372,7 @@ class ConnectionResilienceService extends EventEmitter {
             operationId: retryOperation.id,
             attempt: retryOperation.attempts,
             maxAttempts: retryOperation.maxAttempts,
-            error: error.message,
+            error: error instanceof Error ? error.message : 'Unknown error',
             retryDelay: delay
           });
 
@@ -388,7 +388,7 @@ class ConnectionResilienceService extends EventEmitter {
       attempts: retryOperation.attempts,
       totalTime: Date.now() - retryOperation.startTime.getTime(),
       delays: retryOperation.delays,
-      finalError: error.message
+      finalError: error instanceof Error ? error.message : 'Unknown error'
     });
 
     throw error;
@@ -421,7 +421,7 @@ class ConnectionResilienceService extends EventEmitter {
       'Connection refused'
     ];
 
-    const errorMessage = error.message || error.code || '';
+    const errorMessage = (error instanceof Error ? error.message : String(error)) || (error && typeof error === 'object' && 'code' in error ? String(error.code) : '') || '';
     return retryableErrors.some(retryableError => 
       errorMessage.toLowerCase().includes(retryableError.toLowerCase())
     );
@@ -457,7 +457,7 @@ class ConnectionResilienceService extends EventEmitter {
   private recordOperationFailure(error: any): void {
     this.recordFailure();
     
-    if (error.message.includes('timeout')) {
+    if (error instanceof Error && error.message.includes('timeout')) {
       this.timeoutErrors++;
     } else {
       this.connectionErrors++;
@@ -539,10 +539,10 @@ class ConnectionResilienceService extends EventEmitter {
           return true;
         }
 
-      } catch (error) {
+      } catch (error: unknown) {
         logger.warn('Recovery attempt failed', {
           attempt,
-          error: error.message
+          error: error instanceof Error ? error.message : 'Unknown error'
         });
       }
 
@@ -560,8 +560,8 @@ class ConnectionResilienceService extends EventEmitter {
       try {
         await connection.execute(query);
         logger.debug('Warmup query successful', { query });
-      } catch (error) {
-        logger.warn('Warmup query failed', { query, error: error.message });
+      } catch (error: unknown) {
+        logger.warn('Warmup query failed', { query, error: error instanceof Error ? error.message : 'Unknown error' });
       }
     }
   }
@@ -592,7 +592,7 @@ class ConnectionResilienceService extends EventEmitter {
   }
 
   getLatestMetrics(): ConnectionMetrics | null {
-    return this.metrics.length > 0 ? this.metrics[this.metrics.length - 1] : null;
+    return this.metrics.length > 0 ? (this.metrics[this.metrics.length - 1] || null) : null;
   }
 
   forceCircuitBreakerOpen(): void {

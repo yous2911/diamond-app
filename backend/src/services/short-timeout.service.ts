@@ -6,4 +6,4 @@ export class ShortTimeoutService extends FileSecurityService {
   }
 }
 
-export const shortTimeoutService = new ShortTimeoutService();
+export const _shortTimeoutService = new ShortTimeoutService();

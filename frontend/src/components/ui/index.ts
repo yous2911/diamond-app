@@ -6,6 +6,8 @@ export { Toast, useToast, ToastContainer } from './Toast';
 export { AnimatedCard } from './AnimatedCard';
 export { SparkleElements, MagicElements, CelebrationElements } from './FloatingElements';
 export { ProgressBar } from './ProgressBar';
+export { StreakFlame } from './StreakFlame';
+export { SevenDayChest } from './SevenDayChest';
 
 // UI component mapping
 export const UI_COMPONENTS = {

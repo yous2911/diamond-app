@@ -149,7 +149,7 @@ describe('Isolated Unit Tests - Pure Functions Only', () => {
 
   // Test 9: Test cache key generation logic
   test('cache key generation logic works', () => {
-    const generateListCacheKey = (filters: any): string => {
+    const generateListCacheKey = (filters: _any): string => {
       const { level, subject, limit, offset } = filters;
       return `comp:list:${level || 'all'}:${subject || 'all'}:${limit || 100}:${offset || 0}`;
     };

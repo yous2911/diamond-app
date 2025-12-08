@@ -6,7 +6,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { databaseMonitorService } from '../services/database-monitor.service';
 import { connection, getPoolStats } from '../db/connection';
-import { EventEmitter } from 'events';
+
 import * as cron from 'node-cron';
 import * as os from 'os';
 
@@ -64,7 +64,7 @@ describe('Database Monitor Service', () => {
     // Mock CPU info
     mockCpus.mockReturnValue([
       { times: { idle: 100, user: 200, nice: 0, sys: 50, irq: 0 } },
-      { times: { idle: 150, user: 180, nice: 0, sys: 40, irq: 0 } }
+      { times: { idle: _150, user: _180, nice: 0, sys: _40, irq: 0 } }
     ]);
   });
 
@@ -309,8 +309,8 @@ describe('Database Monitor Service', () => {
 
       const activeAlerts = await databaseMonitorService.getActiveAlerts();
       expect(activeAlerts).toHaveLength(1);
-      expect(activeAlerts[0].category).toBe('connection');
-      expect(activeAlerts[0].type).toBe('critical'); // Above 95%
+      expect(activeAlerts[0]?.category).toBe('connection');
+      expect(activeAlerts[0]?.type).toBe('critical'); // Above 95%
     });
 
     it('should trigger buffer pool hit rate alert', async () => {
@@ -332,8 +332,8 @@ describe('Database Monitor Service', () => {
 
       const activeAlerts = await databaseMonitorService.getActiveAlerts();
       expect(activeAlerts).toHaveLength(1);
-      expect(activeAlerts[0].category).toBe('resource');
-      expect(activeAlerts[0].type).toBe('warning');
+      expect(activeAlerts[0]?.category).toBe('resource');
+      expect(activeAlerts[0]?.type).toBe('warning');
     });
 
     it('should trigger lock wait time alert', async () => {
@@ -355,8 +355,8 @@ describe('Database Monitor Service', () => {
 
       const activeAlerts = await databaseMonitorService.getActiveAlerts();
       expect(activeAlerts).toHaveLength(1);
-      expect(activeAlerts[0].category).toBe('query');
-      expect(activeAlerts[0].type).toBe('error');
+      expect(activeAlerts[0]?.category).toBe('query');
+      expect(activeAlerts[0]?.type).toBe('error');
     });
 
     it('should trigger replication lag alert', async () => {
@@ -367,7 +367,7 @@ describe('Database Monitor Service', () => {
         performance: { cpuUsage: 0, memoryUsage: 0, diskIO: { reads: 0, writes: 0, readLatency: 0, writeLatency: 0 }, bufferPoolHitRate: 100, lockWaitTime: 0 },
         storage: { databaseSize: 0, indexSize: 0, totalSize: 0, freeSpace: 0, tableCount: 0 },
         replication: {
-          lag: 120, // Above 60 second threshold
+          lag: _120, // Above 60 second threshold
           status: 'running' as const,
           slaveThreads: { sql: true, io: true }
         }
@@ -377,8 +377,8 @@ describe('Database Monitor Service', () => {
 
       const activeAlerts = await databaseMonitorService.getActiveAlerts();
       expect(activeAlerts).toHaveLength(1);
-      expect(activeAlerts[0].category).toBe('replication');
-      expect(activeAlerts[0].type).toBe('error');
+      expect(activeAlerts[0]?.category).toBe('replication');
+      expect(activeAlerts[0]?.type).toBe('error');
     });
 
     it('should resolve alerts', async () => {
@@ -396,7 +396,7 @@ describe('Database Monitor Service', () => {
       const activeAlerts = await databaseMonitorService.getActiveAlerts();
       expect(activeAlerts).toHaveLength(1);
 
-      const alertId = activeAlerts[0].id;
+      const alertId = activeAlerts[0]?.id;
       const resolved = await databaseMonitorService.resolveAlert(alertId);
 
       expect(resolved).toBe(true);
@@ -458,7 +458,7 @@ describe('Database Monitor Service', () => {
     it('should return critical status with critical alerts', async () => {
       const criticalMetrics = {
         timestamp: new Date(),
-        connections: { active: 14, idle: 1, total: 15, utilization: 96, queueLength: 0 }, // Critical
+        connections: { active: 14, idle: 1, total: 15, utilization: _96, queueLength: 0 }, // Critical
         queries: { slowQueries: 0, totalQueries: 0, averageQueryTime: 0, queriesPerSecond: 0 },
         performance: { cpuUsage: 0, memoryUsage: 0, diskIO: { reads: 0, writes: 0, readLatency: 0, writeLatency: 0 }, bufferPoolHitRate: 100, lockWaitTime: 0 },
         storage: { databaseSize: 0, indexSize: 0, totalSize: 0, freeSpace: 0, tableCount: 0 }
@@ -515,8 +515,8 @@ describe('Database Monitor Service', () => {
           row_count: 1000,
           data_size: 1048576,
           index_size: 524288,
-          avg_row_length: 1024,
-          fragmentation: 104857, // 10% fragmentation
+          avg_row_length: _1024,
+          fragmentation: _104857, // 10% fragmentation
           last_updated: '2024-01-15 10:00:00'
         }
       ];
@@ -526,9 +526,9 @@ describe('Database Monitor Service', () => {
       const analysis = await (databaseMonitorService as any).analyzeTableHealth();
 
       expect(analysis).toHaveLength(1);
-      expect(analysis[0].tableName).toBe('students');
-      expect(analysis[0].fragmentationRatio).toBe(10);
-      expect(analysis[0].recommendedActions).toContain('OPTIMIZE TABLE to reduce fragmentation');
+      expect(analysis[0]?.tableName).toBe('students');
+      expect(analysis[0]?.fragmentationRatio).toBe(10);
+      expect(analysis[0]?.recommendedActions).toContain('OPTIMIZE TABLE to reduce fragmentation');
     });
 
     it('should analyze index usage', async () => {
@@ -547,10 +547,10 @@ describe('Database Monitor Service', () => {
       const analysis = await (databaseMonitorService as any).analyzeIndexUsage();
 
       expect(analysis).toHaveLength(1);
-      expect(analysis[0].tableName).toBe('students');
-      expect(analysis[0].indexName).toBe('idx_email');
-      expect(analysis[0].columns).toEqual(['email']);
-      expect(analysis[0].cardinality).toBe(1000);
+      expect(analysis[0]?.tableName).toBe('students');
+      expect(analysis[0]?.indexName).toBe('idx_email');
+      expect(analysis[0]?.columns).toEqual(['email']);
+      expect(analysis[0]?.cardinality).toBe(1000);
     });
 
     it('should handle analysis errors gracefully', async () => {
@@ -600,7 +600,7 @@ describe('Database Monitor Service', () => {
 
     it('should get metrics history for specified hours', async () => {
       const now = new Date();
-      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+      const _oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
       const twoHoursAgo = new Date(now.getTime() - 2 * 60 * 60 * 1000);
 
       const recentMetric = {
@@ -624,7 +624,7 @@ describe('Database Monitor Service', () => {
       const history = await databaseMonitorService.getMetricsHistory(1.5); // 1.5 hours
 
       expect(history).toHaveLength(1);
-      expect(history[0].timestamp).toEqual(recentMetric.timestamp);
+      expect(history[0]?.timestamp).toEqual(recentMetric.timestamp);
     });
 
     it('should cleanup old metrics', async () => {
@@ -654,7 +654,7 @@ describe('Database Monitor Service', () => {
 
       const remainingMetrics = (databaseMonitorService as any).metrics;
       expect(remainingMetrics).toHaveLength(1);
-      expect(remainingMetrics[0].timestamp).toEqual(recentMetric.timestamp);
+      expect(remainingMetrics[0]?.timestamp).toEqual(recentMetric.timestamp);
     });
   });
 

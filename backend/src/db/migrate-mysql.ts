@@ -46,7 +46,7 @@ class MySQLMigrationRunner {
       
       logger.info('Switched to database', { database: dbConfig.database });
 
-    } catch (error) {
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logger.error('Failed to connect to MySQL:', { error: errorMessage });
       throw error;
@@ -60,7 +60,7 @@ class MySQLMigrationRunner {
     try {
       await this.connection!.execute(`CREATE DATABASE IF NOT EXISTS ${dbConfig.database}`);
       logger.info('Database created or already exists', { database: dbConfig.database });
-    } catch (error) {
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logger.error('Failed to create database:', { error: errorMessage });
       throw error;
@@ -93,7 +93,7 @@ class MySQLMigrationRunner {
       }
 
       return migrations;
-    } catch (error) {
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logger.error('Failed to read migration files:', { error: errorMessage });
       throw error;
@@ -120,7 +120,7 @@ class MySQLMigrationRunner {
       }
 
       logger.info(`Migration completed: ${migration.name}`);
-    } catch (error) {
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logger.error(`Migration failed: ${migration.name}`, { error: errorMessage });
       throw error;
@@ -141,7 +141,7 @@ class MySQLMigrationRunner {
       }
 
       logger.info('All migrations completed successfully');
-    } catch (error) {
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logger.error('Migration process failed:', { error: errorMessage });
       throw error;
@@ -238,7 +238,7 @@ class MySQLMigrationRunner {
       `);
 
       logger.info('Sample data inserted successfully');
-    } catch (error) {
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logger.error('Failed to insert sample data:', { error: errorMessage });
       throw error;
@@ -289,7 +289,7 @@ class MySQLMigrationRunner {
         competences: (competenceCount as any[])[0].count
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       logger.error('Database verification failed:', { error: errorMessage });
       throw error;
@@ -327,7 +327,7 @@ export async function runMigrations(includeSampleData: boolean = true): Promise<
     await migrationRunner.verifySetup();
     
     logger.info('MySQL database migration completed successfully!');
-  } catch (error) {
+  } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     logger.error('Migration failed:', { error: errorMessage });
     throw error;

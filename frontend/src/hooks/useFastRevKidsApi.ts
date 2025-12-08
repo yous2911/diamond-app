@@ -4,7 +4,8 @@ import { StudentProgress } from '../services/fastrevkids-api.service';
 // Mock data for development - replace with actual API calls
 const MOCK_PROGRESS_DATA: StudentProgress[] = [
   {
-    id: 1,
+    id: '1',
+    studentId: 'student-1',
     competenceId: 'math-basics',
     competenceName: 'Mathématiques de Base',
     status: 'mastered',
@@ -16,11 +17,11 @@ const MOCK_PROGRESS_DATA: StudentProgress[] = [
     attempts: 12,
     successes: 12,
     repetitionNumber: 5,
-    easinessFactor: 2.5,
-    nextReviewDate: new Date('2024-01-22')
+    easinessFactor: 2.5
   },
   {
-    id: 2,
+    id: '2',
+    studentId: 'student-1',
     competenceId: 'french-phonics',
     competenceName: 'Phonétique Française',
     status: 'learning',
@@ -32,24 +33,23 @@ const MOCK_PROGRESS_DATA: StudentProgress[] = [
     attempts: 8,
     successes: 6,
     repetitionNumber: 2,
-    easinessFactor: 1.8,
-    nextReviewDate: new Date('2024-01-16')
+    easinessFactor: 1.8
   },
   {
-    id: 3,
+    id: '3',
+    studentId: 'student-1',
     competenceId: 'vocabulary',
     competenceName: 'Vocabulaire',
     status: 'not_started',
     progress: 0,
     timeSpent: 0,
-    lastPracticed: null,
-    nextReview: null,
+    lastPracticed: undefined,
+    nextReview: undefined,
     difficulty: 1,
     attempts: 0,
     successes: 0,
     repetitionNumber: 0,
-    easinessFactor: 2.5,
-    nextReviewDate: null
+    easinessFactor: 2.5
   }
 ];
 

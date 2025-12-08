@@ -32,7 +32,7 @@ export async function build() {
     if (!fastify.hasDecorator('db')) {
       fastify.decorate('db', fastify.db);
     }
-  } catch (error) {
+  } catch (error: unknown) {
     console.warn('Plugin registration warning:', error);
     // Continue with reduced functionality for testing
   }
@@ -46,7 +46,7 @@ export async function build() {
     await fastify.register(import('./routes/competences'), { prefix: '/api/competences' });
     await fastify.register(import('./routes/gdpr'), { prefix: '/api/gdpr' });
     await fastify.register(import('./routes/upload'), { prefix: '/api' });
-  } catch (error) {
+  } catch (error: unknown) {
     console.warn('Route registration warning:', error);
     // Continue with reduced functionality for testing
   }

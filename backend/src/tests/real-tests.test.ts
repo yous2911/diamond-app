@@ -2,7 +2,7 @@
  * REAL TESTS - No Mocks, Testing Actual Code
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { AuthService } from '../services/auth.service';
 import { db } from '../db/connection';
 import { students } from '../db/schema';

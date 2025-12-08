@@ -1,0 +1,77 @@
+[33mcommit 435145b3aa42555774bb0e03c9b0ec5406c2d1e1[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m, [m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: yous2911 <youssefbgh@gmail.com>
+Date:   Wed Nov 26 11:24:28 2025 +0100
+
+    Update backend and frontend: Add database migrations, GDPR features, analytics, and documentation
+
+ ACCURATE_FULL_STACK_GRADE.md                       |  353 [32m+++++[m
+ COMPREHENSIVE_PLATFORM_AUDIT_REPORT.md             | 1565 [32m++++++++++++++++++++[m
+ CSR_AUDIT_REPORT.md                                |  626 [32m++++++++[m
+ CURSOR_VALIDATION_REPORT.md                        |  283 [32m++++[m
+ DATABASE_DEPLOYMENT_READINESS.md                   |  320 [32m++++[m
+ DATABASE_READY_FOR_DEPLOYMENT.md                   |  129 [32m++[m
+ DEEP_CODE_ANALYSIS_REPORT.md                       |  786 [32m++++++++++[m
+ DEPLOYMENT_FIXES_APPLIED.md                        |  120 [32m++[m
+ DEPLOYMENT_READINESS_FINAL.md                      |   95 [32m++[m
+ ERROR_DIVISION_PLAN.md                             |  210 [32m+++[m
+ FULL_STACK_COMPREHENSIVE_GRADE.md                  |  464 [32m++++++[m
+ HONEST_FULL_STACK_ASSESSMENT.md                    |  253 [32m++++[m
+ MIGRATION_008_SUMMARY.md                           |  227 [32m+++[m
+ QUICK_DEPLOYMENT_FIXES.md                          |   69 [32m+[m
+ QUICK_START_TODAY.md                               |  179 [32m+++[m
+ ROUTES_REGISTRATION_SUMMARY.md                     |  281 [32m++++[m
+ SCHEMA_MISMATCH_ANALYSIS.md                        |  162 [32m++[m
+ SESSION_WORK_SUMMARY.md                            |  384 [32m+++++[m
+ backend/BACKEND_STRENGTH_ANALYSIS.md               |    2 [32m+[m
+ backend/CURRENT_STATUS.md                          |    2 [32m+[m
+ backend/railway.env                                |   75 [32m+[m
+ backend/scripts/generate-secrets.js                |   28 [32m+[m
+ backend/src/config/tracing.ts                      |   64 [32m+[m[31m-[m
+ backend/src/db/migrate-leaderboards.ts             |  438 [32m+++[m[31m---[m
+ backend/src/db/migrate-mysql.ts                    |   26 [32m+[m[31m-[m
+ .../migrations/005_create_parent_system_tables.sql |   91 [32m++[m
+ .../migrations/006_create_gdpr_security_tables.sql |  152 [32m++[m
+ .../db/migrations/007_create_analytics_tables.sql  |  190 [32m+++[m
+ .../db/migrations/008_create_missing_tables.sql    |  200 [32m+++[m
+ backend/src/db/optimized-queries.ts                |   92 [32m+[m[31m-[m
+ backend/src/db/seed-leaderboards.ts                |  245 [32m+[m[31m--[m
+ backend/src/db/seed.ts                             |   15 [32m+[m[31m-[m
+ backend/src/db/seeds/cp2025-exercises.ts           |  221 [32m++[m[31m-[m
+ backend/src/db/setup.ts                            |  357 [32m++[m[31m---[m
+ backend/src/jobs/logger.ts                         |   61 [32m+[m[31m-[m
+ backend/src/middleware/audit.middleware.ts         |   16 [32m+[m[31m-[m
+ backend/src/middleware/auth.middleware.ts          |    1 [31m-[m
+ backend/src/plugins/gdpr.ts                        |   25 [32m+[m[31m-[m
+ backend/src/routes/analytics.ts                    |  702 [32m++++[m[31m-----[m
+ backend/src/routes/auth.ts                         |   10 [32m+[m[31m-[m
+ backend/src/routes/competences.ts                  |   54 [32m+[m[31m-[m
+ backend/src/routes/parent-auth.ts                  |  432 [32m+++[m[31m---[m
+ backend/src/server.ts                              |   11 [32m+[m[31m-[m
+ backend/src/services/gdpr-rights.service.ts        |   16 [32m+[m[31m-[m
+ backend/src/services/parent-auth.service.ts        |  642 [32m++++[m[31m----[m
+ .../src/services/slow-query-optimizer.service.ts   |   14 [32m+[m[31m-[m
+ backend/src/services/storage.service.ts            |  156 [32m+[m[31m-[m
+ backend/src/tests/database-connection.test.ts      |   80 [32m+[m[31m-[m
+ backend/src/tests/db-mock.ts                       |  274 [32m++[m[31m--[m
+ backend/src/tests/helpers/auth.helper.ts           |  130 [32m+[m[31m-[m
+ backend/src/tests/helpers/db.helper.ts             |  106 [32m+[m[31m-[m
+ backend/src/tests/minimal-test.ts                  |  109 [32m+[m[31m-[m
+ backend/src/tests/real-app-test.ts                 |  113 [32m+[m[31m-[m
+ backend/src/tests/setup-real-db.ts                 |  443 [32m+++[m[31m---[m
+ backend/src/tests/setup.ts                         |   13 [32m+[m[31m-[m
+ backend/src/types/fastify-extended.ts              |    8 [32m+[m[31m-[m
+ backend/src/types/fastify-extensions.d.ts          |   31 [32m+[m
+ backend/src/types/gdpr.types.ts                    |    1 [32m+[m
+ .../utils/__examples__/error-handling-examples.ts  |  901 [32m+++++[m[31m------[m
+ backend/src/utils/errorHandler.unified.ts          |   12 [32m+[m[31m-[m
+ backend/src/utils/errors.unified.ts                |    6 [32m+[m[31m-[m
+ backend/src/utils/logger.ts                        |   16 [32m+[m[31m-[m
+ backend/src/utils/monitoring.ts                    |    8 [32m+[m[31m-[m
+ backend/tsconfig.json                              |    2 [32m+[m[31m-[m
+ frontend/CRASH_RISK_ANALYSIS_100_USERS.md          |  241 [32m+++[m
+ frontend/src/components/LazyComponents.tsx         |   56 [32m+[m[31m-[m
+ frontend/src/components/index.ts                   |   12 [32m+[m[31m-[m
+ frontend/src/contexts/ToastContext.tsx             |   34 [32m+[m
+ frontend/src/utils/logger.ts                       |   61 [32m+[m
+ marketing-website/src/components/sections/Hero.tsx |   58 [32m+[m[31m-[m
+ 70 files changed, 10689 insertions(+), 2870 deletions(-)

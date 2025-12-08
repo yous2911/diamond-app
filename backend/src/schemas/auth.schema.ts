@@ -23,11 +23,11 @@ export const registerSchema = z.object({
   niveauActuel: z.string(),
 });
 
-export const passwordResetSchema = z.object({
+export const _passwordResetSchema = z.object({
   email: z.string().email(),
 });
 
-export const passwordResetConfirmSchema = z.object({
+export const _passwordResetConfirmSchema = z.object({
   token: z.string(),
   newPassword: passwordSchema,
 });

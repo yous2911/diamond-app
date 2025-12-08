@@ -9,7 +9,7 @@
  */
 
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { BaseError, ErrorCategory, ErrorSeverity, ErrorContextBuilder, TechnicalError } from './errors.unified';
+import { BaseError, ErrorSeverity, ErrorContextBuilder, TechnicalError } from './errors.unified';
 import { logger } from './logger';
 
 // =============================================================================
@@ -32,7 +32,7 @@ class MockMonitoringService implements IMonitoringService {
   captureMessage(message: string, level = 'info', context?: any): void {
     const logMethod = logger[level as keyof typeof logger];
     if (typeof logMethod === 'function') {
-      logMethod('Mock Sentry - Message captured:', { message, context });
+      logMethod({ message: 'Mock Sentry - Message captured:', context: { message, context } });
     } else {
       logger.info('Mock Sentry - Message captured:', { message, context });
     }
@@ -58,7 +58,7 @@ try {
   const Sentry = require('@sentry/node');
   monitoringService = Sentry;
   logger.info('Sentry monitoring service initialized');
-} catch (error) {
+} catch (error: unknown) {
   monitoringService = new MockMonitoringService();
   logger.warn('Sentry not available, using mock monitoring service');
 }
@@ -343,7 +343,7 @@ export async function unifiedErrorHandler(
     // Send response
     await reply.status(statusCode).send(response);
     
-  } catch (handlerError) {
+  } catch (handlerError: unknown) {
     // Fallback error handling
     const errorMessage = handlerError instanceof Error ? handlerError.message : 'Unknown error';
     logger.error('Error in error handler:', { error: errorMessage });
@@ -371,7 +371,7 @@ export class ErrorHandlerFactory {
     return async (...args: T): Promise<R> => {
       try {
         return await fn(...args);
-      } catch (error) {
+      } catch (error: unknown) {
         // Re-throw as BaseError if not already
         if (!(error instanceof BaseError)) {
           throw new TechnicalError(
@@ -392,7 +392,7 @@ export class ErrorHandlerFactory {
     return (...args: T): R => {
       try {
         return fn(...args);
-      } catch (error) {
+      } catch (error: unknown) {
         // Re-throw as BaseError if not already
         if (!(error instanceof BaseError)) {
           throw new TechnicalError(
@@ -421,4 +421,4 @@ export {
 };
 
 // Legacy compatibility
-export const errorHandler = unifiedErrorHandler;
+export const _errorHandler = unifiedErrorHandler;

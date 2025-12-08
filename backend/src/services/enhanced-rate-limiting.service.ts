@@ -223,8 +223,8 @@ export class EnhancedRateLimitingService {
           }
         }
 
-      } catch (error) {
-        logger.error('Rate limiting error:', error);
+      } catch (error: unknown) {
+        logger.error('Rate limiting error', { err: error });
         // Don't block requests on rate limiting errors
       }
       return; // Explicit return for all code paths
@@ -300,8 +300,11 @@ export class EnhancedRateLimitingService {
     }
 
     const geoConfig = this.options.geoLimits[countryCode];
+    if (!geoConfig) {
+      return { allowed: true, remaining: 0, resetTime: Date.now() };
+    }
     const key = `geo:${countryCode}:${ip}`;
-    const entry = await this.getOrCreateEntry(key, geoConfig.windowMs);
+    const entry = await this?.getOrCreateEntry(key, geoConfig.windowMs);
 
     return this.evaluateLimit(key, entry, geoConfig, 'geo');
   }
@@ -394,14 +397,14 @@ export class EnhancedRateLimitingService {
       const redisKey = `${this.storePrefix}:${key}`;
       const entryData = await this.redis!.hgetall(redisKey);
 
-      if (entryData && Object.keys(entryData).length > 0 && now <= parseInt(entryData.resetTime, 10)) {
+      if (entryData && Object.keys(entryData).length > 0 && entryData.resetTime && now <= parseInt(entryData.resetTime, 10)) {
         return {
-          count: parseInt(entryData.count, 10),
+          count: parseInt(entryData.count || '0', 10),
           resetTime: parseInt(entryData.resetTime, 10),
-          firstRequest: parseInt(entryData.firstRequest, 10),
-          lastRequest: parseInt(entryData.lastRequest, 10),
+          firstRequest: parseInt(entryData.firstRequest || '0', 10),
+          lastRequest: parseInt(entryData.lastRequest || '0', 10),
           blocked: entryData.blocked === 'true',
-          warnings: parseInt(entryData.warnings, 10)
+          warnings: parseInt(entryData.warnings || '0', 10)
         };
       }
 

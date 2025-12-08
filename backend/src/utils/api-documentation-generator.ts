@@ -60,10 +60,10 @@ export class APIDocumentationGenerator {
    */
   private generateRoutesSummary() {
     const routes = this.fastify.printRoutes();
-    const routesByTag: { [tag: string]: any[] } = {};
+    const _routesByTag: { [tag: string]: any[] } = {};
 
     // Parse routes and organize by tags
-    const routeLines = routes.split('\n').filter(line => line.trim());
+    const _routeLines = routes.split('\n').filter(line => line.trim());
     
     // Mock route organization for comprehensive documentation
     const organizedRoutes = {

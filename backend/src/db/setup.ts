@@ -13,7 +13,8 @@ export async function setupDatabase() {
     console.log('🔄 Setting up database...');
     
     // Test the database connection
-    const testResult = await db.execute(sql`SELECT 1 as test`);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _testResult = await db.execute(sql`SELECT 1 as test`);
     console.log('✅ Database connection test successful');
 
     // For MySQL with Drizzle, tables should be created using migrations
@@ -28,7 +29,7 @@ export async function setupDatabase() {
         console.log('🌱 Seeding database with test data...');
         
         // Insert test students
-        const insertedStudents = await db.insert(students).values([
+        const _insertedStudents = await db.insert(students).values([
           {
             prenom: 'Alice',
             nom: 'Dupont',
@@ -71,7 +72,6 @@ export async function setupDatabase() {
             difficulte: 'decouverte',
             competenceCode: 'MATH_ADD_01',
             typeExercice: 'calcul',
-            type: 'CALCUL',
             contenu: { question: 'Combien font 2 + 3 ?', type: 'addition' },
             solution: { bonneReponse: '5' },
             xp: 10,
@@ -85,7 +85,6 @@ export async function setupDatabase() {
             difficulte: 'decouverte',
             competenceCode: 'FR_READ_01',
             typeExercice: 'lecture',
-            type: 'LECTURE',
             contenu: { question: 'Lis le mot : "chat"', type: 'lecture' },
             solution: { bonneReponse: 'chat' },
             xp: 15,
@@ -99,7 +98,6 @@ export async function setupDatabase() {
             difficulte: 'application',
             competenceCode: 'MATH_GEO_01',
             typeExercice: 'geometrie',
-            type: 'GEOMETRIE',
             contenu: { question: 'Quelle forme a 4 côtés égaux ?', type: 'geometrie' },
             solution: { bonneReponse: 'carré' },
             xp: 20,
@@ -111,7 +109,7 @@ export async function setupDatabase() {
       } else {
         console.log('✅ Database already has data, skipping seed');
       }
-    } catch (error) {
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.log('⚠️  Could not check/seed data - tables may not exist yet');
       console.log('   This is normal if running migrations separately');
@@ -120,7 +118,7 @@ export async function setupDatabase() {
 
     console.log('🎉 Database setup complete!');
     
-  } catch (error) {
+  } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('❌ Database setup failed:', errorMessage);
     if (error instanceof Error) {
@@ -146,7 +144,7 @@ export async function resetDatabase() {
     // Re-seed with fresh data
     await setupDatabase();
     
-  } catch (error) {
+  } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('❌ Database reset failed:', errorMessage);
     if (error instanceof Error) {
@@ -169,7 +167,7 @@ export async function checkDatabaseSetup() {
       studentCount,
       exerciseCount
     };
-  } catch (error) {
+  } catch (error: unknown) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('❌ Database check failed:', errorMessage);
     return {

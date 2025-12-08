@@ -24,8 +24,8 @@ export const addLeaderboardUpdateJob = async () => {
 
     logger.info(`Added leaderboard update job to the queue. Job ID: ${job.id}`);
     return job;
-  } catch (error) {
-    logger.error('Failed to add leaderboard update job to queue:', error);
+  } catch (error: unknown) {
+    logger.error('Failed to add leaderboard update job to queue', { err: error });
     return null;
   }
 };
@@ -56,7 +56,7 @@ export const scheduleRecurringLeaderboardUpdate = () => {
     });
 
     logger.info('🏆 Scheduled recurring leaderboard update job (every 5 minutes)');
-  } catch (error) {
-    logger.error('Failed to schedule recurring leaderboard update:', error);
+  } catch (error: unknown) {
+    logger.error('Failed to schedule recurring leaderboard update', { err: error });
   }
 };

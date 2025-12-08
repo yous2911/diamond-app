@@ -2,9 +2,9 @@
 
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { eq, and, desc } from 'drizzle-orm';
-import { students, gdprConsentRequests, gdprDataProcessingLog, files } from '../db/schema';
+import { students, gdprConsentRequests, gdprDataProcessingLog } from '../db/schema';
 import { consentService } from '../services/consent.service.js';
-import { encryptionService } from '../services/encryption.service.js';
+
 import { anonymizationService } from '../services/anonymization.service.js';
 import { gdprService } from '../services/gdpr.service.js';
 
@@ -89,7 +89,7 @@ export default async function gdprRoutes(fastify: FastifyInstance) {
           message: 'Demande de consentement soumise avec succès',
         });
 
-      } catch (error) {
+      } catch (error: unknown) {
         (fastify.log as any).error('GDPR consent request error:', error);
         return reply.status(500).send({
           success: false,
@@ -147,7 +147,7 @@ export default async function gdprRoutes(fastify: FastifyInstance) {
           message: 'Token de consentement vérifié',
         });
 
-      } catch (error) {
+      } catch (error: unknown) {
         (fastify.log as any).error('GDPR consent verification error:', error);
         return reply.status(500).send({
           success: false,
@@ -233,7 +233,7 @@ export default async function gdprRoutes(fastify: FastifyInstance) {
           message: 'Données exportées avec succès',
         });
 
-      } catch (error) {
+      } catch (error: unknown) {
         (fastify.log as any).error('GDPR data export error:', error);
         return reply.status(500).send({
           success: false,
@@ -329,7 +329,7 @@ export default async function gdprRoutes(fastify: FastifyInstance) {
           message: 'Suppression des données complétée',
         });
 
-      } catch (error) {
+      } catch (error: unknown) {
         (fastify.log as any).error('GDPR data deletion error:', error);
         return reply.status(500).send({
           success: false,
@@ -372,19 +372,21 @@ export default async function gdprRoutes(fastify: FastifyInstance) {
         const studentId = parseInt(request.params.studentId);
         const { limit = 50, offset = 0, action } = request.query;
 
-        let whereCondition = eq(gdprDataProcessingLog.studentId, studentId);
+        let whereCondition: ReturnType<typeof eq> | ReturnType<typeof and>;
         
         if (action) {
           whereCondition = and(
             eq(gdprDataProcessingLog.studentId, studentId),
             eq(gdprDataProcessingLog.action, action as any)
-          );
+          )!;
+        } else {
+          whereCondition = eq(gdprDataProcessingLog.studentId, studentId);
         }
 
         const logs = await fastify.db
           .select()
           .from(gdprDataProcessingLog)
-          .where(whereCondition)
+          .where(whereCondition!)
           .orderBy(desc(gdprDataProcessingLog.createdAt))
           .limit(limit)
           .offset(offset);
@@ -402,7 +404,7 @@ export default async function gdprRoutes(fastify: FastifyInstance) {
           message: 'Journal d\'audit récupéré',
         });
 
-      } catch (error) {
+      } catch (error: unknown) {
         (fastify.log as any).error('GDPR audit log error:', error);
         return reply.status(500).send({
           success: false,
@@ -425,7 +427,7 @@ export default async function gdprRoutes(fastify: FastifyInstance) {
     handler: async (request: FastifyRequest, reply: FastifyReply) => {
       try {
         // Test database connectivity
-        const testQuery = await fastify.db
+        const _testQuery = await fastify.db
           .select({ count: gdprConsentRequests.id })
           .from(gdprConsentRequests)
           .limit(1);
@@ -454,7 +456,7 @@ export default async function gdprRoutes(fastify: FastifyInstance) {
           message: 'Service RGPD opérationnel',
         });
 
-      } catch (error) {
+      } catch (error: unknown) {
         (fastify.log as any).error('GDPR health check error:', error);
         return reply.status(503).send({
           success: false,
@@ -506,7 +508,7 @@ export default async function gdprRoutes(fastify: FastifyInstance) {
             submittedAt: new Date().toISOString()
           }
         });
-      } catch (error) {
+      } catch (error: unknown) {
         return reply.status(500).send({
           success: false,
           error: { message: 'Failed to submit consent', code: 'CONSENT_SUBMIT_ERROR' }
@@ -564,7 +566,7 @@ export default async function gdprRoutes(fastify: FastifyInstance) {
             estimatedCompletionDate: deadline.toISOString()
           }
         });
-      } catch (error) {
+      } catch (error: unknown) {
         return reply.status(500).send({
           success: false,
           error: { message: 'Failed to submit request', code: 'REQUEST_SUBMIT_ERROR' }
@@ -602,7 +604,7 @@ export default async function gdprRoutes(fastify: FastifyInstance) {
             message: 'Identité vérifiée avec succès'
           }
         });
-      } catch (error) {
+      } catch (error: unknown) {
         return reply.status(500).send({
           success: false,
           error: { message: 'Failed to verify request', code: 'REQUEST_VERIFY_ERROR' }
@@ -639,7 +641,7 @@ export default async function gdprRoutes(fastify: FastifyInstance) {
             estimatedCompletion: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000).toISOString()
           }
         });
-      } catch (error) {
+      } catch (error: unknown) {
         return reply.status(500).send({
           success: false,
           error: { message: 'Failed to get request status', code: 'REQUEST_STATUS_ERROR' }
@@ -656,8 +658,9 @@ export default async function gdprRoutes(fastify: FastifyInstance) {
         
         // Validate that all preference fields are boolean
         const booleanFields = ['essential', 'functional', 'analytics', 'marketing', 'personalization'];
+        const body = request.body as Record<string, unknown>;
         for (const field of booleanFields) {
-          if (request.body[field] !== undefined && typeof request.body[field] !== 'boolean') {
+          if (body[field] !== undefined && typeof body[field] !== 'boolean') {
             return reply.status(400).send({
               success: false,
               error: { message: `Field ${field} must be a boolean`, code: 'INVALID_FIELD_TYPE' }
@@ -668,7 +671,7 @@ export default async function gdprRoutes(fastify: FastifyInstance) {
         // Validate that all required fields are present
         const requiredFields = ['essential', 'functional', 'analytics', 'marketing', 'personalization'];
         for (const field of requiredFields) {
-          if (request.body[field] === undefined) {
+          if (body[field] === undefined) {
             return reply.status(400).send({
               success: false,
               error: { message: `Field ${field} is required`, code: 'MISSING_REQUIRED_FIELD' }
@@ -683,7 +686,7 @@ export default async function gdprRoutes(fastify: FastifyInstance) {
             message: 'Consent preferences updated successfully'
           }
         });
-      } catch (error) {
+      } catch (error: unknown) {
         return reply.status(500).send({
           success: false,
           error: { message: 'Failed to update preferences', code: 'PREFERENCES_UPDATE_ERROR' }
@@ -720,7 +723,7 @@ export default async function gdprRoutes(fastify: FastifyInstance) {
           reply.header('content-disposition', 'attachment; filename="student-data.json"');
           return reply.send(mockData);
         }
-      } catch (error) {
+      } catch (error: unknown) {
         return reply.status(500).send({
           success: false,
           error: { message: 'Failed to export data', code: 'DATA_EXPORT_ERROR' }

@@ -50,7 +50,8 @@ module.exports = {
         'confetti-burst': 'confettiBurst 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
         'level-up-burst': 'levelUpBurst 2s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
         'bg-float': 'bgFloat 20s ease-in-out infinite',
-        'aurora': 'aurora 10s ease-in-out infinite'
+        'aurora': 'aurora 10s ease-in-out infinite',
+        'shine': 'shine 3s ease-in-out infinite'
       },
       
       keyframes: {
@@ -106,6 +107,10 @@ module.exports = {
         aurora: {
           '0%, 100%': { filter: 'hue-rotate(0deg) brightness(1)' },
           '50%': { filter: 'hue-rotate(180deg) brightness(1.2)' }
+        },
+        shine: {
+          '0%': { transform: 'translateX(-100%) skewX(-12deg)' },
+          '100%': { transform: 'translateX(200%) skewX(-12deg)' }
         }
       },
       

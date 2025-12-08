@@ -366,7 +366,7 @@ class DataIntegrityService extends EventEmitter {
 
       this.emit('initialized');
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to initialize data integrity service', { error });
       throw error;
     }
@@ -379,10 +379,10 @@ class DataIntegrityService extends EventEmitter {
         const task = cron.schedule(rule.schedule, async () => {
           try {
             await this.checkRule(rule.id);
-          } catch (error) {
+          } catch (error: unknown) {
             logger.error('Scheduled integrity check failed', {
               ruleId: rule.id,
-              error: error.message
+              error: error instanceof Error ? error.message : 'Unknown error'
             });
           }
         }, { });
@@ -395,7 +395,7 @@ class DataIntegrityService extends EventEmitter {
     const comprehensiveTask = cron.schedule('0 2 * * *', async () => {
       try {
         await this.runComprehensiveCheck();
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('Daily comprehensive integrity check failed', { error });
       }
     }, { name: 'comprehensive-integrity-check' });
@@ -413,7 +413,7 @@ class DataIntegrityService extends EventEmitter {
     const metricsTask = cron.schedule('0 * * * *', async () => {
       try {
         await this.collectDataQualityMetrics();
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('Data quality metrics collection failed', { error });
       }
     }, { name: 'data-quality-metrics' });
@@ -487,11 +487,11 @@ class DataIntegrityService extends EventEmitter {
 
       return checkResult;
 
-    } catch (error) {
+    } catch (error: unknown) {
       const executionTime = Date.now() - startTime;
       logger.error('Integrity rule check failed', {
         ruleId: rule.id,
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       });
 
       const checkResult: IntegrityCheckResult = {
@@ -502,7 +502,7 @@ class DataIntegrityService extends EventEmitter {
           id: `error-${Date.now()}`,
           table: rule.table,
           primaryKey: {},
-          description: `Rule execution failed: ${error.message}`,
+          description: `Rule execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
           severity: 'critical',
           detectedAt: new Date(),
           resolved: false
@@ -544,10 +544,10 @@ class DataIntegrityService extends EventEmitter {
         }
       }
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.debug('Could not get detailed violations', {
         ruleId: rule.id,
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       });
 
       // Create a generic violation if we can't get details
@@ -631,10 +631,10 @@ class DataIntegrityService extends EventEmitter {
         try {
           const result = await this.checkRule(rule.id);
           results.push(result);
-        } catch (error) {
+        } catch (error: unknown) {
           logger.error('Rule check failed during comprehensive check', {
             ruleId: rule.id,
-            error: error.message
+            error: error instanceof Error ? error.message : 'Unknown error'
           });
         }
       }
@@ -682,7 +682,7 @@ class DataIntegrityService extends EventEmitter {
 
       return report;
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Comprehensive integrity check failed', { error });
       throw error;
     }
@@ -799,7 +799,7 @@ class DataIntegrityService extends EventEmitter {
 
       this.emit('metricsCollected', metrics);
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to collect data quality metrics', { error });
     }
   }
@@ -883,7 +883,7 @@ class DataIntegrityService extends EventEmitter {
 
       const result = (rows as any[])[0];
       return result.recent_updates || 100;
-    } catch (error) {
+    } catch (error: unknown) {
       return 100; // Default if timestamp columns don't exist
     }
   }
@@ -896,7 +896,7 @@ class DataIntegrityService extends EventEmitter {
       const task = cron.schedule(rule.schedule, async () => {
         try {
           await this.checkRule(rule.id);
-        } catch (error) {
+        } catch (error: unknown) {
           logger.error('Custom rule check failed', { ruleId: rule.id, error });
         }
       }, { });
@@ -966,7 +966,7 @@ class DataIntegrityService extends EventEmitter {
   }
 
   getLatestDataQualityMetrics(): DataQualityMetrics | null {
-    return this.metrics.length > 0 ? this.metrics[this.metrics.length - 1] : null;
+    return this.metrics.length > 0 ? (this.metrics[this.metrics.length - 1] || null) : null;
   }
 
   async getDataQualityScore(): Promise<number> {

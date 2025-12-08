@@ -3,7 +3,7 @@
  * Tests actual email functionality, not mocks
  */
 
-import { describe, test, expect, beforeEach, vi } from 'vitest';
+import { describe, test, expect, beforeEach } from 'vitest';
 import { EmailService } from '../services/email.service';
 
 describe('EmailService - Real Unit Tests', () => {
@@ -249,9 +249,9 @@ describe('EmailService - Real Unit Tests', () => {
   describe('Notification Emails', () => {
     test('sendStudentProgressReport sends progress report', async () => {
       const progressData = {
-        exercisesCompleted: 25,
+        exercisesCompleted: _25,
         studyTime: '2 heures',
-        averageScore: 85,
+        averageScore: _85,
         subjects: ['Mathématiques', 'Français']
       };
 
@@ -403,7 +403,7 @@ describe('EmailService - Real Unit Tests', () => {
         id: 'policy-1',
         policyName: 'Student Data Retention',
         action: 'delete',
-        retentionPeriodDays: 365,
+        retentionPeriodDays: _365,
         notificationDays: 30
       };
 

@@ -76,7 +76,7 @@ import { db } from '../db/connection';
 
 describe('AuthService Methods', () => {
   let authService: AuthService;
-  let mockLogger: any;
+  let mockLogger: _any;
 
   beforeEach(() => {
     authService = new AuthService();

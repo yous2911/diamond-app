@@ -5,11 +5,10 @@
 
 import { connection, db } from '../db/connection';
 import { logger } from '../utils/logger';
-import { promises as fs } from 'fs';
+
 import { join } from 'path';
 import cron from 'node-cron';
-import { eq, lt, and, sql, gte } from 'drizzle-orm';
-
+import { and } from 'drizzle-orm';
 interface ArchivingConfig {
   enabled: boolean;
   schedule: string; // Cron schedule for archiving
@@ -178,7 +177,7 @@ class DataArchivingService {
       this.isInitialized = true;
       logger.info('Data archiving service initialized successfully');
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to initialize data archiving service', { error });
       throw error;
     }
@@ -190,7 +189,7 @@ class DataArchivingService {
 
       try {
         await this.createArchiveTable(policy.tableName, policy.archiveTableName);
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('Failed to create archive table', {
           sourceTable: policy.tableName,
           archiveTable: policy.archiveTableName,
@@ -233,7 +232,7 @@ class DataArchivingService {
         archiveTable
       });
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to create archive table', {
         sourceTable,
         archiveTable,
@@ -247,7 +246,7 @@ class DataArchivingService {
     const task = cron.schedule(this.config.schedule, async () => {
       try {
         await this.runScheduledArchiving();
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('Scheduled archiving failed', { error });
       }
     }, { });
@@ -290,7 +289,7 @@ class DataArchivingService {
           });
         }
 
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('Error validating retention policy', {
           tableName: policy.tableName,
           error
@@ -323,7 +322,7 @@ class DataArchivingService {
         if (policy.deleteAfterDays) {
           await this.deleteOldArchivedData(policy);
         }
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('Failed to archive table', {
           tableName: policy.tableName,
           error
@@ -418,7 +417,7 @@ class DataArchivingService {
 
       return jobId;
 
-    } catch (error) {
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       
       job.status = 'failed';
@@ -518,7 +517,7 @@ class DataArchivingService {
 
       await conn.commit();
 
-    } catch (error) {
+    } catch (error: unknown) {
       await conn.rollback();
       throw error;
     } finally {
@@ -561,7 +560,7 @@ class DataArchivingService {
         });
       }
 
-    } catch (error) {
+    } catch (error: unknown) {
       logger.error('Failed to delete old archived data', {
         tableName: policy.archiveTableName,
         error
@@ -667,7 +666,7 @@ class DataArchivingService {
 
       return jobId;
 
-    } catch (error) {
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       
       job.status = 'failed';
@@ -722,7 +721,7 @@ class DataArchivingService {
 
       await conn.commit();
 
-    } catch (error) {
+    } catch (error: unknown) {
       await conn.rollback();
       throw error;
     } finally {
@@ -756,7 +755,7 @@ class DataArchivingService {
             `);
             archivedCount = (archivedRows as any[])[0].count;
             lastArchived = (archivedRows as any[])[0].last_archived;
-          } catch (error) {
+          } catch (error: unknown) {
             // Archive table might not exist yet
           }
         }
@@ -777,7 +776,7 @@ class DataArchivingService {
           nextScheduledArchive: nextSchedule
         });
 
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error('Failed to get archiving stats for table', {
           tableName: policy.tableName,
           error

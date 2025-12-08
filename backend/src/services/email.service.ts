@@ -102,8 +102,9 @@ export class EmailService {
           rejected: result.rejected
         },
         severity: 'low',
-        category: 'compliance'
-      });
+        category: 'compliance',
+        timestamp: new Date()
+      } as Parameters<typeof this.auditService.logAction>[0]);
       
       logger.info('Email sent successfully', { 
         to: options.to, 
@@ -111,8 +112,8 @@ export class EmailService {
         template: options.template,
         messageId: result.messageId
       });
-    } catch (error) {
-      logger.error('Error sending email:', error);
+    } catch (error: unknown) {
+      logger.error('Error sending email', { err: error });
       throw new Error('Failed to send email');
     }
   }
@@ -149,7 +150,7 @@ export class EmailService {
             <p style="margin: 0;"><strong>⏰ Important :</strong> Ce lien expire le ${variables.expiryDate}</p>
           </div>
           <p>Si le bouton ne fonctionne pas, copiez ce lien dans votre navigateur :</p>
-          <p style="word-break: break-all; background: #F3F4F6; padding: 10px; border-radius: 4px; font-family: monospace;">${variables.verificationUrl}</p>
+          <p style="word-break: break-all; background: #F3F4F6; padding: 10px; border-radius: _4px; font-family: _monospace;">${variables.verificationUrl}</p>
           <p>Si vous n'avez pas créé ce compte, ignorez cet email.</p>
           <p>Cordialement,<br>L'équipe RevEd Kids</p>
         </div>
@@ -222,7 +223,7 @@ export class EmailService {
           <h2 style="color: #F59E0B;">🏆 Nouveau succès débloqué !</h2>
           <p>Félicitations ${variables.studentName} !</p>
           <p>Tu viens de débloquer un nouveau succès :</p>
-          <div style="background: #FEF3C7; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
+          <div style="background: #FEF3C7; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: _center;">
             <h3 style="margin: 0; color: #F59E0B;">🏆 ${variables.achievementTitle}</h3>
             <p style="margin: 10px 0 0 0;">${variables.achievementDescription}</p>
           </div>
@@ -423,8 +424,8 @@ export class EmailService {
 
       await this.transporter.verify();
       logger.info('✅ Email service: SMTP connection verified');
-    } catch (error) {
-      logger.warn('⚠️ Email service: SMTP verification failed, emails will be logged only', error);
+    } catch (error: unknown) {
+      logger.warn('⚠️ Email service: SMTP verification failed, emails will be logged only', { err: error });
     }
   }
 
@@ -454,10 +455,10 @@ export class EmailService {
         }
         
         return; // Success
-      } catch (error) {
+      } catch (error: unknown) {
         lastError = error as Error;
         logger.warn(`Email sending attempt ${attempt}/${maxRetries} failed:`, {
-          error: error.message,
+          error: error instanceof Error ? error.message : 'Unknown error',
           to: options.to,
           template: options.template,
           attempt
@@ -486,7 +487,7 @@ export class EmailService {
     
     // Enhanced audit log for failures
     await this.auditService.logAction({
-      entityType: 'admin_action',
+        entityType: 'admin_action',
       entityId: options.to,
       action: 'access_denied',
       userId: null,
@@ -501,8 +502,9 @@ export class EmailService {
         errorStack: lastError?.stack
       },
       severity: 'high',
-      category: 'system'
-    });
+      category: 'system',
+      timestamp: new Date()
+    } as Parameters<typeof this.auditService.logAction>[0]);
 
     // Create detailed error for different failure types
     if (lastError?.message.includes('ENOTFOUND') || lastError?.message.includes('ECONNREFUSED')) {
@@ -524,9 +526,10 @@ export class EmailService {
       if (emailConfig.user && emailConfig.host) {
         await this.transporter.verify();
       }
-    } catch (error) {
-      logger.warn('Email service health check failed:', error);
-      throw new Error(`Email service health check failed: ${error.message}`);
+    } catch (error: unknown) {
+      logger.warn('Email service health check failed:', { err: error });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Email service health check failed: ${errorMessage}`);
     }
   }
 
@@ -599,8 +602,8 @@ export class EmailService {
         status.status = 'unhealthy'; // Config valid but no auth
         return { ...status, connectionTest: false };
       }
-    } catch (error) {
-      logger.warn('Email service connection test failed:', error);
+    } catch (error: unknown) {
+      logger.warn('Email service connection test failed:', { err: error });
       return { ...status, connectionTest: false };
     }
   }
@@ -699,8 +702,8 @@ export class EmailService {
         }
       });
       return true;
-    } catch (error) {
-      logger.error('Test email failed:', error);
+    } catch (error: unknown) {
+      logger.error('Test email failed', { err: error });
       return false;
     }
   }
@@ -716,7 +719,7 @@ export class EmailService {
     userEmail: string,
     userName: string,
     username: string,
-    loginUrl: string = 'http://localhost:3000/login'
+    loginUrl: string = process.env.FRONTEND_URL || 'http://localhost:3003'
   ): Promise<void> {
     await this.sendEmailWithRetry({
       to: userEmail,
@@ -805,7 +808,7 @@ export class EmailService {
     userEmail: string,
     userName: string,
     ipAddress: string = 'Unknown',
-    loginUrl: string = 'http://localhost:3000/login'
+    loginUrl: string = process.env.FRONTEND_URL || 'http://localhost:3003'
   ): Promise<void> {
     await this.sendEmailWithRetry({
       to: userEmail,
@@ -843,7 +846,7 @@ export class EmailService {
       averageScore: number;
       subjects: string[];
     },
-    dashboardUrl: string = 'http://localhost:3000/dashboard'
+    dashboardUrl: string = process.env.FRONTEND_URL || 'http://localhost:3003'
   ): Promise<void> {
     await this.sendEmailWithRetry({
       to: parentEmail,
@@ -871,7 +874,7 @@ export class EmailService {
       title: string;
       description: string;
     },
-    achievementsUrl: string = 'http://localhost:3000/achievements'
+    achievementsUrl: string = process.env.FRONTEND_URL || 'http://localhost:3003'
   ): Promise<void> {
     await this.sendEmailWithRetry({
       to: studentEmail,
@@ -922,7 +925,7 @@ export class EmailService {
       location: string;
       device: string;
     },
-    securityUrl: string = 'http://localhost:3000/security'
+    securityUrl: string = process.env.FRONTEND_URL || 'http://localhost:3003'
   ): Promise<void> {
     await this.sendEmailWithRetry({
       to: userEmail,
@@ -981,13 +984,13 @@ export class EmailService {
             variables: emailData.variables
           });
           results.sent++;
-        } catch (error) {
+        } catch (error: unknown) {
           results.failed++;
           results.errors.push({
             email: emailData.to,
             error: error instanceof Error ? error.message : 'Unknown error'
           });
-          logger.error(`Failed to send bulk email to ${emailData.to}:`, error);
+          logger.error(`Failed to send bulk email to ${emailData.to}`, { err: error });
         }
       });
 

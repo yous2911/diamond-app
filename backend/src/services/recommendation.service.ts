@@ -27,9 +27,9 @@ export class RecommendationService {
 
       const completedIds = completedExercises.map(p => p.exerciseId);
 
-      // Get recommended exercises based on student's niveau
+      // Get recommended exercises based on student's niveau (not difficulte!)
       const whereConditions = [
-        eq(schema.exercises.difficulte, student[0].niveauActuel),
+        eq(schema.exercises.niveau, student[0]?.niveauActuel),
         // exercises are active by default - removed estActif check
       ];
 
@@ -46,7 +46,7 @@ export class RecommendationService {
         .limit(limit);
 
       return recommendedExercises;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error getting recommended exercises:', error);
       return [];
     }
@@ -75,9 +75,9 @@ export class RecommendationService {
 
       const completedIds = completedExercises.map(p => p.exerciseId);
 
-      // Build where conditions
+      // Build where conditions - match niveau, not difficulte!
       const whereConditions = [
-        eq(schema.exercises.difficulte, student[0].niveauActuel),
+        eq(schema.exercises.niveau, student[0]?.niveauActuel),
         // exercises are active by default - removed estActif check
       ];
 
@@ -99,7 +99,7 @@ export class RecommendationService {
         .limit(1);
 
       return nextExercise[0] || null;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error getting next exercise:', error);
       return null;
     }
@@ -123,7 +123,7 @@ export class RecommendationService {
         ))
         .limit(1);
 
-      const statut = data.completed ? 'TERMINE' : 'ECHEC';
+      const _statut = data.completed ? 'TERMINE' : 'ECHEC';
       const pointsGagnes = data.completed ? Math.round(data.score) : 0;
 
       if (existingProgress[0]) {
@@ -135,7 +135,7 @@ export class RecommendationService {
             totalAttempts: sql`total_attempts + 1`,
             averageScore: sql`average_score + ${pointsGagnes}`,
             timeSpent: sql`time_spent + ${data.timeSpent || 0}`,
-            completedAt: data.completed && !existingProgress[0].completedAt ? new Date() : existingProgress[0].completedAt,
+            completedAt: data.completed && !existingProgress[0]?.completedAt ? new Date() : existingProgress[0]?.completedAt,
             updatedAt: new Date(),
           })
           .where(and(
@@ -172,7 +172,7 @@ export class RecommendationService {
       }
 
       return true;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error recording exercise attempt:', error);
       return false;
     }
@@ -194,14 +194,14 @@ export class RecommendationService {
         .select()
         .from(schema.exercises)
         .where(and(
-          eq(schema.exercises.difficulte, student[0].niveauActuel),
+          eq(schema.exercises.niveau, student[0]?.niveauActuel),
           eq(schema.exercises.difficulte, difficulte),
           // exercises are active by default - removed estActif check
         ))
         .orderBy(schema.exercises.id);
 
       return exercises;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error getting exercises by difficulty:', error);
       return [];
     }
@@ -223,14 +223,14 @@ export class RecommendationService {
         .select()
         .from(schema.exercises)
         .where(and(
-          eq(schema.exercises.difficulte, student[0].niveauActuel),
+          eq(schema.exercises.niveau, student[0]?.niveauActuel),
           eq(schema.exercises.matiere, matiere),
           // exercises are active by default - removed estActif check
         ))
         .orderBy(schema.exercises.id);
 
       return exercises;
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error getting exercises by subject:', error);
       return [];
     }
@@ -263,7 +263,7 @@ export class RecommendationService {
         difficulte: area.difficulte,
         count: Number(area.count),
       }));
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error getting student weaknesses:', error);
       return [];
     }
@@ -297,11 +297,11 @@ export class RecommendationService {
       }
 
       return recommendations.slice(0, limit);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error getting personalized recommendations:', error);
       return [];
     }
   }
 }
 
-export const recommendationService = new RecommendationService();
+export const _recommendationService = new RecommendationService();

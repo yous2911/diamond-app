@@ -1,6 +1,6 @@
 import { FastifySchema } from 'fastify';
 
-export const monitoringSchemas = {
+export const _monitoringSchemas = {
   health: {
     description: 'System health check',
     tags: ['monitoring'],

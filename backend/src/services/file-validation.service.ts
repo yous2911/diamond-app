@@ -59,7 +59,7 @@ export class FileValidationService {
       extension: 'webp',
       mimeType: 'image/webp',
       signatures: [
-        [0x52, 0x49, 0x46, 0x46, null, null, null, null, 0x57, 0x45, 0x42, 0x50] // RIFF...WEBP
+        [0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50] // RIFF...WEBP (null bytes replaced with 0x00)
       ],
       maxSize: 10 * 1024 * 1024 // 10MB
     },
@@ -141,9 +141,9 @@ export class FileValidationService {
       }
       result.warnings.push(...typeSpecificResult.warnings);
 
-    } catch (error) {
+    } catch (error: unknown) {
       result.isValid = false;
-      result.errors.push(`Erreur de validation: ${error.message}`);
+      result.errors.push(`Erreur de validation: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 
     return result;

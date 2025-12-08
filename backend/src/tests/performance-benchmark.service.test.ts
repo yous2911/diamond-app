@@ -7,7 +7,6 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import { performanceBenchmarkService } from '../services/performance-benchmark.service';
 import { connection, getPoolStats } from '../db/connection';
 import { promises as fs } from 'fs';
-import { join } from 'path';
 
 // Mock dependencies
 // Database connection is mocked in setup.ts

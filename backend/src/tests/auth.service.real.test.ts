@@ -33,7 +33,7 @@ describe('AuthService - Real Unit Tests', () => {
       lockedUntil: null
     }).returning({ id: students.id });
     
-    testStudentId = testStudent[0].id;
+    testStudentId = testStudent[0]?.id;
   });
 
   afterEach(async () => {
@@ -279,7 +279,7 @@ describe('AuthService - Real Unit Tests', () => {
       
       // Verify the student is marked as disconnected
       const student = await db.select().from(students).where(eq(students.id, testStudentId)).limit(1);
-      expect(student[0].estConnecte).toBe(false);
+      expect(student[0]?.estConnecte).toBe(false);
     });
   });
 });

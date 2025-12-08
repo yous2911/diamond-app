@@ -36,7 +36,7 @@ describe('Real App Testing', () => {
       } else {
         console.log('⚠️ Auth endpoints might not be set up');
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.log('⚠️ No auth token available - auth endpoints might not be set up');
     }
   });

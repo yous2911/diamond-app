@@ -3,8 +3,7 @@
  * Testing actual functions in complete isolation
  */
 
-import { describe, test, expect, beforeEach, vi } from 'vitest';
-
+import { describe, test, expect, vi } from 'vitest';
 // Mock ONLY what's absolutely necessary
 vi.mock('../db/connection', () => ({
   db: {

@@ -42,7 +42,7 @@ describe('Minimal Setup Test', () => {
       authToken = await authenticateRequest(app, testUser);
       expect(authToken).toBeDefined();
       expect(typeof authToken).toBe('string');
-    } catch (error) {
+    } catch (error: unknown) {
       // If auth endpoints don't exist, that's okay for this test
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.log('Auth endpoints not available:', errorMessage);

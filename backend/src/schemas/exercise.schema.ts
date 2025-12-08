@@ -69,9 +69,14 @@ export const UpdateExerciseSchema = {
 export const AttemptExerciseSchema = {
   body: Type.Object({
     exerciseId: Type.Integer(),
+    competenceCode: CompetenceCode,
     score: Type.Number({ minimum: 0, maximum: 100 }),
     completed: Type.Boolean(),
-    timeSpent: Type.Optional(Type.Integer({ minimum: 0 })),
+    timeSpent: Type.Integer({ minimum: 0 }),
+    difficultyLevel: Type.Optional(Type.Integer({ minimum: 0, maximum: 5 })),
+    hintsUsed: Type.Optional(Type.Integer({ minimum: 0, default: 0 })),
+    confidence: Type.Optional(Type.Integer({ minimum: 0, maximum: 5 })),
+    attempts: Type.Optional(Type.Integer({ minimum: 1, default: 1 })),
     answers: Type.Optional(Type.Object({}, { additionalProperties: true })),
   }),
 };

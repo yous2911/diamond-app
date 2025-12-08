@@ -3,7 +3,7 @@
 
 
 
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { build } from '../app-test';
 import type { FastifyInstance } from 'fastify';
 import { 
@@ -11,7 +11,6 @@ import {
   SubmitGDPRRequest, 
   ConsentPreferencesRequest 
 } from '../types/gdpr.types';
-import { v4 as uuidv4 } from 'uuid';
 
 /**
  * End-to-End GDPR Compliance Tests
@@ -312,7 +311,7 @@ describe('GDPR End-to-End Compliance Tests', () => {
         requesterType: 'parent',
         requesterEmail: `urgent-${testSession.parentEmail}`,
         requesterName: 'Urgent Test Parent',
-        studentId: 99999,
+        studentId: _99999,
         studentName: 'Urgent Test Child',
         requestDetails: 'URGENT: My child is being cyberbullied through the platform. Please immediately delete all data, remove all social features access, and anonymize any remaining educational records for child safety.',
         urgentRequest: true,
@@ -599,7 +598,7 @@ describe('GDPR End-to-End Compliance Tests', () => {
         parentEmail: 'international@example.com',
         parentName: 'International Parent',
         childName: 'International Child',
-        childAge: 10,
+        childAge: _10,
         consentTypes: ['data_processing', 'international_transfer'],
         ipAddress: '94.228.160.1', // EU IP for testing
         userAgent: 'International Browser'
@@ -638,7 +637,7 @@ describe('GDPR End-to-End Compliance Tests', () => {
         parentEmail: lifecycleEmail,
         parentName: 'Lifecycle Test Parent',
         childName: 'Lifecycle Test Child',
-        childAge: 9,
+        childAge: _9,
         consentTypes: ['data_processing', 'educational_content', 'analytics'],
         ipAddress: '192.168.1.1',
         userAgent: 'Lifecycle Test Browser'
@@ -652,7 +651,7 @@ describe('GDPR End-to-End Compliance Tests', () => {
 
       expect(consentResponse.statusCode).toBe(200);
       const consentBody = JSON.parse(consentResponse.body);
-      const lifecycleConsentId = consentBody.data.consentId;
+      const _lifecycleConsentId = consentBody.data.consentId;
 
       // Step 2: Verify consent (simulated)
       const verifyResponse = await app.inject({
@@ -790,7 +789,7 @@ describe('GDPR End-to-End Compliance Tests', () => {
       const responses = await Promise.all(requests);
       
       // Some requests should be rate limited
-      const rateLimitedResponses = responses.filter(r => r.statusCode === 429);
+      const _rateLimitedResponses = responses.filter(r => r.statusCode === 429);
       const successfulResponses = responses.filter(r => r.statusCode === 200);
       
       // Should have a mix of successful and rate-limited responses

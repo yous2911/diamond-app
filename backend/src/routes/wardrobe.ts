@@ -1,13 +1,6 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { eq, and, sql } from 'drizzle-orm';
-import { 
-  wardrobeItems, 
-  studentWardrobe, 
-  students, 
-  studentStats,
-  achievements,
-  studentAchievements
-} from '../db/schema-mysql-cp2025';
+import { wardrobeItems, studentWardrobe, studentStats } from '../db/schema-mysql-cp2025';
 import { getDatabase } from '../db/connection';
 
 interface AuthenticatedUser {
@@ -257,8 +250,8 @@ export default async function wardrobeRoutes(fastify: FastifyInstance) {
               message: 'Conditions de déblocage non remplies',
               code: 'UNLOCK_REQUIREMENTS_NOT_MET',
               details: {
-                requirementType: item.unlockRequirementType,
-                requirementValue: item.unlockRequirementValue,
+                requirementType: item?.unlockRequirementType,
+                requirementValue: item?.unlockRequirementValue,
                 currentProgress: getCurrentProgress(item, stats)
               }
             }
@@ -266,7 +259,7 @@ export default async function wardrobeRoutes(fastify: FastifyInstance) {
         }
 
         // Unlock the item
-        const unlockResult = await db
+        const _unlockResult = await db
           .insert(studentWardrobe)
           .values({
             studentId: parseInt(studentId),
@@ -279,16 +272,16 @@ export default async function wardrobeRoutes(fastify: FastifyInstance) {
           success: true,
           data: {
             item: {
-              id: item.id,
-              name: item.name,
-              type: item.type,
-              rarity: item.rarity,
-              description: item.description,
-              icon: item.icon
+              id: item?.id,
+              name: item?.name,
+              type: item?.type,
+              rarity: item?.rarity,
+              description: item?.description,
+              icon: item?.icon
             },
             unlockedAt: new Date()
           },
-          message: `${item.name} a été débloqué avec succès !`
+          message: `${item?.name} a été débloqué avec succès !`
         });
 
       } catch (error: unknown) {
@@ -363,6 +356,15 @@ export default async function wardrobeRoutes(fastify: FastifyInstance) {
         }
 
         const item = studentItem[0];
+        if (!item) {
+          return reply.status(404).send({
+            success: false,
+            error: {
+              message: 'Objet non trouvé',
+              code: 'ITEM_NOT_FOUND'
+            }
+          });
+        }
 
         // Unequip other items of the same type (only one hat, one clothing, etc.)
         // First get all items of the same type for this student
@@ -402,12 +404,12 @@ export default async function wardrobeRoutes(fastify: FastifyInstance) {
           success: true,
           data: {
             itemId: parseInt(itemId),
-            itemName: item.itemName,
-            itemType: item.itemType,
+            itemName: item?.itemName,
+            itemType: item?.itemType,
             equipped: true,
             equippedAt: new Date()
           },
-          message: `${item.itemName} équipé avec succès !`
+          message: `${item?.itemName} équipé avec succès !`
         });
 
       } catch (error: unknown) {
@@ -455,7 +457,7 @@ export default async function wardrobeRoutes(fastify: FastifyInstance) {
         }
 
         // Unequip the item
-        const result = await db
+        const _result = await db
           .update(studentWardrobe)
           .set({
             isEquipped: false,

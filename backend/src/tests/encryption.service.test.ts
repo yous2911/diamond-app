@@ -117,8 +117,8 @@ describe('EncryptionService', () => {
     it('should initialize with custom config', async () => {
       const { EncryptionService } = await import('../services/encryption.service');
       const customConfig = {
-        rotationIntervalDays: 30,
-        keyRetentionDays: 180,
+        rotationIntervalDays: _30,
+        keyRetentionDays: _180,
         autoRotation: false
       };
       

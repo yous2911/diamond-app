@@ -62,7 +62,7 @@ export async function authenticateMiddleware(
 
     return; // Continue with request
 
-  } catch (error) {
+  } catch (error: unknown) {
     // Check if we can refresh the token
     const refreshToken = request.cookies['refresh-token'];
     
@@ -90,7 +90,7 @@ export async function authenticateMiddleware(
 
           return; // Continue with request
         }
-      } catch (refreshError) {
+      } catch (refreshError: unknown) {
         // Refresh failed, fall through to error
       }
     }
@@ -110,7 +110,7 @@ export async function authenticateMiddleware(
  */
 export async function optionalAuthMiddleware(
   request: FastifyRequest,
-  reply: FastifyReply
+  _reply: FastifyReply
 ) {
   try {
     // Get token from cookie OR Authorization header
@@ -134,9 +134,9 @@ export async function optionalAuthMiddleware(
         role: decoded.role || 'student',
       };
     }
-  } catch (error) {
+  } catch (error: unknown) {
     // Silently fail for optional auth
-    request.user = undefined;
+    (request as any).user = undefined;
   }
   
   return; // Continue with request

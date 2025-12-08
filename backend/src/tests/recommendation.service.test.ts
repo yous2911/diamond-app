@@ -151,7 +151,7 @@ describe('Recommendation Service', () => {
       expect(result).toEqual(mockRecommendedExercises);
       // Should include NOT condition to exclude completed exercises
       expect(and).toHaveBeenCalledWith(
-        expect.any(Function), // eq(schema.exercises.difficulte, student[0].niveauActuel)
+        expect.any(Function), // eq(schema.exercises.difficulte, student[0]?.niveauActuel)
         expect.any(Function)  // not(sql`...`)
       );
     });

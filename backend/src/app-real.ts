@@ -45,7 +45,7 @@ export async function buildRealApp() {
     await fastify.register(import('./plugins/validation'));
 
     console.log('✅ Real database plugins registered successfully');
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('❌ Plugin registration failed:', error);
     throw error;
   }
@@ -58,7 +58,7 @@ export async function buildRealApp() {
     await fastify.register(import('./routes/upload'), { prefix: '/api/upload' });
 
     console.log('✅ Routes registered successfully');
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('❌ Route registration failed:', error);
     throw error;
   }

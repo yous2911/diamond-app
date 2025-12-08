@@ -11,8 +11,8 @@ const runMigrations = async () => {
     await migrate(db, { migrationsFolder: path.resolve(__dirname, 'migrations') });
 
     logger.info('Migrations applied successfully!');
-  } catch (error) {
-    logger.error('Error applying migrations:', error);
+  } catch (error: unknown) {
+    logger.error('Error applying migrations', { err: error });
     process.exit(1);
   } finally {
     if (connection) {

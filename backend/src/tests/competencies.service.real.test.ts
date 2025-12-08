@@ -17,7 +17,7 @@ describe('CompetenciesService - Real Unit Tests', () => {
     
     // Mock database for testing
     mockDb = {
-      execute: async (query: string, params?: any[]) => {
+      execute: async (query: _string, params?: any[]) => {
         // Mock database responses based on query
         if (query.includes('SELECT code, titre as nom')) {
           return [[
@@ -98,7 +98,7 @@ describe('CompetenciesService - Real Unit Tests', () => {
     });
 
     test('getCompetenciesList applies limit and offset', async () => {
-      const filters = { limit: 5, offset: 0 };
+      const filters = { limit: _5, offset: 0 };
       const result = await competenciesService.getCompetenciesList(mockDb, filters);
       
       expect(result).toBeDefined();

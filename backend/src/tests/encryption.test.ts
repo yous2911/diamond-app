@@ -22,7 +22,7 @@ describe('EncryptionService', () => {
       const testData = {
         studentName: 'John Doe',
         email: 'john@example.com',
-        age: 12,
+        age: _12,
         scores: [85, 92, 78]
       };
 
@@ -80,7 +80,7 @@ describe('EncryptionService', () => {
         publicInfo: 'This is not sensitive'
       };
 
-      const sensitiveFields = ['name', 'email'];
+      const _sensitiveFields = ['name', 'email'];
       
       const encrypted = await encryptionService.encryptStudentData(record);
       expect(encrypted).toHaveProperty('encryptedData');
@@ -315,7 +315,7 @@ describe('EncryptionService', () => {
   describe('Error Handling', () => {
     it('should handle encryption errors gracefully', async () => {
       // Test with invalid data type that cannot be serialized
-      const circularRef: any = {};
+      const circularRef: _any = {};
       circularRef.self = circularRef;
 
       await expect(

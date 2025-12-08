@@ -5,15 +5,7 @@
  */
 
 import { FastifyRequest, FastifyReply } from 'fastify';
-import { 
-  ErrorFactory,
-  ValidationError,
-  NotFoundError,
-  DatabaseError,
-  ExternalServiceError,
-  ErrorContextBuilder,
-  BaseError
-} from '../errors.unified';
+import { ErrorFactory, ErrorContextBuilder, BaseError } from '../errors.unified';
 import { unifiedErrorHandler, ErrorHandlerFactory } from '../errorHandler.unified';
 
 // =============================================================================
@@ -46,7 +38,7 @@ export class UserService {
       // Simulate successful creation
       return { id: 1, ...userData };
 
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof BaseError) {
         throw error; // Re-throw known errors
       }
@@ -137,7 +129,7 @@ export class NotificationService {
           new Error(response.error)
         );
       }
-    } catch (error) {
+    } catch (error: unknown) {
       if (error instanceof BaseError) {
         throw error;
       }
@@ -188,7 +180,7 @@ export class UserController {
     request: FastifyRequest<{ Body: any }>,
     reply: FastifyReply
   ): Promise<void> => {
-    const userData = request.body;
+    const userData = request.body as any;
     
     // Add request context to errors
     const context = ErrorContextBuilder
@@ -204,7 +196,7 @@ export class UserController {
         data: user,
         message: 'User created successfully'
       });
-    } catch (error) {
+    } catch (error: unknown) {
       // Add context to error if it's a BaseError
       if (error instanceof BaseError) {
         error.metadata.context = { ...error.metadata.context, ...context };
@@ -236,7 +228,7 @@ export class UserController {
         data: user
       });
       
-    } catch (error) {
+    } catch (error: unknown) {
       // Let the global error handler deal with it
       await unifiedErrorHandler(error as Error, request, reply);
     }
@@ -278,7 +270,7 @@ export class OrderService {
       // Update order status
       await this.updateOrderStatus(orderId, 'paid');
 
-    } catch (error) {
+    } catch (error: unknown) {
       // Add business context to any errors
       if (error instanceof BaseError) {
         error.metadata.details = {
@@ -377,21 +369,21 @@ export class ErrorTestExamples {
     try {
       // This will throw a validation error
       await userService.createUser({ name: 'Test' }); // Missing email
-    } catch (error) {
+    } catch (error: unknown) {
       console.log('Validation Error:', (error as BaseError).toApiResponse());
     }
 
     try {
       // This will throw a business rule error
       await studentService.enrollInCourse(1, 1); // Course at capacity
-    } catch (error) {
+    } catch (error: unknown) {
       console.log('Business Rule Error:', (error as BaseError).toLogFormat());
     }
 
     try {
       // This will throw an external service error
       await notificationService.sendEmail('fail@example.com', 'Test', 'Body');
-    } catch (error) {
+    } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       console.log('External Service Error:', {
         message: errorMessage,

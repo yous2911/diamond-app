@@ -2,9 +2,8 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { SuperMemoService, SuperMemoCard } from '../services/supermemo.service';
 import { FastifyInstance } from 'fastify';
 import { build } from '../app-test';
-import { students, exercises, spacedRepetition } from '../db/schema';
-import { eq, and } from 'drizzle-orm';
-
+import { exercises } from '../db/schema';
+import { and } from 'drizzle-orm';
 describe('SuperMemoService', () => {
   describe('calculateNextReview', () => {
     it('should handle a perfect response (quality 5)', () => {

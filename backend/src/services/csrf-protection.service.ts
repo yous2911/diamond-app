@@ -155,8 +155,8 @@ export class CSRFProtectionService {
 
       return true;
 
-    } catch (error) {
-      logger.error('CSRF validation error:', error);
+    } catch (error: unknown) {
+      logger.error('CSRF validation error', { err: error });
       return false;
     }
   }
@@ -221,8 +221,8 @@ export class CSRFProtectionService {
           // this.activeTokens.delete(token);
         }
 
-      } catch (error) {
-        logger.error('CSRF middleware error:', error);
+      } catch (error: unknown) {
+        logger.error('CSRF middleware error', { err: error });
         return reply.status(500).send({
           error: 'CSRF protection error',
           message: 'Internal error in CSRF protection system'
@@ -256,8 +256,8 @@ export class CSRFProtectionService {
         expiresAt: csrfToken.expiresAt.toISOString()
       });
 
-    } catch (error) {
-      logger.error('Error generating CSRF token:', error);
+    } catch (error: unknown) {
+      logger.error('Error generating CSRF token', { err: error });
       return reply.status(500).send({
         success: false,
         error: 'Failed to generate CSRF token'
@@ -281,8 +281,8 @@ export class CSRFProtectionService {
       // Generate new token
       return this.generateToken(userId, sessionId);
 
-    } catch (error) {
-      logger.error('Error refreshing CSRF token:', error);
+    } catch (error: unknown) {
+      logger.error('Error refreshing CSRF token', { err: error });
       return null;
     }
   }
@@ -351,7 +351,7 @@ export class CSRFProtectionService {
       }, {} as Record<string, string>);
       
       if (cookies[this.options.cookieName]) {
-        return cookies[this.options.cookieName];
+        return cookies[this.options.cookieName] || null;
       }
     }
 

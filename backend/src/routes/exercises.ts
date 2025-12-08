@@ -1,8 +1,8 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { eq, and, desc, asc, sql } from 'drizzle-orm';
-import { exercises, studentProgress, modules, spacedRepetition } from '../db/schema';
-import { SuperMemoService, SuperMemoCard } from '../services/supermemo.service';
+import { eq, and } from 'drizzle-orm';
+import { exercises } from '../db/schema';
 import { CommonIdParams } from '../schemas/common.schema.js';
+import { databaseService } from '../services/enhanced-database.service.js';
 import {
   CreateModuleSchema,
   GenerateExercisesSchema,
@@ -19,19 +19,18 @@ import {
 export default async function exercisesRoutes(fastify: FastifyInstance) {
   // Create module with competence mapping
   fastify.post('/modules', {
-    preHandler: fastify.authenticate,
-    preValidation: fastify.csrfProtection,
+    preHandler: [fastify.authenticate],
+    preValidation: [fastify.csrfProtection],
     schema: CreateModuleSchema,
-  }, async (request, reply) => {
+  }, async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const moduleData = request.body;
       // Production logic would go here
       return reply.status(501).send({
         success: false,
         error: { message: 'Not implemented', code: 'NOT_IMPLEMENTED' }
       });
-    } catch (error) {
-      fastify.log.error('Create module error:', error);
+    } catch (error: unknown) {
+      fastify.log.error({ err: error }, 'Create module error');
       return reply.status(500).send({
         success: false,
         error: { message: 'Internal error', code: 'INTERNAL_ERROR' }
@@ -41,19 +40,18 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
 
   // Generate exercises from competence codes
   fastify.post('/generate', {
-    preHandler: fastify.authenticate,
-    preValidation: fastify.csrfProtection,
+    preHandler: [fastify.authenticate],
+    preValidation: [fastify.csrfProtection],
     schema: GenerateExercisesSchema,
-  }, async (request, reply) => {
+  }, async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const generateData = request.body;
       // Production logic would go here
       return reply.status(501).send({
         success: false,
         error: { message: 'Not implemented', code: 'NOT_IMPLEMENTED' }
       });
-    } catch (error) {
-      fastify.log.error('Generate exercises error:', error);
+    } catch (error: unknown) {
+      fastify.log.error({ err: error }, 'Generate exercises error');
       return reply.status(500).send({
         success: false,
         error: { message: 'Internal error', code: 'INTERNAL_ERROR' }
@@ -63,14 +61,14 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
 
   // Get exercises with filtering
   fastify.get('/', {
-    schema: GetExercisesSchema,
-    handler: async (request, reply) => {
+    schema: GetExercisesSchema
+  }, async (request: FastifyRequest<{ Querystring: { page?: number; limit?: number; difficulte?: string } }>, reply) => {
       try {
         const {
-          page,
-          limit,
+          page = 1,
+          limit = 10,
           difficulte,
-        } = request.query;
+        } = request.query as { page?: number; limit?: number; difficulte?: string };
 
         const offset = (page - 1) * limit;
 
@@ -90,8 +88,8 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
           success: true,
           data: allExercises
         });
-      } catch (error) {
-        fastify.log.error('Get exercises error:', error);
+      } catch (error: unknown) {
+        fastify.log.error({ err: error }, 'Get exercises error');
         return reply.status(500).send({
           success: false,
           error: {
@@ -100,24 +98,22 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
           },
         });
       }
-    },
   });
 
   // Create exercise
   fastify.post('/', {
-    preHandler: fastify.authenticate,
-    preValidation: fastify.csrfProtection,
+    preHandler: [fastify.authenticate],
+    preValidation: [fastify.csrfProtection],
     schema: CreateExerciseSchema,
-  }, async (request, reply) => {
+  }, async (_request: FastifyRequest, reply: FastifyReply) => {
     try {
-      const exerciseData = request.body;
       // Production logic would go here
       return reply.status(501).send({
         success: false,
         error: { message: 'Not implemented', code: 'NOT_IMPLEMENTED' }
       });
-    } catch (error) {
-      fastify.log.error('Create exercise error:', error);
+    } catch (error: unknown) {
+      fastify.log.error({ err: error }, 'Create exercise error');
       return reply.status(500).send({
         success: false,
         error: { message: 'Internal error', code: 'INTERNAL_ERROR' }
@@ -127,20 +123,18 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
 
   // Update exercise
   fastify.put('/:id', {
-    preHandler: fastify.authenticate,
-    preValidation: fastify.csrfProtection,
+    preHandler: [fastify.authenticate],
+    preValidation: [fastify.csrfProtection],
     schema: UpdateExerciseSchema,
-  }, async (request, reply) => {
+  }, async (_request, reply) => {
     try {
-      const { id } = request.params;
-      const updateData = request.body;
       // Production logic would go here
       return reply.status(501).send({
         success: false,
         error: { message: 'Not implemented', code: 'NOT_IMPLEMENTED' }
       });
-    } catch (error) {
-      fastify.log.error('Update exercise error:', error);
+      } catch (error: unknown) {
+        fastify.log.error({ err: error }, 'Update exercise error');
       return reply.status(500).send({
         success: false,
         error: { message: 'Internal error', code: 'INTERNAL_ERROR' }
@@ -150,19 +144,18 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
 
   // Delete exercise
   fastify.delete('/:id', {
-    preHandler: fastify.authenticate,
-    preValidation: fastify.csrfProtection,
+    preHandler: [fastify.authenticate],
+    preValidation: [fastify.csrfProtection],
     schema: { params: CommonIdParams },
-  }, async (request, reply) => {
+  }, async (_request, reply) => {
     try {
-      const { id } = request.params;
       // Production logic would go here
       return reply.status(501).send({
         success: false,
         error: { message: 'Not implemented', code: 'NOT_IMPLEMENTED' }
       });
-    } catch (error) {
-      fastify.log.error('Delete exercise error:', error);
+      } catch (error: unknown) {
+        fastify.log.error({ err: error }, 'Delete exercise error');
       return reply.status(500).send({
         success: false,
         error: { message: 'Internal error', code: 'INTERNAL_ERROR' }
@@ -172,7 +165,7 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
 
   // Get exercise recommendations for a student
   fastify.get('/recommendations/:studentId', {
-    preHandler: fastify.authenticate,
+    preHandler: [fastify.authenticate],
     schema: {
       params: CommonIdParams,
       querystring: {
@@ -182,13 +175,13 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
         },
       },
     },
-  }, async (request, reply) => {
+  }, async (_request: FastifyRequest, _reply: FastifyReply) => {
     // ...
   });
 
   // Get exercises by module
   fastify.get('/by-module/:moduleId', {
-    preHandler: fastify.authenticate,
+    preHandler: [fastify.authenticate],
     schema: {
       params: CommonIdParams,
       querystring: {
@@ -199,31 +192,88 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
         },
       },
     },
-  }, async (request, reply) => {
+  }, async (_request: FastifyRequest, _reply: FastifyReply) => {
     // ...
   });
 
-  // Submit exercise attempt
+  // Submit exercise attempt with SuperMemo-2 integration
   fastify.post('/attempt', {
-    preHandler: fastify.authenticate,
-    preValidation: fastify.csrfProtection,
+    preHandler: [fastify.authenticate],
+    preValidation: [fastify.csrfProtection],
     schema: AttemptExerciseSchema,
   }, async (request, reply) => {
     try {
-      const attemptData = request.body;
       const user = request.user as any;
-      const studentId = user.studentId;
-      const exerciseId = attemptData.exerciseId;
+      if (!user || !user.studentId) {
+        return reply.status(401).send({
+          success: false,
+          error: {
+            message: 'Authentification requise',
+            code: 'AUTH_REQUIRED',
+          },
+        });
+      }
 
-      // Spaced repetition logic...
-      // ...
+      const body = request.body as {
+        exerciseId: number;
+        competenceCode: string;
+        score: number;
+        completed: boolean;
+        timeSpent: number;
+        difficultyLevel?: number;
+        hintsUsed?: number;
+        confidence?: number;
+        attempts?: number;
+        answers?: any;
+      };
+
+      const { exerciseId, competenceCode, score, completed, timeSpent, difficultyLevel, hintsUsed, confidence, attempts } = body;
+
+      // Get exercise to determine difficulty if not provided
+      let finalDifficultyLevel = difficultyLevel;
+      if (finalDifficultyLevel === undefined) {
+        const [exercise] = await fastify.db
+          .select()
+          .from(exercises)
+          .where(eq(exercises.id, exerciseId))
+          .limit(1);
+
+        if (exercise) {
+          // Map difficulte string to number (0-5)
+          const difficultyMap: Record<string, number> = {
+            'FACILE': 1,
+            'MOYEN': 3,
+            'DIFFICILE': 5
+          };
+          finalDifficultyLevel = difficultyMap[exercise.difficulte] || 3;
+        } else {
+          finalDifficultyLevel = 3; // Default medium difficulty
+        }
+      }
+
+      // Record progress with SuperMemo-2 integration
+      const result = await databaseService.recordStudentProgress(user.studentId, {
+        exerciseId,
+        competenceCode,
+        score,
+        completed,
+        timeSpent,
+        difficultyLevel: finalDifficultyLevel,
+        hintsUsed: hintsUsed || 0,
+        confidence,
+        attempts: attempts || 1
+      });
 
       return reply.send({
         success: true,
         message: 'Tentative enregistrée avec succès',
+        data: {
+          ...result,
+          nextReviewDate: result.superMemoUpdated ? 'Calculé par SuperMemo-2' : undefined
+        }
       });
-    } catch (error) {
-      fastify.log.error('Create attempt error:', error);
+    } catch (error: unknown) {
+      fastify.log.error({ err: error }, 'Create attempt error');
       return reply.status(500).send({
         success: false,
         error: {
@@ -236,85 +286,81 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
 
   // Get student exercise history
   fastify.get('/student-history/:id', {
-    preHandler: fastify.authenticate,
+    preHandler: [fastify.authenticate],
     schema: StudentHistorySchema,
-  }, async (request, reply) => {
+  }, async (_request: FastifyRequest, _reply: FastifyReply) => {
     // ...
   });
 
   // Get student progress
   fastify.get('/student-progress/:id', {
-    preHandler: fastify.authenticate,
+    preHandler: [fastify.authenticate],
     schema: { params: CommonIdParams },
-  }, async (request, reply) => {
+  }, async (_request: FastifyRequest, _reply: FastifyReply) => {
     // ...
   });
 
   // Get exercise by ID
   fastify.get('/:id', {
-    schema: { params: CommonIdParams },
-    handler: async (request, reply) => {
-      try {
-        const { id } = request.params;
+    schema: { params: CommonIdParams }
+  }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+    try {
+      const { id } = request.params;
 
-        const exercise = await fastify.db
-          .select()
-          .from(exercises)
-          .where(eq(exercises.id, id))
-          .limit(1);
+      const exercise = await fastify.db
+        .select()
+        .from(exercises)
+        .where(eq(exercises.id, parseInt(id, 10)))
+        .limit(1);
 
-        if (exercise.length === 0) {
-          return reply.status(404).send({
-            success: false,
-            error: {
-              message: 'Exercice non trouvé',
-              code: 'EXERCISE_NOT_FOUND',
-            },
-          });
-        }
-
-        return reply.send({
-          success: true,
-          data: {
-            items: exercise,
-            total: exercise.length
-          },
-          message: 'Exercice récupéré avec succès',
-        });
-      } catch (error) {
-        fastify.log.error('Get exercise by ID error:', error);
-        return reply.status(500).send({
+      if (exercise.length === 0) {
+        return reply.status(404).send({
           success: false,
           error: {
-            message: 'Erreur lors de la récupération de l\'exercice',
-            code: 'GET_EXERCISE_ERROR',
+            message: 'Exercice non trouvé',
+            code: 'EXERCISE_NOT_FOUND',
           },
         });
       }
-    },
+
+      return reply.send({
+        success: true,
+        data: {
+          items: exercise,
+          total: exercise.length
+        },
+        message: 'Exercice récupéré avec succès',
+      });
+    } catch (error: unknown) {
+      fastify.log.error({ err: error }, 'Get exercise by ID error');
+      return reply.status(500).send({
+        success: false,
+        error: {
+          message: 'Erreur lors de la récupération de l\'exercice',
+          code: 'GET_EXERCISE_ERROR',
+        },
+      });
+    }
   });
 
   // Get exercises by level
   fastify.get('/by-level/:level', {
-    schema: GetExercisesByLevelSchema,
-    handler: async (request, reply) => {
-      // ...
-    }
+    schema: GetExercisesByLevelSchema
+  }, async (_request: FastifyRequest, _reply: FastifyReply) => {
+    // ...
   });
 
   // Get random exercises
   fastify.get('/random/:level', {
-    schema: GetRandomExercisesSchema,
-    handler: async (request, reply) => {
-      // ...
-    }
+    schema: GetRandomExercisesSchema
+  }, async (_request: FastifyRequest, _reply: FastifyReply) => {
+    // ...
   });
 
   // Get exercise statistics
   fastify.get('/stats/:level', {
-    schema: GetExerciseStatsSchema,
-    handler: async (request, reply) => {
-      // ...
-    }
+    schema: GetExerciseStatsSchema
+  }, async (_request: FastifyRequest, _reply: FastifyReply) => {
+    // ...
   });
 } 

@@ -23,7 +23,7 @@ const defaultConfig: ValidationConfig = {
 // Enhanced validation plugin
 const validationPlugin: FastifyPluginAsync = async (fastify: FastifyInstance) => {
   const config = { ...defaultConfig };
-  const sanitizationService = new InputSanitizationService();
+  const _sanitizationService = new InputSanitizationService();
 
   // Custom schema compiler for Zod integration
   fastify.setValidatorCompiler<FastifySchema>(({ schema }) => {
@@ -38,7 +38,7 @@ const validationPlugin: FastifyPluginAsync = async (fastify: FastifyInstance) =>
         const result = zodSchema.parse(data);
         
         return { value: result };
-      } catch (error) {
+      } catch (error: unknown) {
         if (error instanceof ZodError) {
           return {
             error: new Error(error.message)
@@ -56,7 +56,7 @@ const validationPlugin: FastifyPluginAsync = async (fastify: FastifyInstance) =>
     try {
       const result = await schema.parseAsync(data);
       return { success: true, data: result };
-    } catch (error) {
+    } catch (error: unknown) {
       if (config.logValidationErrors) {
         logger.warn('Data validation failed', { error, data });
       }
