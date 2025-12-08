@@ -19,10 +19,10 @@ export default function FAQ() {
     <section className="py-16 px-6">
       <div className="max-w-3xl mx-auto">
         <h3 className="font-sora text-3xl md:text-4xl mb-6 text-center">Questions Fréquentes</h3>
-        <Item q="Pourquoi ajouter encore de l'écran ?" a="Nous remplaçons 30 minutes d'écran passif par 30 minutes actives et structurées, avec un objectif de compétence et des tests de rétention." />
-        <Item q="Comment fonctionne la Garantie Maîtrise ?" a="Respectez le protocole (30 min/jour, 5 j/sem). Si la compétence n'est pas maîtrisée (Tests A & B ≥ 85% + rétention J+7 ≥ 80%), nous remboursons la période concernée." />
-        <Item q="Qu'est-ce que le 1 acheté = 1 offert ?" a="Chaque abonnement finance un accès pour un élève d'une zone reculée via nos partenaires (écoles/associations). La transparence est totale." />
-        <Item q="Et si mon enfant décroche ?" a="L'app ajuste la difficulté et propose des détours de prérequis. Le protocole est un cadre, pas une prison. Notre support est là pour vous accompagner." />
+        <Item q="Pourquoi ajouter encore de l&apos;écran ?" a="Nous remplaçons 30 minutes d&apos;écran passif par 30 minutes actives et structurées, avec un objectif de compétence et des tests de rétention." />
+        <Item q="Comment fonctionne la Garantie Maîtrise ?" a="Respectez le protocole (30 min/jour, 5 j/sem). Si la compétence n&apos;est pas maîtrisée (Tests A & B ≥ 85% + rétention J+7 ≥ 80%), nous remboursons la période concernée." />
+        <Item q="Qu&apos;est-ce que le 1 acheté = 1 offert ?" a="Chaque abonnement finance un accès pour un élève d&apos;une zone reculée via nos partenaires (écoles/associations). La transparence est totale." />
+        <Item q="Et si mon enfant décroche ?" a="L&apos;app ajuste la difficulté et propose des détours de prérequis. Le protocole est un cadre, pas une prison. Notre support est là pour vous accompagner." />
       </div>
     </section>
   );

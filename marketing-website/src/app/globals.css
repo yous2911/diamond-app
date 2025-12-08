@@ -12,4 +12,10 @@
 :focus-visible { outline: 2px solid #FFD700; outline-offset: 2px; }
 
 /* subtle gradient bg */
-.body-gradient { @apply bg-gradient-to-br from-indigo-50/5 via-purple-50/5 to-pink-50/5; }
+.body-gradient { 
+  background: linear-gradient(to bottom right, 
+    rgba(238, 242, 255, 0.05), 
+    rgba(250, 245, 255, 0.05), 
+    rgba(253, 244, 255, 0.05)
+  );
+}

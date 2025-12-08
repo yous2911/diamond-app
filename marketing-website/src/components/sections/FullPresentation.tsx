@@ -8,11 +8,11 @@ export default function FullPresentation() {
           Notre Mission, Expliquée en Vidéo
         </h2>
         <p className="text-white/75 max-w-2xl mx-auto mb-10">
-          Découvrez comment RevEd réinvente l'apprentissage grâce à une méthode fondée sur la science et un engagement pour l'impact social.
+          Découvrez comment RevEd réinvente l&apos;apprentissage grâce à une méthode fondée sur la science et un engagement pour l&apos;impact social.
         </p>
         <YouTubeEmbed
-          embedId="VOTRE_ID_YOUTUBE_ICI" // <-- METTEZ L'ID DE VOTRE VIDÉO
-          poster="/img/presentation-thumbnail.jpg" // L'IMAGE DE PRÉSENTATION
+          embedId="VOTRE_ID_YOUTUBE_ICI" // <-- METTEZ L&apos;ID DE VOTRE VIDÉO
+          poster="/img/presentation-thumbnail.jpg" // L&apos;IMAGE DE PRÉSENTATION
           title="Présentation complète de RevEd"
         />
       </div>

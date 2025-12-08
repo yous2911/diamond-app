@@ -3,10 +3,10 @@ export default function SocialProof() {
     <section className="py-20 bg-gradient-to-b from-white/5 to-white/10 border-b border-white/10">
       <div className="max-w-6xl mx-auto text-center px-6">
         <h3 className="font-sora text-3xl md:text-4xl mb-4 text-white">
-          Rejoignez un mouvement de parents qui changent l'avenir
+          Rejoignez un mouvement de parents qui changent l&apos;avenir
         </h3>
         <p className="text-white/70 text-lg mb-12 max-w-3xl mx-auto">
-          Chaque abonnement finance l'accès gratuit d'un enfant méritant. Votre investissement a un double impact.
+          Chaque abonnement finance l&apos;accès gratuit d&apos;un enfant méritant. Votre investissement a un double impact.
         </p>
         
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
@@ -31,12 +31,16 @@ export default function SocialProof() {
         {/* Testimonials */}
         <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
           <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-            <p className="text-white/90 mb-4 italic">"Emma adore ses exercices, et savoir qu'on aide un autre enfant en même temps... C'est exactement nos valeurs familiales."</p>
-            <div className="text-sm text-cognitive-gold">Marie D. • Maman d'Emma, 8 ans</div>
-            <div className="text-xs text-white/50 mt-1">+67% en calcul mental • Founders' Circle</div>
+            <p className="text-white/90 mb-4 italic">
+              &ldquo;Emma adore ses exercices, et savoir qu&apos;on aide un autre enfant en même temps... C&apos;est exactement nos valeurs familiales.&rdquo;
+            </p>
+            <div className="text-sm text-cognitive-gold">Marie D. • Maman d&apos;Emma, 8 ans</div>
+            <div className="text-xs text-white/50 mt-1">+67% en calcul mental • Founders&apos; Circle</div>
           </div>
           <div className="bg-white/5 rounded-2xl p-6 border border-white/10">
-            <p className="text-white/90 mb-4 italic">"Plus qu'une app éducative, c'est un mouvement. Léo progresse ET on contribue à l'équité éducative."</p>
+            <p className="text-white/90 mb-4 italic">
+              &ldquo;Plus qu&apos;une app éducative, c&apos;est un mouvement. Léo progresse ET on contribue à l&apos;équité éducative.&rdquo;
+            </p>
             <div className="text-sm text-cognitive-gold">Thomas L. • Papa de Léo, 7 ans</div>
             <div className="text-xs text-white/50 mt-1">+52% en lecture • Impact social</div>
           </div>
@@ -49,7 +53,7 @@ export default function SocialProof() {
             Grâce à nos 50 familles fondatrices, <strong>347 enfants</strong> accèdent gratuitement à une éducation de qualité.
           </p>
           <p className="text-emerald-300 text-sm">
-            Prochain objectif : 1000 enfants soutenus d'ici décembre 2024
+            Prochain objectif : 1000 enfants soutenus d&apos;ici décembre 2024
           </p>
         </div>
       </div>

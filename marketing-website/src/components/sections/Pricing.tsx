@@ -32,7 +32,7 @@ function PriceCard({ title, price, children, cta, isPopular = false, guarantee }
           <p className="text-green-200 text-sm text-center">✅ {guarantee}</p>
         </div>
       )}
-      <Button className="mt-auto" aria-label={`Choisir l'offre ${title}`}>{cta}</Button>
+      <Button className="mt-auto" aria-label={`Choisir l&apos;offre ${title}`}>{cta}</Button>
     </div>
   );
 }
@@ -41,8 +41,8 @@ export default function Pricing() {
   return (
     <section className="py-20 px-6 bg-white/5 border-y border-white/10">
       <div className="max-w-6xl mx-auto">
-        <h3 className="font-sora text-3xl md:text-4xl mb-8 text-center">Investissement dans l'avenir de votre enfant</h3>
-        <p className="text-center text-white/60 mb-8 text-lg">Moins cher qu'un cours particulier (€40/h) • Plus efficace que 4h d'écrans</p>
+        <h3 className="font-sora text-3xl md:text-4xl mb-8 text-center">Investissement dans l&apos;avenir de votre enfant</h3>
+        <p className="text-center text-white/60 mb-8 text-lg">Moins cher qu&apos;un cours particulier (€40/h) • Plus efficace que 4h d&apos;écrans</p>
         
         <UrgencyBanner />
         
@@ -53,26 +53,26 @@ export default function Pricing() {
             cta="Commencer immédiatement"
             guarantee="30 jours satisfait ou remboursé"
           >
-            <li>✅ Accès complet à l'app (web + mobile)</li>
+            <li>✅ Accès complet à l&apos;app (web + mobile)</li>
             <li>✅ 462 exercices avec répétition espacée</li>
             <li>✅ Rapport de progrès hebdomadaire</li>
             <li>🌍 **1 abonnement acheté = 1 accès offert à un enfant méritant**</li>
-            <li>✅ Participation au mouvement d'équité éducative</li>
+            <li>✅ Participation au mouvement d&apos;équité éducative</li>
           </PriceCard>
           
           <PriceCard 
             title="Maîtrise & Impact" 
             price="€100" 
-            cta="Postuler au Founders' Circle"
+            cta="Postuler au Founders&apos; Circle"
             isPopular={true}
             guarantee="60 jours + consultation gratuite 20min"
           >
             <li>✅ Toutes les fonctions Standard</li>
             <li>🌍 **Impact amplifié : 3 enfants soutenus par votre abonnement**</li>
             <li>✅ Rapports cognitifs détaillés (PDF)</li>
-            <li>✅ Accès direct à l'équipe + nouveautés</li>
+            <li>✅ Accès direct à l&apos;équipe + nouveautés</li>
             <li>✅ **EXCLUSIF:** 3 sessions coaching (20min)</li>
-            <li>✅ Certificat d'impact social annuel</li>
+            <li>✅ Certificat d&apos;impact social annuel</li>
             <li>✅ Garantie maîtrise ou remboursé</li>
           </PriceCard>
         </div>
@@ -93,7 +93,7 @@ export default function Pricing() {
           
           <div className="mt-8 bg-gradient-to-r from-emerald-900/20 to-teal-900/20 border border-emerald-400/30 rounded-xl p-6 max-w-3xl mx-auto">
             <p className="text-emerald-200 text-lg font-medium mb-2">
-              🏆 Founders' Circle = Double Impact
+              🏆 Founders&apos; Circle = Double Impact
             </p>
             <p className="text-emerald-100 text-sm">
               Excellence éducative pour votre enfant + Impact social amplifié + Communauté de parents engagés

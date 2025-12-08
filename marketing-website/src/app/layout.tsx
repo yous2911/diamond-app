@@ -8,9 +8,9 @@ const lexend = Lexend({ subsets: ['latin'], variable: '--font-lexend', display: 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://votre-domaine.com'),
   title: "RevEd — 30 minutes par jour pour construire leur avenir",
-  description: "Répétition espacée (SM-2), prérequis, maîtrise garantie. L'alternative aux 4h d'écrans passifs.",
+  description: "Répétition espacée (SM-2), prérequis, maîtrise garantie. L&apos;alternative aux 4h d&apos;écrans passifs.",
   openGraph: {
-    title: "RevEd — Le vrai concurrent, c'est l'algorithme.",
+    title: "RevEd — Le vrai concurrent, c&apos;est l&apos;algorithme.",
     description: "Remplacez 30 minutes de scroll par 30 minutes qui restent. Maîtrise garantie.",
     type: 'website',
     url: process.env.NEXT_PUBLIC_SITE_URL || 'https://votre-domaine.com',

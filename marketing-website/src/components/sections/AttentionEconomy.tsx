@@ -3,9 +3,9 @@ export default function AttentionEconomy() {
     <section className="py-14 px-6 bg-deep-space">
       <div className="max-w-4xl mx-auto">
         <h2 className="font-sora text-3xl md:text-4xl mb-4 text-center">
-          Le vrai concurrent n'est pas l'école. C'est l'algorithme.
+          Le vrai concurrent n&apos;est pas l&apos;école. C&apos;est l&apos;algorithme.
         </h2>
-        <div className="max-w-xl mx-auto" aria-label="Comparaison de temps d'écran passif vs actif">
+        <div className="max-w-xl mx-auto" aria-label="Comparaison de temps d&apos;écran passif vs actif">
           <div className="h-40 rounded-2xl bg-white/5 border border-white/10 p-4 mt-8">
             <div className="flex items-end gap-6 h-full">
               <div className="flex-1">
@@ -23,10 +23,10 @@ export default function AttentionEconomy() {
             </div>
           </div>
           <p className="mt-3 text-center text-sm text-white/80">
-            Notre protocole ne promet pas la magie. C'est un choix quotidien : reconstruire la concentration, l'effort et la fierté de progresser.
+            Notre protocole ne promet pas la magie. C&apos;est un choix quotidien : reconstruire la concentration, l&apos;effort et la fierté de progresser.
           </p>
           <p className="mt-2 text-xs text-white/50 text-center">
-            L'objectif est de <strong>remplacer</strong> 30 min passives par 30 min actives.
+            L&apos;objectif est de <strong>remplacer</strong> 30 min passives par 30 min actives.
           </p>
         </div>
       </div>
