@@ -1,34 +1,56 @@
-'use client';
-import React from 'react';
-
-function Item({ q, a }: { q: string; a: string }) {
-  const [open, setOpen] = React.useState(false);
-  return (
-    <div className="border-b-2 border-text-medium/10 py-4">
-      <button className="w-full text-left flex justify-between items-center hover:text-cognitive-gold transition-colors" onClick={() => setOpen(o => !o)} aria-expanded={open}>
-        <span className="font-sora text-lg text-text-dark font-medium">{q}</span>
-        <span className="text-cognitive-gold text-2xl font-bold">{open ? '–' : '+'}</span>
-      </button>
-      {open && <p className="mt-2 text-text-medium">{a}</p>}
-    </div>
-  );
-}
+const faqs = [
+  {
+    q: "Pourquoi ajouter encore de l&apos;écran ?",
+    a: "RevEd ne rajoute pas du temps d&apos;écran, il en remplace. Nous transformons une partie du temps déjà passé devant les écrans en apprentissage structuré, limité à 30 minutes, avec un objectif clair et des résultats visibles.",
+  },
+  {
+    q: "À partir de quel niveau scolaire RevEd est-il adapté ?",
+    a: "RevEd couvre l&apos;ensemble du primaire, du CP au CM2, avec des parcours progressifs adaptés à l&apos;âge de l&apos;enfant et au programme officiel.",
+  },
+  {
+    q: "Comment fonctionne la garantie de maîtrise ?",
+    a: "Si le protocole est respecté (30 min/jour, 5 j/sem, utilisation du parcours recommandé) et que la compétence ciblée n&apos;est pas maîtrisée selon nos critères, nous remboursons la période concernée.",
+  },
+  {
+    q: "Comment fonctionne le programme solidaire ?",
+    a: "Pour chaque abonnement famille, un accès est offert à un enfant en zone reculée via nos partenaires (écoles et associations). Un suivi agrégé de l&apos;impact est partagé chaque année.",
+  },
+  {
+    q: "Y a-t-il un engagement de durée ?",
+    a: "Non. Les abonnements sont sans engagement. Vous pouvez arrêter à tout moment. Les garanties s&apos;appliquent sur les périodes effectivement réglées.",
+  },
+];
 
 export default function FAQ() {
   return (
-    <section className="py-16 px-6 bg-light-bg">
-      <div className="max-w-3xl mx-auto">
-        <h3 className="font-sora text-3xl md:text-4xl mb-6 text-center text-text-dark">Questions Fréquentes</h3>
-        <Item q="Pourquoi ajouter encore de l&apos;écran ?" a="Nous remplaçons 30 minutes d&apos;écran passif par 30 minutes actives et structurées, avec un objectif de compétence et des tests de rétention." />
-        <Item q="Comment fonctionne la Garantie Maîtrise ?" a="Respectez le protocole (30 min/jour, 5 j/sem). Si la compétence n&apos;est pas maîtrisée (Tests A & B ≥ 85% + rétention J+7 ≥ 80%), nous remboursons la période concernée." />
-        <Item q="Qu&apos;est-ce que le 1 acheté = 1 offert ?" a="Chaque abonnement finance un accès pour un élève d&apos;une zone reculée via nos partenaires (écoles/associations). La transparence est totale." />
-        <Item q="Et si mon enfant décroche ?" a="L&apos;app ajuste la difficulté et propose des détours de prérequis. Le protocole est un cadre, pas une prison. Notre support est là pour vous accompagner." />
+    <section className="py-24 bg-white">
+      <div className="container mx-auto px-4 max-w-4xl">
+        <div className="text-center max-w-2xl mx-auto mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-3">
+            Questions fréquentes
+          </h2>
+          <p className="text-slate-600">
+            Si vous hésitez, vous n&apos;êtes probablement pas les seuls.
+          </p>
+        </div>
+        <div className="space-y-4">
+          {faqs.map((item) => (
+            <details
+              key={item.q}
+              className="group bg-slate-50 border border-slate-100 rounded-2xl px-5 py-4"
+            >
+              <summary className="flex cursor-pointer items-center justify-between gap-2 text-sm font-semibold text-slate-900">
+                <span>{item.q}</span>
+                <span className="shrink-0 text-slate-400 group-open:hidden">+</span>
+                <span className="shrink-0 text-slate-400 hidden group-open:block">−</span>
+              </summary>
+              <div className="mt-3 text-sm text-slate-600 leading-relaxed">
+                {item.a}
+              </div>
+            </details>
+          ))}
+        </div>
       </div>
     </section>
   );
 }
-
-
-
-
-

@@ -1,60 +1,123 @@
+import Image from "next/image";
+import { Star, Users, HeartHandshake } from "lucide-react";
+
 export default function SocialProof() {
   return (
-    <section className="py-20 bg-light-bg">
-      <div className="max-w-6xl mx-auto text-center px-6">
-        <h3 className="font-sora text-3xl md:text-4xl mb-4 text-text-dark">
-          Rejoignez un mouvement de parents qui changent l&apos;avenir
-        </h3>
-        <p className="text-text-medium text-lg mb-12 max-w-3xl mx-auto">
-          Chaque abonnement finance l&apos;accès gratuit d&apos;un enfant méritant. Votre investissement a un double impact.
-        </p>
-        
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
-          <div className="p-6 border-2 border-spark-turquoise/30 rounded-xl bg-gradient-to-br from-spark-turquoise/10 to-spark-turquoise/5">
-            <div className="text-5xl font-black text-spark-turquoise mb-2">347</div>
-            <div className="text-text-dark font-medium">Enfants soutenus</div>
-          </div>
-          <div className="p-6 border-2 border-cognitive-gold/30 rounded-xl bg-gradient-to-br from-cognitive-gold/10 to-cognitive-gold/5">
-            <div className="text-5xl font-black text-cognitive-gold mb-2">462</div>
-            <div className="text-text-dark">Exercices scientifiques</div>
-          </div>
-          <div className="p-6 border-2 border-mastery-blue/30 rounded-xl bg-gradient-to-br from-mastery-blue/10 to-mastery-blue/5">
-            <div className="text-5xl font-black text-mastery-blue mb-2">94%</div>
-            <div className="text-text-dark">Amélioration mesurée</div>
-          </div>
-          <div className="p-6 border-2 border-cognitive-gold/30 rounded-xl bg-gradient-to-br from-cognitive-gold/10 to-cognitive-gold/5">
-            <div className="text-5xl font-black text-cognitive-gold mb-2">4.9★</div>
-            <div className="text-text-dark">Parents satisfaits</div>
+    <section className="py-24 bg-white">
+      <div className="container mx-auto px-4">
+        {/* En-tête */}
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+            Des familles engagées, des résultats visibles
+          </h2>
+          <p className="text-lg text-slate-600">
+            RevEd n&apos;est pas une simple application. C&apos;est un cadre éducatif structuré,
+            pensé pour la progression et la sérénité des parents.
+          </p>
+        </div>
+        {/* Image Social Proof */}
+        <div className="mb-16 max-w-4xl mx-auto">
+          <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden shadow-lg border border-slate-100">
+            <Image
+              src="/images/social-proof.png"
+              alt="Familles utilisant RevEd - Preuve sociale"
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 90vw, 1200px"
+            />
           </div>
         </div>
-        
-        {/* Testimonials */}
-        <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto mb-12">
-          <div className="bg-warm-white rounded-2xl p-6 border-2 border-cognitive-gold/20 shadow-lg">
-            <p className="text-text-dark mb-4 italic text-lg">
-              &ldquo;Emma adore ses exercices, et savoir qu&apos;on aide un autre enfant en même temps... C&apos;est exactement nos valeurs familiales.&rdquo;
+        {/* Stats */}
+        <div className="grid md:grid-cols-4 gap-6 mb-16">
+          <div className="bg-slate-50 rounded-2xl p-6 text-center border border-slate-100">
+            <p className="text-3xl font-bold text-slate-900 mb-1">+94%</p>
+            <p className="text-xs uppercase tracking-wide text-slate-500">
+              Progression moyenne mesurée
             </p>
-            <div className="text-sm text-cognitive-gold font-bold">Marie D. • Maman d&apos;Emma, 8 ans</div>
-            <div className="text-xs text-text-medium mt-1">+67% en calcul mental</div>
           </div>
-          <div className="bg-warm-white rounded-2xl p-6 border-2 border-mastery-blue/20 shadow-lg">
-            <p className="text-text-dark mb-4 italic text-lg">
-              &ldquo;Plus qu&apos;une app éducative, c&apos;est un mouvement. Léo progresse ET on contribue à l&apos;équité éducative.&rdquo;
+          <div className="bg-slate-50 rounded-2xl p-6 text-center border border-slate-100">
+            <p className="text-3xl font-bold text-slate-900 mb-1">462</p>
+            <p className="text-xs uppercase tracking-wide text-slate-500">
+              Exercices structurés CP–CM2
             </p>
-            <div className="text-sm text-mastery-blue font-bold">Thomas L. • Papa de Léo, 7 ans</div>
-            <div className="text-xs text-text-medium mt-1">+52% en lecture</div>
+          </div>
+          <div className="bg-slate-50 rounded-2xl p-6 text-center border border-slate-100 flex flex-col items-center">
+            <div className="flex items-center gap-1 mb-1">
+              <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
+              <span className="text-2xl font-bold text-slate-900">4,9</span>
+            </div>
+            <p className="text-xs uppercase tracking-wide text-slate-500">
+              Note moyenne parents
+            </p>
+          </div>
+          <div className="bg-slate-50 rounded-2xl p-6 text-center border border-slate-100">
+            <p className="text-3xl font-bold text-slate-900 mb-1">347</p>
+            <p className="text-xs uppercase tracking-wide text-slate-500">
+              Enfants déjà accompagnés
+            </p>
           </div>
         </div>
-        
-        {/* Impact Banner */}
-        <div className="mt-12 bg-gradient-to-r from-spark-turquoise/20 to-mastery-blue/20 border-2 border-spark-turquoise/30 rounded-2xl p-8 max-w-3xl mx-auto">
-          <h4 className="text-2xl font-bold text-text-dark mb-4">🌍 Impact en temps réel</h4>
-          <p className="text-text-dark text-lg mb-4">
-            Grâce à nos 50 familles fondatrices, <strong className="text-spark-turquoise">347 enfants</strong> accèdent gratuitement à une éducation de qualité.
-          </p>
-          <p className="text-text-medium text-sm">
-            Prochain objectif : 1000 enfants soutenus d&apos;ici décembre 2024
-          </p>
+        {/* Témoignages */}
+        <div className="grid md:grid-cols-2 gap-8 mb-16">
+          <div className="bg-slate-50 rounded-2xl p-8 border border-slate-100 flex flex-col justify-between">
+            <div>
+              <p className="text-slate-700 text-sm leading-relaxed mb-4">
+                &ldquo;Pour la première fois, les devoirs ne sont plus une source de tension.
+                Les séances sont courtes, claires, et ma fille a repris confiance.&rdquo;
+              </p>
+            </div>
+            <div className="pt-4 border-t border-slate-200 flex items-center justify-between">
+              <div>
+                <p className="font-semibold text-slate-900">Marie D.</p>
+                <p className="text-xs text-slate-500">Maman — CE2</p>
+              </div>
+              <p className="text-xs text-emerald-600 font-semibold">
+                +67% en calcul mental
+              </p>
+            </div>
+          </div>
+          <div className="bg-slate-50 rounded-2xl p-8 border border-slate-100 flex flex-col justify-between">
+            <div>
+              <p className="text-slate-700 text-sm leading-relaxed mb-4">
+                &ldquo;Léo a retrouvé le plaisir d&apos;apprendre. Et le fait que notre abonnement
+                finance un autre enfant correspond exactement à nos valeurs.&rdquo;
+              </p>
+            </div>
+            <div className="pt-4 border-t border-slate-200 flex items-center justify-between">
+              <div>
+                <p className="font-semibold text-slate-900">Thomas L.</p>
+                <p className="text-xs text-slate-500">Papa — CM1</p>
+              </div>
+              <p className="text-xs text-emerald-600 font-semibold">
+                +52% en lecture
+              </p>
+            </div>
+          </div>
+        </div>
+        {/* Bandeau impact */}
+        <div className="bg-blue-600 rounded-2xl p-8 md:p-10 text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+              <HeartHandshake className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold mb-1">
+                Un impact éducatif mesurable
+              </h3>
+              <p className="text-blue-100 text-sm">
+                Chaque nouvelle famille rejoint un mouvement qui finance l&apos;accès
+                d&apos;enfants en zones reculées à une plateforme structurée et suivie.
+              </p>
+            </div>
+          </div>
+          <div className="md:text-right">
+            <p className="text-sm text-blue-100 mb-1">
+              Objectif 2025 :
+            </p>
+            <p className="text-lg font-semibold">
+              1 000 enfants accompagnés grâce au programme solidaire
+            </p>
+          </div>
         </div>
       </div>
     </section>

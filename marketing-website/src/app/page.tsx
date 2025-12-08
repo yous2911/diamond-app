@@ -1,27 +1,25 @@
 import Hero from "../components/sections/Hero";
-import SocialProof from "../components/sections/SocialProof";
-import AttentionEconomy from "../components/sections/AttentionEconomy";
 import Method from "../components/sections/Method";
+import SocialProof from "../components/sections/SocialProof";
+import Science from "../components/sections/Science";
 import MasteryGuarantee from "../components/sections/MasteryGuarantee";
 import ImpactB1G1 from "../components/sections/ImpactB1G1";
-import FullPresentation from "../components/sections/FullPresentation";
 import Pricing from "../components/sections/Pricing";
-import Contract from "../components/sections/Contract";
+import ProgressionGuarantee from "../components/sections/ProgressionGuarantee";
 import FAQ from "../components/sections/FAQ";
 import Footer from "../components/sections/Footer";
 
 export default function Home() {
   return (
-    <main id="main">
+    <main id="main" className="min-h-screen bg-white">
       <Hero />
-      <SocialProof />
-      <AttentionEconomy />
-      <FullPresentation />
       <Method />
+      <SocialProof />
+      <Science />
       <MasteryGuarantee />
       <ImpactB1G1 />
       <Pricing />
-      <Contract />
+      <ProgressionGuarantee />
       <FAQ />
       <Footer />
     </main>

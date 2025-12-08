@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr">
-      <body className={`${sora.variable} ${lexend.variable} font-lexend bg-light-bg text-text-dark body-gradient`}>
+      <body className={`${sora.variable} ${lexend.variable} font-lexend bg-white text-slate-900`}>
         <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:bg-clarity-white focus:text-deep-space focus:px-3 focus:py-2 focus:rounded">Aller au contenu</a>
         {children}
         <script

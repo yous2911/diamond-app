@@ -1,19 +1,43 @@
 @import "tailwindcss";
 
-:root { color-scheme: light; }
+:root {
+  /* Palette Institutionnelle & Premium */
+  --background: #ffffff;
+  --foreground: #0f172a; /* Slate-900 pour un texte très lisible */
+  
+  --primary: #2563eb; /* Royal Blue - Confiance */
+  --primary-dark: #1e40af;
+  
+  --accent: #d97706; /* Or/Amber - Excellence */
+  --accent-light: #fcd34d;
+  
+  --surface: #f8fafc; /* Slate-50 - Gris très léger pour les sections alternées */
+  --surface-highlight: #eff6ff; /* Bleu très pâle pour les focus */
+  
+  color-scheme: light;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Utilitaires pour le texte */
+.text-gradient {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gold {
+  color: var(--accent);
+}
 
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-in-up { animation: none !important; }
 }
 
 /* focus ring for keyboard users */
-:focus-visible { outline: 2px solid #FFD700; outline-offset: 2px; }
-
-/* subtle gradient bg */
-.body-gradient { 
-  background: linear-gradient(to bottom right, 
-    rgba(238, 242, 255, 0.05), 
-    rgba(250, 245, 255, 0.05), 
-    rgba(253, 244, 255, 0.05)
-  );
-}
+:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
