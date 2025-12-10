@@ -36,7 +36,7 @@ export default function SocialProof() {
             </p>
           </div>
           <div className="bg-slate-50 rounded-2xl p-6 text-center border border-slate-100">
-            <p className="text-3xl font-bold text-slate-900 mb-1">462</p>
+            <p className="text-3xl font-bold text-slate-900 mb-1">Des milliers</p>
             <p className="text-xs uppercase tracking-wide text-slate-500">
               Exercices structurés
             </p>

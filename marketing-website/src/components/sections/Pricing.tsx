@@ -39,7 +39,7 @@ export default function Pricing() {
               Pour installer une routine d&apos;apprentissage sereine et efficace.
             </p>
             <div className="flex items-baseline gap-1 mb-6">
-              <span className="text-3xl font-bold text-slate-900">30€</span>
+              <span className="text-3xl font-bold text-slate-900">330 DH</span>
               <span className="text-sm text-slate-500">/ mois</span>
             </div>
             <ul className="space-y-2 mb-6 text-sm text-slate-700">
@@ -71,7 +71,7 @@ export default function Pricing() {
               et engagement social renforcé.
             </p>
             <div className="flex items-baseline gap-1 mb-6">
-              <span className="text-3xl font-bold text-slate-900">100€</span>
+              <span className="text-3xl font-bold text-slate-900">1100 DH</span>
               <span className="text-sm text-slate-500">/ mois</span>
             </div>
             <ul className="space-y-2 mb-6 text-sm text-slate-700">
