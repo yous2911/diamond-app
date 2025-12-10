@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, FlatList } from 'react-native';
 import { useLeaderboard } from '../../hooks/useApiData';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
-import { Card } from '../../components/common/Card';
+import Card from '../../components/common/Card';
 
 const LeaderboardScreen = () => {
   const { data: leaderboard, loading, error } = useLeaderboard();

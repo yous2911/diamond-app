@@ -5,6 +5,7 @@ import { User } from '../types/auth';
 
 interface AuthContextType {
   user: User | null;
+  student: User | null; // Alias for user when it is a student
   isLoggedIn: boolean;
   login: (email: string, pass: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -64,7 +65,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoggedIn: !!user, login, logout, loading, error }}>
+    <AuthContext.Provider value={{
+      user,
+      student: user, // Alias user to student for compatibility
+      isLoggedIn: !!user,
+      login,
+      logout,
+      loading,
+      error
+    }}>
       {children}
     </AuthContext.Provider>
   );

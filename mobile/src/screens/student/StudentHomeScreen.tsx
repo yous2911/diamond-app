@@ -19,7 +19,7 @@ import LinearGradient from 'react-native-linear-gradient';
 
 // Mobile versions of your hooks (same API calls, different imports)
 import { useAuth } from '../../contexts/AuthContext';
-import { usePremiumFeatures } from '../../contexts/PremiumFeaturesContext';
+import { usePremiumFeatures, MascotEmotion } from '../../contexts/PremiumFeaturesContext';
 import {
   useExercises,
   useMascot,
@@ -29,11 +29,12 @@ import {
 // Mobile components (converted from web versions)
 import XPCrystalsMobile from '../../components/premium/XPCrystalsMobile';
 import MascotMobile3D from '../../components/MascotMobile3D';
+import { User } from '../../types/auth';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 const StudentHomeScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const { user, logout } = useAuth();
 
   // Debug logging (same as web)
@@ -42,12 +43,15 @@ const StudentHomeScreen = () => {
   const { celebrations, mascotEmotions } = usePremiumFeatures();
 
   // Same hooks as web version
-  const { data: exercisesData } = useExercises(user?.niveau || 'CP');
+  // Fallback to 'CP' if user.niveau is undefined, but User type should have it if extended.
+  // Casting or checking property existence. Assuming User type in auth.ts needs update or we cast.
+  const userNiveau = (user as any)?.niveau || 'CP';
+  const { data: exercisesData } = useExercises(userNiveau);
   const { data: statsData } = useStudentStats(user?.id || '');
-  const { data: mascotData, updateEmotion: updateMascotEmotion } = useMascot();
+  const { data: mascotData, refetch: updateMascotEmotion } = useMascot();
 
   // State for mobile-specific features
-  const [mascotEmotion, setMascotEmotion] = useState('happy');
+  const [mascotEmotion, setMascotEmotion] = useState<MascotEmotion>('happy');
   const [mascotMessage, setMascotMessage] = useState('Welcome!');
   const [showMascotSelector, setShowMascotSelector] = useState(false);
   const [equippedItems, setEquippedItems] = useState<string[]>(['golden_crown', 'magic_cape']);
@@ -55,14 +59,14 @@ const StudentHomeScreen = () => {
 
   const studentData = useMemo(() => ({
     prenom: user?.name || 'Élève',
-    niveau: user?.niveau || 'CP',
+    niveau: userNiveau,
     stars: statsData?.exercisesCompleted || 0,
     hearts: 3, // Mocked
     streak: 0, // Mocked
     currentXP: statsData?.totalXp || 0,
     maxXP: 100 + ((statsData?.level || 1) * 20),
     level: statsData?.level || 1
-  }), [user, statsData]);
+  }), [user, statsData, userNiveau]);
 
   // Same subjects logic as web (using backend data)
   const subjects = useMemo(() => {

@@ -6,6 +6,8 @@ export interface User {
   avatar?: string;
   type: 'student' | 'parent';
   token?: string;
+  prenom?: string; // Add prenom
+  niveau?: string; // Add niveau
 }
 
 export interface AuthState {
