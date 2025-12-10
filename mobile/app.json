@@ -16,15 +16,30 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.fastreved.kids"
+      "bundleIdentifier": "com.diamondapp.fastrevedkids",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "L'application a besoin d'accéder au microphone pour les exercices de prononciation."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#6366f1"
       },
-      "package": "com.fastreved.kids"
+      "package": "com.diamondapp.fastrevedkids",
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.INTERNET"
+      ]
     },
+    "plugins": [
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone."
+        }
+      ]
+    ],
     "web": {
       "favicon": "./assets/favicon.png"
     }

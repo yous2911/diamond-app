@@ -88,6 +88,10 @@ export const useExerciseSubmission = () => {
     );
 };
 
+export const useLeaderboard = () => {
+    return useApiData<any[]>(() => apiClient.get('/leaderboard').then(res => res.data), []);
+};
+
 // --- Mocked Hooks for missing endpoints ---
 
 export const useCompetences = () => {

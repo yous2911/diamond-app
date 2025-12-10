@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { useStudentStats } from '../../hooks/useApiData';
-import { Card } from '../../components/common/Card';
+import Card from '../../components/common/Card';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
 
 const ProfileScreen = () => {

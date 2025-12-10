@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { useXpTracking, useStudentStats } from '../../hooks/useApiData';
 import { LoadingSpinner } from '../../components/common/LoadingSpinner';
-import { Card } from '../../components/common/Card';
+import Card from '../../components/common/Card';
 
 // A simple progress bar component
 const ProgressBar = ({ progress, label }: { progress: number, label: string }) => (
