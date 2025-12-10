@@ -7,15 +7,15 @@ import {
   Dimensions,
   TouchableOpacity
 } from 'react-native';
-import Svg, { 
-  Defs, 
-  LinearGradient as SvgLinearGradient, 
-  Stop, 
-  Circle, 
+import Svg, {
+  Defs,
+  LinearGradient as SvgLinearGradient,
+  Stop,
+  Circle,
   Path,
-  Text as SvgText 
+  Text as SvgText
 } from 'react-native-svg';
-import { useMagicalSounds } from '../hooks/useMagicalSounds';
+import { useMagicalSounds } from '../../hooks/useMagicalSounds';
 
 // =============================================================================
 // 💎 MOBILE XP CRYSTALS WITH 3D PHYSICS
@@ -32,10 +32,10 @@ interface XPCrystalsMobileProps {
 const { width: screenWidth } = Dimensions.get('window');
 const crystalSize = Math.min(screenWidth * 0.7, 280);
 
-const XPCrystalsMobile: React.FC<XPCrystalsMobileProps> = ({ 
-  currentXP, 
-  maxXP, 
-  level, 
+const XPCrystalsMobile: React.FC<XPCrystalsMobileProps> = ({
+  currentXP,
+  maxXP,
+  level,
   onLevelUp,
   studentName = 'Élève',
   achievements = []
@@ -43,13 +43,13 @@ const XPCrystalsMobile: React.FC<XPCrystalsMobileProps> = ({
   const [displayXP, setDisplayXP] = useState(currentXP);
   const [isLevelingUp, setIsLevelingUp] = useState(false);
   const [showXPGain, setShowXPGain] = useState<number | null>(null);
-  
+
   // Animation values
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const glowAnim = useRef(new Animated.Value(0.5)).current;
   const xpGainAnim = useRef(new Animated.Value(0)).current;
-  
+
   const { playLevelUpFanfare, playSparkleSound } = useMagicalSounds();
 
   const progress = Math.min((displayXP / maxXP) * 100, 100);
@@ -60,17 +60,17 @@ const XPCrystalsMobile: React.FC<XPCrystalsMobileProps> = ({
       const difference = currentXP - displayXP;
       setShowXPGain(difference);
       playSparkleSound();
-      
+
       // Mobile-optimized animation
       const duration = 1000;
       const steps = 30;
       const increment = difference / steps;
-      
+
       let currentStep = 0;
       const timer = setInterval(() => {
         currentStep++;
         setDisplayXP(prev => Math.min(prev + increment, currentXP));
-        
+
         if (currentStep >= steps) {
           clearInterval(timer);
           setDisplayXP(currentXP);
@@ -101,7 +101,7 @@ const XPCrystalsMobile: React.FC<XPCrystalsMobileProps> = ({
     if (displayXP >= maxXP && !isLevelingUp) {
       setIsLevelingUp(true);
       playLevelUpFanfare();
-      
+
       // Epic level up animation
       Animated.sequence([
         Animated.parallel([
@@ -194,7 +194,7 @@ const XPCrystalsMobile: React.FC<XPCrystalsMobileProps> = ({
       </View>
 
       {/* Main Crystal Container */}
-      <Animated.View 
+      <Animated.View
         style={[
           styles.crystalContainer,
           {
@@ -214,7 +214,7 @@ const XPCrystalsMobile: React.FC<XPCrystalsMobileProps> = ({
               <Stop offset="50%" stopColor="#EC4899" stopOpacity="0.8" />
               <Stop offset="100%" stopColor="#3B82F6" stopOpacity="0.9" />
             </SvgLinearGradient>
-            
+
             {/* Progress gradient */}
             <SvgLinearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="0%">
               <Stop offset="0%" stopColor="#10B981" stopOpacity="1" />
@@ -228,7 +228,7 @@ const XPCrystalsMobile: React.FC<XPCrystalsMobileProps> = ({
               <Stop offset="100%" stopColor="#F59E0B" stopOpacity="0.6" />
             </SvgLinearGradient>
           </Defs>
-          
+
           {/* Outer crystal shell */}
           <Circle
             cx="140"
@@ -238,7 +238,7 @@ const XPCrystalsMobile: React.FC<XPCrystalsMobileProps> = ({
             stroke="url(#glowGradient)"
             strokeWidth="4"
           />
-          
+
           {/* Inner glow ring */}
           <Circle
             cx="140"
@@ -248,7 +248,7 @@ const XPCrystalsMobile: React.FC<XPCrystalsMobileProps> = ({
             stroke="rgba(255, 255, 255, 0.4)"
             strokeWidth="2"
           />
-          
+
           {/* Progress ring */}
           <Circle
             cx="140"
@@ -269,7 +269,7 @@ const XPCrystalsMobile: React.FC<XPCrystalsMobileProps> = ({
             strokeLinecap="round"
             transform="rotate(-90 140 140)"
           />
-          
+
           {/* Center XP display */}
           <Circle
             cx="140"
@@ -277,7 +277,7 @@ const XPCrystalsMobile: React.FC<XPCrystalsMobileProps> = ({
             r="60"
             fill="rgba(255, 255, 255, 0.9)"
           />
-          
+
           {/* XP Text */}
           <SvgText
             x="140"
@@ -324,11 +324,11 @@ const XPCrystalsMobile: React.FC<XPCrystalsMobileProps> = ({
       {/* Progress Bar */}
       <View style={styles.progressBarContainer}>
         <View style={styles.progressBar}>
-          <Animated.View 
+          <Animated.View
             style={[
               styles.progressFill,
               { width: `${progress}%` }
-            ]} 
+            ]}
           />
         </View>
         <Text style={styles.progressText}>

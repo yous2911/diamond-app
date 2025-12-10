@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
-import Card from '../../components/common/Card';
+import { Card } from '../../components/common/Card';
 
 const ParentHomeScreen = () => {
   return (
