@@ -2,8 +2,10 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { User } from '../types/auth';
 
+const API_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:3003/api';
+
 const apiClient = axios.create({
-  baseURL: 'http://localhost:3003/api',
+  baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },

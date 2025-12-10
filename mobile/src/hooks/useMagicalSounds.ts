@@ -1,15 +1,16 @@
-// Mock implementation for useMagicalSounds hook
+// Placeholder hook to satisfy TypeScript until sound assets are ready
 export const useMagicalSounds = () => {
-    const playSparkleSound = () => {
-        console.log('Playing sparkle sound...');
-    };
+  const playSound = async (soundName: string) => {
+    // console.log('Playing sound:', soundName);
+  };
 
-    const playLevelUpFanfare = () => {
-        console.log('Playing level up fanfare...');
-    };
+  const playSparkleSound = async () => {
+    await playSound('sparkle');
+  };
 
-    return {
-        playSparkleSound,
-        playLevelUpFanfare,
-    };
+  const playLevelUpFanfare = async () => {
+    await playSound('fanfare');
+  };
+
+  return { playSound, playSparkleSound, playLevelUpFanfare };
 };
