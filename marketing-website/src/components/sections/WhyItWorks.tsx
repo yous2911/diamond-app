@@ -8,7 +8,7 @@ export default function WhyItWorks() {
             Pourquoi ça marche
           </h2>
           <p className="text-lg text-slate-600">
-            Trois leviers pédagogiques qui changent tout pour le primaire (CP à CM2).
+            Trois leviers pédagogiques qui changent tout pour le primaire.
           </p>
         </div>
         {/* Les 3 Points */}

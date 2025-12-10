@@ -32,7 +32,7 @@ export default function AttentionEconomy() {
             <div className="text-4xl mb-4">📚</div>
             <h3 className="font-sora text-2xl mb-3 text-text-dark">100% Programme Officiel</h3>
             <p className="text-text-medium">
-              Conforme à l&apos;Éducation Nationale. Chaque compétence du CP au CE2 est couverte avec des exercices progressifs.
+              Conforme à l&apos;Éducation Nationale. Chaque compétence est couverte avec des exercices progressifs.
             </p>
           </div>
         </div>

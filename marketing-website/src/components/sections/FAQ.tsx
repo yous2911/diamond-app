@@ -5,7 +5,7 @@ const faqs = [
   },
   {
     q: "À partir de quel niveau scolaire RevEd est-il adapté ?",
-    a: "RevEd couvre l&apos;ensemble du primaire, du CP au CM2, avec des parcours progressifs adaptés à l&apos;âge de l&apos;enfant et au programme officiel.",
+    a: "RevEd couvre l&apos;ensemble du primaire avec des parcours progressifs adaptés à l&apos;âge de l&apos;enfant et au programme officiel.",
   },
   {
     q: "Comment fonctionne la garantie de maîtrise ?",

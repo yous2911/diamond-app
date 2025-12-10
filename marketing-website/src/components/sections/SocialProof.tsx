@@ -38,7 +38,7 @@ export default function SocialProof() {
           <div className="bg-slate-50 rounded-2xl p-6 text-center border border-slate-100">
             <p className="text-3xl font-bold text-slate-900 mb-1">462</p>
             <p className="text-xs uppercase tracking-wide text-slate-500">
-              Exercices structurés CP–CM2
+              Exercices structurés
             </p>
           </div>
           <div className="bg-slate-50 rounded-2xl p-6 text-center border border-slate-100 flex flex-col items-center">
@@ -69,7 +69,7 @@ export default function SocialProof() {
             <div className="pt-4 border-t border-slate-200 flex items-center justify-between">
               <div>
                 <p className="font-semibold text-slate-900">Marie D.</p>
-                <p className="text-xs text-slate-500">Maman — CE2</p>
+                <p className="text-xs text-slate-500">Maman</p>
               </div>
               <p className="text-xs text-emerald-600 font-semibold">
                 +67% en calcul mental
@@ -86,7 +86,7 @@ export default function SocialProof() {
             <div className="pt-4 border-t border-slate-200 flex items-center justify-between">
               <div>
                 <p className="font-semibold text-slate-900">Thomas L.</p>
-                <p className="text-xs text-slate-500">Papa — CM1</p>
+                <p className="text-xs text-slate-500">Papa</p>
               </div>
               <p className="text-xs text-emerald-600 font-semibold">
                 +52% en lecture

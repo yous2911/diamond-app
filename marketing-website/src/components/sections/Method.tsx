@@ -85,7 +85,7 @@ export default function Method() {
                 <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span> Conforme Éducation Nationale
               </li>
               <li className="flex items-center gap-2 text-sm text-slate-700">
-                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span> Progression CP → CM2
+                <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span> Progression continue
               </li>
               <li className="flex items-center gap-2 text-sm text-slate-700">
                 <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span> Zéro saut dangereux

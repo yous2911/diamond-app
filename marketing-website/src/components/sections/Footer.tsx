@@ -13,7 +13,7 @@ export default function Footer() {
               La fierté de maîtriser. La sérénité de voir progresser.
             </p>
             <p className="text-xs text-slate-400">
-              Plateforme d&apos;entraînement scolaire structurée pour le primaire (CP à CM2).
+              Plateforme d&apos;entraînement scolaire structurée pour le primaire.
             </p>
           </div>
           <div>

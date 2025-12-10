@@ -1,7 +1,7 @@
 import { Check } from "lucide-react";
 
 const featuresEssential = [
-  "Accès complet RevEd (CP à CM2)",
+  "Accès complet RevEd",
   "Répétition espacée personnalisée",
   "Parcours structurés par compétences",
   "Tableau de bord parents hebdomadaire",

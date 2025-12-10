@@ -15,7 +15,7 @@ export default function Hero() {
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
           </span>
-          Nouveau : Programme complet Primaire (CP au CM2)
+          Nouveau : Programme complet Primaire
         </div>
         {/* Titre Principal */}
         <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-slate-900 mb-6 leading-[1.1]">
@@ -24,7 +24,7 @@ export default function Hero() {
         </h1>
         {/* Sous-titre */}
         <p className="text-xl md:text-2xl text-slate-600 mb-8 max-w-3xl mx-auto font-medium">
-          Du CP au CM2 — Lecture, Calcul, Fondamentaux.
+          Lecture, Calcul, Fondamentaux.
         </p>
         {/* Description */}
         <p className="text-lg text-slate-500 mb-10 max-w-2xl mx-auto leading-relaxed">
