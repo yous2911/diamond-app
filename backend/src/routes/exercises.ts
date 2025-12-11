@@ -1,8 +1,10 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
-import { eq, and } from 'drizzle-orm';
-import { exercises } from '../db/schema';
+import { eq, and, sql, count, sum, avg } from 'drizzle-orm';
+import { exercises, studentProgress, modules, spacedRepetition } from '../db/schema';
+import { SuperMemoService, SuperMemoCard } from '../services/supermemo.service';
 import { CommonIdParams } from '../schemas/common.schema.js';
 import { databaseService } from '../services/enhanced-database.service.js';
+import { Type } from '@sinclair/typebox';
 import {
   CreateModuleSchema,
   GenerateExercisesSchema,
@@ -353,14 +355,282 @@ export default async function exercisesRoutes(fastify: FastifyInstance) {
   // Get random exercises
   fastify.get('/random/:level', {
     schema: GetRandomExercisesSchema
-  }, async (_request: FastifyRequest, _reply: FastifyReply) => {
-    // ...
+  }, async (request: FastifyRequest<{ 
+    Params: { level: string };
+    Querystring: { count?: number; exclude_types?: string[] };
+  }>, reply: FastifyReply) => {
+    try {
+      const { level } = request.params;
+      const { count = 5, exclude_types = [] } = request.query as { count?: number; exclude_types?: string[] };
+
+      const whereConditions = [eq(exercises.niveau, level), eq(exercises.estActif, true)];
+
+      // Exclude specific exercise types if provided
+      if (exclude_types && exclude_types.length > 0) {
+        // Use NOT IN with SQL template for type exclusion
+        whereConditions.push(
+          sql`${exercises.typeExercice} NOT IN (${sql.join(exclude_types.map(type => sql`${type}`), sql`, `)})`
+        );
+      }
+
+      // Get random exercises using ORDER BY RAND() and LIMIT
+      const randomExercises = await fastify.db
+        .select()
+        .from(exercises)
+        .where(and(...whereConditions))
+        .orderBy(sql`RAND()`)
+        .limit(count);
+
+      return reply.send({
+        success: true,
+        data: {
+          exercises: randomExercises,
+          count: randomExercises.length,
+          level
+        },
+        message: `${randomExercises.length} exercice(s) aléatoire(s) récupéré(s)`
+      });
+    } catch (error: unknown) {
+      fastify.log.error({ err: error }, 'Get random exercises error');
+      return reply.status(500).send({
+        success: false,
+        error: {
+          message: 'Erreur lors de la récupération des exercices aléatoires',
+          code: 'GET_RANDOM_EXERCISES_ERROR',
+        },
+      });
+    }
   });
 
-  // Get exercise statistics
+  // Get random exercises (without level filter)
+  fastify.get('/random', {
+    schema: {
+      querystring: Type.Object({
+        count: Type.Optional(Type.Integer({ minimum: 1, maximum: 10, default: 5 })),
+        niveau: Type.Optional(Type.String()),
+        matiere: Type.Optional(Type.String()),
+        exclude_types: Type.Optional(Type.Array(Type.String())),
+      }),
+    },
+  }, async (request: FastifyRequest<{ 
+    Querystring: { count?: number; niveau?: string; matiere?: string; exclude_types?: string[] };
+  }>, reply: FastifyReply) => {
+    try {
+      const { count = 5, niveau, matiere, exclude_types = [] } = request.query as { 
+        count?: number; 
+        niveau?: string; 
+        matiere?: string; 
+        exclude_types?: string[] 
+      };
+
+      const whereConditions = [eq(exercises.estActif, true)];
+
+      if (niveau) {
+        whereConditions.push(eq(exercises.niveau, niveau));
+      }
+
+      if (matiere) {
+        whereConditions.push(eq(exercises.matiere, matiere));
+      }
+
+      if (exclude_types && exclude_types.length > 0) {
+        // Use NOT IN with SQL template for type exclusion
+        whereConditions.push(
+          sql`${exercises.typeExercice} NOT IN (${sql.join(exclude_types.map(type => sql`${type}`), sql`, `)})`
+        );
+      }
+
+      const randomExercises = await fastify.db
+        .select()
+        .from(exercises)
+        .where(and(...whereConditions))
+        .orderBy(sql`RAND()`)
+        .limit(count);
+
+      return reply.send({
+        success: true,
+        data: {
+          exercises: randomExercises,
+          count: randomExercises.length
+        },
+        message: `${randomExercises.length} exercice(s) aléatoire(s) récupéré(s)`
+      });
+    } catch (error: unknown) {
+      fastify.log.error({ err: error }, 'Get random exercises error');
+      return reply.status(500).send({
+        success: false,
+        error: {
+          message: 'Erreur lors de la récupération des exercices aléatoires',
+          code: 'GET_RANDOM_EXERCISES_ERROR',
+        },
+      });
+    }
+  });
+
+  // Get exercise statistics by level
   fastify.get('/stats/:level', {
     schema: GetExerciseStatsSchema
-  }, async (_request: FastifyRequest, _reply: FastifyReply) => {
-    // ...
+  }, async (request: FastifyRequest<{ Params: { level: string } }>, reply: FastifyReply) => {
+    try {
+      const { level } = request.params;
+
+      // Get statistics for exercises at this level
+      const [levelStats] = await fastify.db
+        .select({
+          total: count(exercises.id),
+          byMatiere: sql<number>`COUNT(DISTINCT ${exercises.matiere})`,
+          byType: sql<number>`COUNT(DISTINCT ${exercises.typeExercice})`,
+          byDifficulte: sql<number>`COUNT(DISTINCT ${exercises.difficulte})`,
+          active: sql<number>`SUM(CASE WHEN ${exercises.estActif} = true THEN 1 ELSE 0 END)`,
+        })
+        .from(exercises)
+        .where(eq(exercises.niveau, level));
+
+      // Get breakdown by matiere
+      const matiereBreakdown = await fastify.db
+        .select({
+          matiere: exercises.matiere,
+          count: count(exercises.id),
+        })
+        .from(exercises)
+        .where(eq(exercises.niveau, level))
+        .groupBy(exercises.matiere);
+
+      // Get breakdown by type
+      const typeBreakdown = await fastify.db
+        .select({
+          typeExercice: exercises.typeExercice,
+          count: count(exercises.id),
+        })
+        .from(exercises)
+        .where(eq(exercises.niveau, level))
+        .groupBy(exercises.typeExercice);
+
+      // Get breakdown by difficulte
+      const difficulteBreakdown = await fastify.db
+        .select({
+          difficulte: exercises.difficulte,
+          count: count(exercises.id),
+        })
+        .from(exercises)
+        .where(eq(exercises.niveau, level))
+        .groupBy(exercises.difficulte);
+
+      return reply.send({
+        success: true,
+        data: {
+          level,
+          total: Number(levelStats?.total || 0),
+          active: Number(levelStats?.active || 0),
+          inactive: Number(levelStats?.total || 0) - Number(levelStats?.active || 0),
+          uniqueMatieres: Number(levelStats?.byMatiere || 0),
+          uniqueTypes: Number(levelStats?.byType || 0),
+          uniqueDifficultes: Number(levelStats?.byDifficulte || 0),
+          breakdown: {
+            byMatiere: matiereBreakdown.map(m => ({
+              matiere: m.matiere,
+              count: Number(m.count)
+            })),
+            byType: typeBreakdown.map(t => ({
+              typeExercice: t.typeExercice,
+              count: Number(t.count)
+            })),
+            byDifficulte: difficulteBreakdown.map(d => ({
+              difficulte: d.difficulte,
+              count: Number(d.count)
+            }))
+          }
+        },
+        message: `Statistiques pour le niveau ${level} récupérées avec succès`
+      });
+    } catch (error: unknown) {
+      fastify.log.error({ err: error }, 'Get exercise stats error');
+      return reply.status(500).send({
+        success: false,
+        error: {
+          message: 'Erreur lors de la récupération des statistiques',
+          code: 'GET_EXERCISE_STATS_ERROR',
+        },
+      });
+    }
+  });
+
+  // Get exercise statistics by ID
+  fastify.get('/:id/stats', {
+    schema: { params: CommonIdParams }
+  }, async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+    try {
+      const { id } = request.params;
+      const exerciseId = parseInt(id, 10);
+
+      // Get exercise
+      const [exercise] = await fastify.db
+        .select()
+        .from(exercises)
+        .where(eq(exercises.id, exerciseId))
+        .limit(1);
+
+      if (!exercise) {
+        return reply.status(404).send({
+          success: false,
+          error: {
+            message: 'Exercice non trouvé',
+            code: 'EXERCISE_NOT_FOUND',
+          },
+        });
+      }
+
+      // Get statistics from student_progress
+      const [progressStats] = await fastify.db
+        .select({
+          totalAttempts: count(studentProgress.id),
+          successfulAttempts: sum(sql<number>`CASE WHEN ${studentProgress.completed} = true THEN 1 ELSE 0 END`),
+          averageScore: avg(studentProgress.averageScore),
+          bestScore: sql<number>`MAX(${studentProgress.bestScore})`,
+          totalTimeSpent: sum(studentProgress.totalTimeSpent),
+          masteredCount: sum(sql<number>`CASE WHEN ${studentProgress.masteryLevel} = 'maitrise' THEN 1 ELSE 0 END`),
+        })
+        .from(studentProgress)
+        .where(eq(studentProgress.exerciseId, exerciseId));
+
+      const totalAttempts = Number(progressStats?.totalAttempts || 0);
+      const successfulAttempts = Number(progressStats?.successfulAttempts || 0);
+      const successRate = totalAttempts > 0 ? (successfulAttempts / totalAttempts) * 100 : 0;
+
+      return reply.send({
+        success: true,
+        data: {
+          exerciseId,
+          exercise: {
+            titre: exercise.titre,
+            niveau: exercise.niveau,
+            matiere: exercise.matiere,
+            typeExercice: exercise.typeExercice,
+            difficulte: exercise.difficulte,
+          },
+          statistics: {
+            totalAttempts,
+            successfulAttempts,
+            failedAttempts: totalAttempts - successfulAttempts,
+            successRate: Math.round(successRate * 100) / 100,
+            averageScore: progressStats?.averageScore ? Number(progressStats.averageScore) : 0,
+            bestScore: progressStats?.bestScore ? Number(progressStats.bestScore) : 0,
+            totalTimeSpent: Number(progressStats?.totalTimeSpent || 0),
+            masteredCount: Number(progressStats?.masteredCount || 0),
+            masteryRate: totalAttempts > 0 ? (Number(progressStats?.masteredCount || 0) / totalAttempts) * 100 : 0,
+          }
+        },
+        message: 'Statistiques de l\'exercice récupérées avec succès'
+      });
+    } catch (error: unknown) {
+      fastify.log.error({ err: error }, 'Get exercise stats by ID error');
+      return reply.status(500).send({
+        success: false,
+        error: {
+          message: 'Erreur lors de la récupération des statistiques de l\'exercice',
+          code: 'GET_EXERCISE_STATS_ERROR',
+        },
+      });
+    }
   });
 } 

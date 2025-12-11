@@ -46,6 +46,9 @@ interface Badge {
   earnedAt: Date;
 }
 
+// Base URL for API calls (consistent with other services)
+const BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3003/api';
+
 // API service functions
 const leaderboardApi = {
   getUserCentricLeaderboard: async (
@@ -60,7 +63,7 @@ const leaderboardApi = {
       range: range.toString()
     });
     
-    const response = await fetch(`/api/leaderboards/user-centric/${studentId}?${params}`);
+    const response = await fetch(`${BASE_URL}/leaderboards/user-centric/${studentId}?${params}`);
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${await response.text()}`);
     }
@@ -74,7 +77,7 @@ const leaderboardApi = {
   },
 
   getStudentBadges: async (studentId: number) => {
-    const response = await fetch(`/api/badges/student/${studentId}`);
+    const response = await fetch(`${BASE_URL}/badges/student/${studentId}`);
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${await response.text()}`);
     }
@@ -88,7 +91,7 @@ const leaderboardApi = {
   },
 
   getLeaderboardStats: async () => {
-    const response = await fetch('/api/leaderboards/stats');
+    const response = await fetch(`${BASE_URL}/leaderboards/stats`);
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${await response.text()}`);
     }
@@ -102,7 +105,7 @@ const leaderboardApi = {
   },
 
   getCompetitions: async () => {
-    const response = await fetch('/api/competitions');
+    const response = await fetch(`${BASE_URL}/competitions`);
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}: ${await response.text()}`);
     }

@@ -1,6 +1,10 @@
+'use client';
+
 import Image from "next/image";
 import { Sparkles, Layers } from "lucide-react";
-import ForgettingCurve from "../ui/ForgettingCurve";
+import AnimatedSection from "../ui/AnimatedSection";
+import AnimatedCard from "../ui/AnimatedCard";
+import { motion } from "framer-motion";
 
 export default function Method() {
   return (
@@ -8,22 +12,27 @@ export default function Method() {
       <div className="container mx-auto px-4">
         
         {/* En-tête de section */}
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-            Une méthode pensée pour le cerveau de l&apos;enfant
-          </h2>
-          <p className="text-lg text-slate-600">
-            Pas de quiz aléatoires. Pas de surcharge. <br />
-            Une architecture d&apos;apprentissage précise, validée par la recherche.
-          </p>
-        </div>
+        <AnimatedSection delay={0}>
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+              Une méthode pensée pour le cerveau de l&apos;enfant
+            </h2>
+            <p className="text-lg text-slate-600">
+              Pas de quiz aléatoires. Pas de surcharge. <br />
+              Une architecture d&apos;apprentissage précise, validée par la recherche.
+            </p>
+          </div>
+        </AnimatedSection>
+
         {/* Les 3 Piliers */}
         <div className="grid md:grid-cols-3 gap-8 md:gap-12">
           
           {/* Pilier 1 */}
-          <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
-            <div className="mb-6">
-              <ForgettingCurve />
+          <AnimatedCard delay={0} className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-6 text-blue-600">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
             </div>
             <h3 className="text-xl font-bold text-slate-900 mb-3">1. Répétition espacée</h3>
             <p className="text-slate-600 mb-4 font-medium">Réviser au bon moment, pas plus.</p>
@@ -41,9 +50,10 @@ export default function Method() {
                 <span className="w-1.5 h-1.5 bg-blue-500 rounded-full"></span> Progression mesurable
               </li>
             </ul>
-          </div>
+          </AnimatedCard>
+
           {/* Pilier 2 */}
-          <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+          <AnimatedCard delay={0.1} className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
             <div className="relative w-full h-48 mb-6 rounded-xl overflow-hidden bg-slate-50 border border-slate-100">
               <Image
                 src="/images/gamification.png"
@@ -69,9 +79,10 @@ export default function Method() {
                 <span className="w-1.5 h-1.5 bg-amber-500 rounded-full"></span> Engagement durable
               </li>
             </ul>
-          </div>
+          </AnimatedCard>
+
           {/* Pilier 3 */}
-          <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+          <AnimatedCard delay={0.2} className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
             <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center mb-6 text-emerald-600">
               <Layers className="w-6 h-6" />
             </div>
@@ -91,17 +102,24 @@ export default function Method() {
                 <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></span> Zéro saut dangereux
               </li>
             </ul>
-          </div>
+          </AnimatedCard>
         </div>
+
         {/* Bandeau de synthèse */}
-        <div className="mt-16 bg-blue-600 rounded-2xl p-8 md:p-12 text-center text-white">
-          <h3 className="text-2xl font-bold mb-4">
-            Remplacez 30 minutes d&apos;écran passif par 30 minutes qui construisent vraiment.
-          </h3>
-          <p className="text-blue-100 text-lg">
-            Votre enfant apprend. Vous retrouvez la sérénité.
-          </p>
-        </div>
+        <AnimatedSection delay={0.3}>
+          <motion.div
+            whileHover={{ scale: 1.02 }}
+            transition={{ duration: 0.3 }}
+            className="mt-16 bg-blue-600 rounded-2xl p-8 md:p-12 text-center text-white"
+          >
+            <h3 className="text-2xl font-bold mb-4">
+              Remplacez 30 minutes d&apos;écran passif par 30 minutes qui construisent vraiment.
+            </h3>
+            <p className="text-blue-100 text-lg">
+              Votre enfant apprend. Vous retrouvez la sérénité.
+            </p>
+          </motion.div>
+        </AnimatedSection>
       </div>
     </section>
   );

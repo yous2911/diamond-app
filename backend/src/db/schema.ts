@@ -52,6 +52,9 @@ export const exercises = mysqlTable('exercises', {
   ordre: int('ordre').default(0),
   estActif: boolean('est_actif').default(true),
   metadonnees: json('metadonnees'),
+  audioUrl: varchar('audio_url', { length: 500 }),
+  audioQuestionUrl: varchar('audio_question_url', { length: 500 }),
+  audioFeedbackUrl: varchar('audio_feedback_url', { length: 500 }),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow().onUpdateNow()
 });

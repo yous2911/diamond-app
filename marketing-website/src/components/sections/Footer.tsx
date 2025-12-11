@@ -1,10 +1,15 @@
+'use client';
+
 import Link from "next/link";
+import AnimatedSection from "../ui/AnimatedSection";
+import { motion } from "framer-motion";
 
 export default function Footer() {
   return (
     <footer className="border-t border-slate-200 bg-white">
       <div className="container mx-auto px-4 py-10 md:py-12">
-        <div className="grid md:grid-cols-[2fr,1fr,1fr] gap-8 md:gap-12 mb-8">
+        <AnimatedSection delay={0}>
+          <div className="grid md:grid-cols-[2fr,1fr,1fr] gap-8 md:gap-12 mb-8">
           <div>
             <h3 className="text-sm font-semibold text-slate-900 mb-2">
               RevEd
@@ -60,8 +65,11 @@ export default function Footer() {
               </li>
             </ul>
           </div>
-        </div>
-        <div className="flex flex-col md:flex-row items-center justify-between gap-3 border-t border-slate-200 pt-4">
+          </div>
+        </AnimatedSection>
+
+        <AnimatedSection delay={0.1}>
+          <div className="flex flex-col md:flex-row items-center justify-between gap-3 border-t border-slate-200 pt-4">
           <p className="text-xs text-slate-400">
             © {new Date().getFullYear()} RevEd. Tous droits réservés.
           </p>

@@ -1,6 +1,7 @@
 import React from 'react';
 import AdvancedParticleEngine from './AdvancedParticleEngine';
 import MascotSystem from './MascotSystem'; // <-- UPDATED to use new MascotSystem
+import MascotVoiceControls from './MascotVoiceControls';
 import XPCrystalsPremium from './XPCrystalsPremium';
 import { usePremiumFeatures } from '../contexts/PremiumFeaturesContext';
 
@@ -29,6 +30,7 @@ const GlobalPremiumLayout: React.FC<GlobalPremiumLayoutProps> = ({
     showParticles,
     particleType,
     mascotEmotion,
+    mascotMessage,
     currentXP,
     maxXP,
     level,
@@ -100,7 +102,7 @@ const GlobalPremiumLayout: React.FC<GlobalPremiumLayoutProps> = ({
       )}
 
       {/* UPDATED to use new MascotSystem */}
-      <div className="fixed bottom-6 right-6 z-40">
+      <div className="fixed bottom-6 right-6 z-40 flex flex-col items-end gap-3">
         <MascotSystem
           locale={locale}
           mascotType="dragon"
@@ -115,7 +117,10 @@ const GlobalPremiumLayout: React.FC<GlobalPremiumLayoutProps> = ({
           equippedItems={equippedMascotItems}
           onMascotInteraction={() => {}}
           onEmotionalStateChange={() => {}}
+          externalMessage={mascotMessage}
+          externalEmotion={mascotEmotion}
         />
+        <MascotVoiceControls mascotType="dragon" locale={locale} />
       </div>
     </div>
   );

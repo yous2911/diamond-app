@@ -68,15 +68,18 @@ export function createMockContainer() {
   testContainer.enableTestMode();
   
   // Mock specific services
-  testContainer.mock(SERVICE_TOKENS.EMAIL, {
-    sendWelcomeEmail: jest.fn().mockResolvedValue(true),
-    sendPasswordReset: jest.fn().mockResolvedValue(true)
-  });
+  const mockEmailService = {
+    sendWelcomeEmail: async () => true,
+    sendPasswordReset: async () => true
+  };
   
-  testContainer.mock(SERVICE_TOKENS.ENCRYPTION, {
-    encrypt: jest.fn().mockResolvedValue('encrypted-data'),
-    decrypt: jest.fn().mockResolvedValue('decrypted-data')
-  });
+  const mockEncryptionService = {
+    encrypt: async () => 'encrypted-data',
+    decrypt: async () => 'decrypted-data'
+  };
+  
+  testContainer.mock(SERVICE_TOKENS.EMAIL, mockEmailService);
+  testContainer.mock(SERVICE_TOKENS.ENCRYPTION, mockEncryptionService);
   
   return testContainer;
 }

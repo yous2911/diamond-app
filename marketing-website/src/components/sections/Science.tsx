@@ -1,23 +1,31 @@
+'use client';
+
 import { Brain, LineChart, ShieldCheck } from "lucide-react";
 import ForgettingCurve from "../ui/ForgettingCurve";
+import AnimatedSection from "../ui/AnimatedSection";
+import AnimatedCard from "../ui/AnimatedCard";
+import { motion } from "framer-motion";
 
 export default function Science() {
   return (
     <section className="py-24 bg-slate-50">
       <div className="container mx-auto px-4">
         {/* En-tête */}
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-            Une méthode alignée avec la recherche en sciences cognitives
-          </h2>
-          <p className="text-lg text-slate-600">
-            Répétition espacée, récupération active, gestion de la charge cognitive,
-            prérequis stricts : RevEd applique les principes reconnus de l&apos;apprentissage durable.
-          </p>
-        </div>
+        <AnimatedSection delay={0}>
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+              Une méthode alignée avec la recherche en sciences cognitives
+            </h2>
+            <p className="text-lg text-slate-600">
+              Répétition espacée, récupération active, gestion de la charge cognitive,
+              prérequis stricts : RevEd applique les principes reconnus de l&apos;apprentissage durable.
+            </p>
+          </div>
+        </AnimatedSection>
+
         {/* 3 blocs scientifiques */}
         <div className="grid md:grid-cols-3 gap-8 md:gap-10 mb-16">
-          <div className="bg-white rounded-2xl p-8 border border-slate-100">
+          <AnimatedCard delay={0} className="bg-white rounded-2xl p-8 border border-slate-100">
             <div className="w-12 h-12 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center mb-6">
               <Brain className="w-6 h-6" />
             </div>
@@ -33,8 +41,9 @@ export default function Science() {
               <li>• Plus de rappels ciblés</li>
               <li>• Rétention long terme</li>
             </ul>
-          </div>
-          <div className="bg-white rounded-2xl p-8 border border-slate-100">
+          </AnimatedCard>
+
+          <AnimatedCard delay={0.1} className="bg-white rounded-2xl p-8 border border-slate-100">
             <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center mb-6">
               <LineChart className="w-6 h-6" />
             </div>
@@ -50,8 +59,9 @@ export default function Science() {
               <li>• Retours immédiats</li>
               <li>• Suivi parents lisible</li>
             </ul>
-          </div>
-          <div className="bg-white rounded-2xl p-8 border border-slate-100">
+          </AnimatedCard>
+
+          <AnimatedCard delay={0.2} className="bg-white rounded-2xl p-8 border border-slate-100">
             <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center mb-6">
               <ShieldCheck className="w-6 h-6" />
             </div>
@@ -65,14 +75,19 @@ export default function Science() {
             <p className="text-xs text-slate-500">
               Rapport disponible sur demande pour les établissements et partenaires.
             </p>
-          </div>
+          </AnimatedCard>
         </div>
+
         {/* Graphique de la courbe de l'oubli */}
-        <div className="mb-16 max-w-4xl mx-auto">
-          <ForgettingCurve />
-        </div>
+        <AnimatedSection delay={0.3}>
+          <div className="mb-16 max-w-4xl mx-auto">
+            <ForgettingCurve />
+          </div>
+        </AnimatedSection>
+
         {/* Bandeau bas avec mention protocole */}
-        <div className="bg-white rounded-2xl p-8 border border-slate-100 max-w-4xl mx-auto">
+        <AnimatedSection delay={0.4}>
+          <div className="bg-white rounded-2xl p-8 border border-slate-100 max-w-4xl mx-auto">
           <p className="text-sm text-slate-600 leading-relaxed">
             RevEd ne remplace pas une prise en charge clinique individuelle.
             La plateforme propose un cadre structuré qui respecte le rythme de

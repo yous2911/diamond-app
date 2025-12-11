@@ -21,6 +21,7 @@ import { useGPUPerformance } from '../hooks/useGPUPerformance';
 import SkeletonLoader from '../components/ui/SkeletonLoader';
 import WardrobeModal from '../components/WardrobeModal';
 import { StreakFlame, SevenDayChest } from '../components/ui';
+import AnimatedSection from '../components/ui/AnimatedSection';
 
 const HomePage = () => {
   const navigate = useNavigate();
@@ -288,23 +289,29 @@ const HomePage = () => {
       </div>
 
       {/* Premium Diamond Interface */}
-      {isLoadingExercises ? (
-        <div className="flex justify-center items-center h-64">
-          <SkeletonLoader type="dashboard" />
-        </div>
-      ) : exercisesError ? (
-        <div className="text-center text-red-500 bg-red-100 p-4 rounded-lg">
-          <p className="font-bold">Erreur de chargement</p>
-          <p>Nous n'avons pas pu charger les exercices. Veuillez réessayer plus tard.</p>
-        </div>
-      ) : (
-        <DiamondCP_CE2Interface
-          onSubjectClick={handleSubjectClick}
-          onExerciseStart={handleExerciseStart}
-          studentData={studentData}
-          subjects={subjects}
-        />
-      )}
+      <AnimatedSection delay={0.2}>
+        {isLoadingExercises ? (
+          <div className="flex justify-center items-center h-64">
+            <SkeletonLoader type="dashboard" />
+          </div>
+        ) : exercisesError ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-center text-red-500 bg-red-100 p-4 rounded-lg"
+          >
+            <p className="font-bold">Erreur de chargement</p>
+            <p>Nous n'avons pas pu charger les exercices. Veuillez réessayer plus tard.</p>
+          </motion.div>
+        ) : (
+          <DiamondCP_CE2Interface
+            onSubjectClick={handleSubjectClick}
+            onExerciseStart={handleExerciseStart}
+            studentData={studentData}
+            subjects={subjects}
+          />
+        )}
+      </AnimatedSection>
 
       <WardrobeModal
         selectedMascot={selectedMascot}

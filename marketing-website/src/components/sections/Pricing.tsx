@@ -1,4 +1,10 @@
+'use client';
+
 import { Check } from "lucide-react";
+import AnimatedSection from "../ui/AnimatedSection";
+import AnimatedCard from "../ui/AnimatedCard";
+import MagneticButton from "../ui/MagneticButton";
+import { motion } from "framer-motion";
 
 const featuresEssential = [
   "Accès complet RevEd",
@@ -20,17 +26,20 @@ export default function Pricing() {
   return (
     <section className="py-24 bg-white">
       <div className="container mx-auto px-4 max-w-5xl">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-            Un investissement éducatif rationnel
-          </h2>
-          <p className="text-lg text-slate-600">
-            Moins cher qu&apos;un cours particulier, plus structuré que n&apos;importe quel écran.
-          </p>
-        </div>
+        <AnimatedSection delay={0}>
+          <div className="text-center max-w-3xl mx-auto mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+              Un investissement éducatif rationnel
+            </h2>
+            <p className="text-lg text-slate-600">
+              Moins cher qu&apos;un cours particulier, plus structuré que n&apos;importe quel écran.
+            </p>
+          </div>
+        </AnimatedSection>
+
         <div className="grid md:grid-cols-2 gap-8">
           {/* Essentiel */}
-          <div className="border border-slate-200 rounded-3xl p-8 flex flex-col bg-slate-50">
+          <AnimatedCard delay={0} className="border border-slate-200 rounded-3xl p-8 flex flex-col bg-slate-50">
             <p className="text-xs uppercase tracking-wide text-slate-500 mb-2">
               Offre famille
             </p>
@@ -39,7 +48,7 @@ export default function Pricing() {
               Pour installer une routine d&apos;apprentissage sereine et efficace.
             </p>
             <div className="flex items-baseline gap-1 mb-6">
-              <span className="text-3xl font-bold text-slate-900">330 DH</span>
+              <span className="text-3xl font-bold text-slate-900">299 DH</span>
               <span className="text-sm text-slate-500">/ mois</span>
             </div>
             <ul className="space-y-2 mb-6 text-sm text-slate-700">
@@ -50,15 +59,19 @@ export default function Pricing() {
                 </li>
               ))}
             </ul>
-            <button className="mt-auto w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm transition-all">
+            <MagneticButton
+              variant="primary"
+              className="mt-auto w-full py-3 text-sm"
+            >
               Commencer avec Essentiel
-            </button>
+            </MagneticButton>
             <p className="text-[11px] text-slate-500 mt-3">
               Sans engagement. 30 jours satisfait ou remboursé.
             </p>
-          </div>
+          </AnimatedCard>
+
           {/* Excellence */}
-          <div className="border border-amber-300 rounded-3xl p-8 flex flex-col bg-gradient-to-b from-amber-50 to-white shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
+          <AnimatedCard delay={0.1} className="border border-amber-300 rounded-3xl p-8 flex flex-col bg-gradient-to-b from-amber-50 to-white shadow-[0_18px_45px_rgba(15,23,42,0.08)]">
             <p className="text-xs uppercase tracking-wide text-amber-600 mb-2">
               Programme fondateurs
             </p>
@@ -70,9 +83,8 @@ export default function Pricing() {
               Pour les familles qui veulent combiner excellence académique
               et engagement social renforcé.
             </p>
-            <div className="flex items-baseline gap-1 mb-6">
-              <span className="text-3xl font-bold text-slate-900">1100 DH</span>
-              <span className="text-sm text-slate-500">/ mois</span>
+            <div className="mb-6">
+              <p className="text-lg font-semibold text-slate-700">Sur demande</p>
             </div>
             <ul className="space-y-2 mb-6 text-sm text-slate-700">
               {featuresExcellence.map((f) => (
@@ -82,9 +94,12 @@ export default function Pricing() {
                 </li>
               ))}
             </ul>
-            <button className="mt-auto w-full py-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-semibold text-sm transition-all">
+            <MagneticButton
+              variant="primary"
+              className="mt-auto w-full py-3 bg-amber-600 hover:bg-amber-700 text-sm"
+            >
               Postuler au programme Excellence
-            </button>
+            </MagneticButton>
             <p className="text-[11px] text-slate-500 mt-3">
               Garantie étendue. Accompagnement personnalisé inclus.
             </p>

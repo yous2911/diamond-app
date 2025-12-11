@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Star, Home } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { usePremiumFeatures } from '../contexts/PremiumFeaturesContext';
@@ -8,6 +8,7 @@ import { useCelebrations } from '../contexts/CelebrationContext';
 import { useStudentStats, useExerciseSubmission, useXpTracking, useMascot } from '../hooks/useApiData';
 import XPCrystalsPremium from '../components/XPCrystalsPremium';
 import MicroInteraction from '../components/MicroInteractions';
+import AnimatedSection from '../components/ui/AnimatedSection';
 
 const ExercisePage = () => {
   const navigate = useNavigate();

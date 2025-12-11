@@ -1,21 +1,30 @@
+'use client';
+
+import AnimatedSection from '../ui/AnimatedSection';
+import AnimatedCard from '../ui/AnimatedCard';
+import { motion } from 'framer-motion';
+
 export default function WhyItWorks() {
   return (
     <section className="py-20 bg-white">
       <div className="container mx-auto px-4 max-w-4xl">
         {/* En-tête */}
-        <div className="text-center mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-            Pourquoi ça marche
-          </h2>
-          <p className="text-lg text-slate-600">
-            Trois leviers pédagogiques qui changent tout pour le primaire.
-          </p>
-        </div>
+        <AnimatedSection delay={0}>
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
+              Pourquoi ça marche
+            </h2>
+            <p className="text-lg text-slate-600">
+              Trois leviers pédagogiques qui changent tout pour le primaire.
+            </p>
+          </div>
+        </AnimatedSection>
+
         {/* Les 3 Points */}
         <div className="space-y-8 md:space-y-10">
           
           {/* Point 1 - Maths */}
-          <div className="flex items-start gap-4 md:gap-6 p-6 rounded-2xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
+          <AnimatedCard delay={0} className="flex items-start gap-4 md:gap-6 p-6 rounded-2xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
             <span className="flex-shrink-0 mt-1 inline-flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-blue-700 text-base font-bold shadow-sm">
               1
             </span>
@@ -29,9 +38,10 @@ export default function WhyItWorks() {
                 Votre enfant manipule, visualise, et <em>comprend</em> enfin le sens des nombres.
               </p>
             </div>
-          </div>
+          </AnimatedCard>
+
           {/* Point 2 - Mémoire */}
-          <div className="flex items-start gap-4 md:gap-6 p-6 rounded-2xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
+          <AnimatedCard delay={0.1} className="flex items-start gap-4 md:gap-6 p-6 rounded-2xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
             <span className="flex-shrink-0 mt-1 inline-flex h-8 w-8 items-center justify-center rounded-full bg-amber-100 text-amber-700 text-base font-bold shadow-sm">
               2
             </span>
@@ -45,9 +55,10 @@ export default function WhyItWorks() {
                 2 minutes. <strong className="text-amber-700">Résultat : une mémorisation divisée par 3, ancrée pour la vie.</strong>
               </p>
             </div>
-          </div>
+          </AnimatedCard>
+
           {/* Point 3 - Logique */}
-          <div className="flex items-start gap-4 md:gap-6 p-6 rounded-2xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
+          <AnimatedCard delay={0.2} className="flex items-start gap-4 md:gap-6 p-6 rounded-2xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
             <span className="flex-shrink-0 mt-1 inline-flex h-8 w-8 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 text-base font-bold shadow-sm">
               3
             </span>
@@ -61,7 +72,7 @@ export default function WhyItWorks() {
                 jamais bloqué devant un problème complexe.
               </p>
             </div>
-          </div>
+          </AnimatedCard>
         </div>
       </div>
     </section>

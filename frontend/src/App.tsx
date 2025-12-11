@@ -6,6 +6,8 @@ import { PremiumFeaturesProvider } from './contexts/PremiumFeaturesContext';
 import { CelebrationProvider } from './contexts/CelebrationContext';
 import GlobalPremiumLayout from './components/GlobalPremiumLayout';
 import RealTimeNotifications from './components/RealTimeNotifications';
+import OfflineIndicator from './components/OfflineIndicator';
+import { useOfflinePreload } from './hooks/useOfflinePreload';
 
 // Import newly extracted components
 import SkeletonLoader from './components/ui/SkeletonLoader';
@@ -24,6 +26,9 @@ const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 const MainLayout = () => {
   const { student } = useAuth();
   
+  // Preload exercises for offline mode based on SuperMemo schedule
+  useOfflinePreload();
+  
   // This layout will wrap all authenticated pages with premium features
   return (
     <PremiumFeaturesProvider initialXP={75} initialLevel={3}>
@@ -39,6 +44,9 @@ const MainLayout = () => {
           
           {/* Outlet renders the current page component from the router */}
           <Outlet />
+          
+          {/* Offline mode indicator */}
+          <OfflineIndicator />
         </GlobalPremiumLayout>
       </CelebrationProvider>
     </PremiumFeaturesProvider>

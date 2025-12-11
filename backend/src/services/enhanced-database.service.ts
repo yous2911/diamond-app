@@ -572,7 +572,11 @@ class EnhancedDatabaseService {
           )
         ))
         .orderBy(
-          desc(spacedRepetition.priority === 'high' ? sql`1` : spacedRepetition.priority === 'medium' ? sql`2` : sql`3`),
+          desc(sql`CASE 
+            WHEN ${spacedRepetition.priority} = 'high' THEN 1 
+            WHEN ${spacedRepetition.priority} = 'medium' THEN 2 
+            ELSE 3 
+          END`),
           asc(spacedRepetition.nextReviewDate)
         )
         .limit(limit);
